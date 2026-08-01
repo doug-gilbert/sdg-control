@@ -59,12 +59,12 @@ MainWindow::MainWindow(QWidget *parent)
     resize(500, 250);
 }
 
-
 void MainWindow::refreshClicked()
 {
     idLabel->setText(generator.identification());
 
     auto ch1 = generator.getChannelState(1);
+    bool ch1Output = generator.getOutputState(1);
 
     ch1Label->setText(
         QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
@@ -72,13 +72,10 @@ void MainWindow::refreshClicked()
             .arg(ch1.frequency)
             .arg(ch1.amplitude)
             .arg(ch1.offset)
-            .arg(generator.getOutputState(1) ? "ON" : "OFF"));
-
-    ch1OutputCheck->blockSignals(true);
-    ch1OutputCheck->setChecked(generator.getOutputState(1));
-    ch1OutputCheck->blockSignals(false);
+            .arg(ch1Output ? "ON" : "OFF"));
 
     auto ch2 = generator.getChannelState(2);
+    bool ch2Output = generator.getOutputState(2);
 
     ch2Label->setText(
         QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
@@ -86,5 +83,10 @@ void MainWindow::refreshClicked()
             .arg(ch2.frequency)
             .arg(ch2.amplitude)
             .arg(ch2.offset)
-            .arg(generator.getOutputState(2) ? "ON" : "OFF"));
+            .arg(ch2Output ? "ON" : "OFF"));
+
+    ch1OutputCheck->blockSignals(true);
+    ch1OutputCheck->setChecked(ch1Output);
+    ch1OutputCheck->blockSignals(false);
 }
+
