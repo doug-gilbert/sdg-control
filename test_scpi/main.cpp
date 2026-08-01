@@ -38,10 +38,12 @@ int main(int argc, char *argv[])
     generator.setFrequency(2, 1000);
     generator.setAmplitude(2, 2);
     generator.setOffset(2, 0);
+#ifdef SDG_DEBUG
 qDebug() << "SCPI error:"
          << generator.getError();
 qDebug() << "CH2 immediate:"
          << generator.getChannelState(2).offset;
+#endif
     generator.output(2, true);
     
     auto ch2 = generator.getChannelState(2);
