@@ -23,30 +23,57 @@ MainWindow::MainWindow(QWidget *parent)
     ch2OutputCheck = new QCheckBox("CH2 Output", central);
 
     ch1FrequencySpin = new QDoubleSpinBox(central);
-    ch1FrequencySpin->setRange(0.000001, 10000000);
+    ch1FrequencySpin->setRange(0.001, 120'000'000);
     ch1FrequencySpin->setDecimals(3);
+    ch1FrequencySpin->setSingleStep(1.0);
     ch1FrequencySpin->setSuffix(" Hz");
 
     ch1AmplitudeSpin = new QDoubleSpinBox(central);
     ch1AmplitudeSpin->setRange(0, 20);
     ch1AmplitudeSpin->setDecimals(3);
+    ch1AmplitudeSpin->setSingleStep(0.1);
     ch1AmplitudeSpin->setSuffix(" V");
 
     ch1OffsetSpin = new QDoubleSpinBox(central);
     ch1OffsetSpin->setRange(-10, 10);
     ch1OffsetSpin->setDecimals(3);
+    ch1OffsetSpin->setSingleStep(0.1);
     ch1OffsetSpin->setSuffix(" V");
+
+    ch2FrequencySpin = new QDoubleSpinBox(central);
+    ch2FrequencySpin->setRange(0.001, 120'000'000);
+    ch2FrequencySpin->setDecimals(3);
+    ch2FrequencySpin->setSingleStep(1.0);
+    ch2FrequencySpin->setSuffix(" Hz");
+
+    ch2AmplitudeSpin = new QDoubleSpinBox(central);
+    ch2AmplitudeSpin->setRange(0, 20);
+    ch2AmplitudeSpin->setDecimals(3);
+    ch2AmplitudeSpin->setSingleStep(0.1);
+    ch2AmplitudeSpin->setSuffix(" V");
+
+    ch2OffsetSpin = new QDoubleSpinBox(central);
+    ch2OffsetSpin->setRange(-10, 10);
+    ch2OffsetSpin->setDecimals(3);
+    ch2OffsetSpin->setSingleStep(0.1);
+    ch2OffsetSpin->setSuffix(" V");
 
     auto *refresh = new QPushButton("Refresh", central);
 
     layout->addWidget(idLabel);
+
     layout->addWidget(ch1Label);
-    layout->addWidget(ch2Label);
     layout->addWidget(ch1OutputCheck);
-    layout->addWidget(ch2OutputCheck);
     layout->addWidget(ch1FrequencySpin);
     layout->addWidget(ch1AmplitudeSpin);
     layout->addWidget(ch1OffsetSpin);
+
+    layout->addWidget(ch2Label);
+    layout->addWidget(ch2OutputCheck);
+    layout->addWidget(ch2FrequencySpin);
+    layout->addWidget(ch2AmplitudeSpin);
+    layout->addWidget(ch2OffsetSpin);
+
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -105,8 +132,31 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](double value)
             {
-qDebug() << "OFFSET GUI:" << value;
                 generator.setOffset(1, value);
+            });
+
+    connect(ch2FrequencySpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                generator.setFrequency(2, value);
+            });
+
+    connect(ch2AmplitudeSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                generator.setAmplitude(2, value);
+            });
+
+    connect(ch2OffsetSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                generator.setOffset(2, value);
             });
 
     if (!generator.connectTo("192.168.48.28"))
@@ -147,6 +197,18 @@ void MainWindow::refreshClicked()
 
     auto ch2 = generator.getChannelState(2);
     bool ch2Output = generator.getOutputState(2);
+
+    ch2FrequencySpin->blockSignals(true);
+    ch2FrequencySpin->setValue(ch2.frequency);
+    ch2FrequencySpin->blockSignals(false);
+
+    ch2AmplitudeSpin->blockSignals(true);
+    ch2AmplitudeSpin->setValue(ch2.amplitude);
+    ch2AmplitudeSpin->blockSignals(false);
+
+    ch2OffsetSpin->blockSignals(true);
+    ch2OffsetSpin->setValue(ch2.offset);
+    ch2OffsetSpin->blockSignals(false);
 
     ch2Label->setText(
         QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
