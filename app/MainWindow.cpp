@@ -104,6 +104,10 @@ void MainWindow::refreshClicked()
             .arg(ch1.offset)
             .arg(ch1Output ? "ON" : "OFF"));
 
+    ch1FrequencySpin->blockSignals(true);
+    ch1FrequencySpin->setValue(ch1.frequency);
+    ch1FrequencySpin->blockSignals(false);
+
     auto ch2 = generator.getChannelState(2);
     bool ch2Output = generator.getOutputState(2);
 
