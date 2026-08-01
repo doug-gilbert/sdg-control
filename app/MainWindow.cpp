@@ -22,6 +22,11 @@ MainWindow::MainWindow(QWidget *parent)
     ch1OutputCheck = new QCheckBox("CH1 Output", central);
     ch2OutputCheck = new QCheckBox("CH2 Output", central);
 
+    ch1FrequencySpin = new QDoubleSpinBox(central);
+    ch1FrequencySpin->setRange(0.000001, 10000000);
+    ch1FrequencySpin->setDecimals(3);
+    ch1FrequencySpin->setSuffix(" Hz");
+
     auto *refresh = new QPushButton("Refresh", central);
 
     layout->addWidget(idLabel);
@@ -29,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(ch2Label);
     layout->addWidget(ch1OutputCheck);
     layout->addWidget(ch2OutputCheck);
+    layout->addWidget(ch1FrequencySpin);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -64,6 +70,14 @@ MainWindow::MainWindow(QWidget *parent)
                 ch2OutputCheck->blockSignals(true);
                 ch2OutputCheck->setChecked(actual);
                 ch2OutputCheck->blockSignals(false);
+            });
+
+    connect(ch1FrequencySpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                generator.setFrequency(1, value);
             });
 
     if (!generator.connectTo("192.168.48.28"))
@@ -109,4 +123,3 @@ void MainWindow::refreshClicked()
     ch2OutputCheck->setChecked(ch2Output);
     ch2OutputCheck->blockSignals(false);
 }
-

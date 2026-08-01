@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QDoubleSpinBox>
 
 #include "SDG2000X.h"
 
@@ -23,6 +24,7 @@ private:
     QLabel *ch2Label;
     QCheckBox *ch1OutputCheck;
     QCheckBox *ch2OutputCheck;
+    QDoubleSpinBox *ch1FrequencySpin;
 
     SDG2000X generator;
 };
