@@ -2,6 +2,8 @@ add_executable(sdg_control
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    ChannelWidget.cpp
+    ChannelWidget.h
 )
 
 target_link_libraries(sdg_control
