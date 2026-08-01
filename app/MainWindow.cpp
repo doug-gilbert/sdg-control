@@ -36,5 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::refreshClicked()
 {
-    statusLabel->setText("Refresh pressed");
+    if (!generator.connectTo("192.168.48.28"))
+    {
+        statusLabel->setText("Connection failed");
+        return;
+    }
+
+    statusLabel->setText(generator.identification());
 }

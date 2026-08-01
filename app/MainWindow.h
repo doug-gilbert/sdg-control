@@ -2,6 +2,8 @@
 
 #include <QMainWindow>
 
+#include "SDG2000X.h"
+
 class QLabel;
 
 class MainWindow : public QMainWindow
@@ -16,4 +18,5 @@ private slots:
 
 private:
     QLabel *statusLabel;
+    SDG2000X generator;
 };
