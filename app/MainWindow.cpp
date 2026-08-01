@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QCheckBox>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -18,11 +19,14 @@ MainWindow::MainWindow(QWidget *parent)
     ch1Label = new QLabel("CH1: --", central);
     ch2Label = new QLabel("CH2: --", central);
 
+    ch1OutputCheck = new QCheckBox("CH1 Output", central);
+
     auto *refresh = new QPushButton("Refresh", central);
 
     layout->addWidget(idLabel);
     layout->addWidget(ch1Label);
     layout->addWidget(ch2Label);
+    layout->addWidget(ch1OutputCheck);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -31,6 +35,20 @@ MainWindow::MainWindow(QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::refreshClicked);
+
+    connect(ch1OutputCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool enabled)
+            {
+                generator.output(1, enabled);
+
+                bool actual = generator.getOutputState(1);
+
+                ch1OutputCheck->blockSignals(true);
+                ch1OutputCheck->setChecked(actual);
+                ch1OutputCheck->blockSignals(false);
+            });
 
     if (!generator.connectTo("192.168.48.28"))
     {
@@ -55,6 +73,10 @@ void MainWindow::refreshClicked()
             .arg(ch1.amplitude)
             .arg(ch1.offset)
             .arg(generator.getOutputState(1) ? "ON" : "OFF"));
+
+    ch1OutputCheck->blockSignals(true);
+    ch1OutputCheck->setChecked(generator.getOutputState(1));
+    ch1OutputCheck->blockSignals(false);
 
     auto ch2 = generator.getChannelState(2);
 
