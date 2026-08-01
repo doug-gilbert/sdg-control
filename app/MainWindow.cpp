@@ -32,36 +32,37 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::refreshClicked);
 
-    resize(500, 250);
-}
-
-
-void MainWindow::refreshClicked()
-{
     if (!generator.connectTo("192.168.48.28"))
     {
         idLabel->setText("Connection failed");
         return;
     }
 
+    resize(500, 250);
+}
+
+
+void MainWindow::refreshClicked()
+{
     idLabel->setText(generator.identification());
 
     auto ch1 = generator.getChannelState(1);
 
     ch1Label->setText(
-        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V")
+        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
             .arg(ch1.waveform)
             .arg(ch1.frequency)
             .arg(ch1.amplitude)
-            .arg(ch1.offset));
-
+            .arg(ch1.offset)
+            .arg(generator.getOutputState(1) ? "ON" : "OFF"));
 
     auto ch2 = generator.getChannelState(2);
 
     ch2Label->setText(
-        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V")
+        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
             .arg(ch2.waveform)
             .arg(ch2.frequency)
             .arg(ch2.amplitude)
-            .arg(ch2.offset));
+            .arg(ch2.offset)
+            .arg(generator.getOutputState(2) ? "ON" : "OFF"));
 }
