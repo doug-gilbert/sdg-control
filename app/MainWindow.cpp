@@ -32,6 +32,11 @@ MainWindow::MainWindow(QWidget *parent)
     ch1AmplitudeSpin->setDecimals(3);
     ch1AmplitudeSpin->setSuffix(" V");
 
+    ch1OffsetSpin = new QDoubleSpinBox(central);
+    ch1OffsetSpin->setRange(-10, 10);
+    ch1OffsetSpin->setDecimals(3);
+    ch1OffsetSpin->setSuffix(" V");
+
     auto *refresh = new QPushButton("Refresh", central);
 
     layout->addWidget(idLabel);
@@ -41,6 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(ch2OutputCheck);
     layout->addWidget(ch1FrequencySpin);
     layout->addWidget(ch1AmplitudeSpin);
+    layout->addWidget(ch1OffsetSpin);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -94,6 +100,15 @@ MainWindow::MainWindow(QWidget *parent)
                 generator.setAmplitude(1, value);
             });
 
+    connect(ch1OffsetSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+qDebug() << "OFFSET GUI:" << value;
+                generator.setOffset(1, value);
+            });
+
     if (!generator.connectTo("192.168.48.28"))
     {
         idLabel->setText("Connection failed");
@@ -125,6 +140,10 @@ void MainWindow::refreshClicked()
     ch1AmplitudeSpin->blockSignals(true);
     ch1AmplitudeSpin->setValue(ch1.amplitude);
     ch1AmplitudeSpin->blockSignals(false);
+
+    ch1OffsetSpin->blockSignals(true);
+    ch1OffsetSpin->setValue(ch1.offset);
+    ch1OffsetSpin->blockSignals(false);
 
     auto ch2 = generator.getChannelState(2);
     bool ch2Output = generator.getOutputState(2);
