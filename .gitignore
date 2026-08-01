@@ -1,0 +1,36 @@
+# Build directories
+build/
+*/build/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Qt Creator
+*.pro.user
+*.user
+*.autosave
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.so
+*.dll
+*.dylib
+
+# Executables
+*.exe
+
+# macOS
+.DS_Store
