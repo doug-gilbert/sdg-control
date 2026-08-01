@@ -17,6 +17,9 @@ private slots:
     void refreshClicked();
 
 private:
-    QLabel *statusLabel;
+    QLabel *idLabel;
+    QLabel *ch1Label;
+    QLabel *ch2Label;
+
     SDG2000X generator;
 };

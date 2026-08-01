@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -13,14 +14,15 @@ MainWindow::MainWindow(QWidget *parent)
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
 
-    auto *title = new QLabel("SDG Control", central);
-
-    statusLabel = new QLabel("Instrument: Not connected", central);
+    idLabel = new QLabel("Instrument: Not connected", central);
+    ch1Label = new QLabel("CH1: --", central);
+    ch2Label = new QLabel("CH2: --", central);
 
     auto *refresh = new QPushButton("Refresh", central);
 
-    layout->addWidget(title);
-    layout->addWidget(statusLabel);
+    layout->addWidget(idLabel);
+    layout->addWidget(ch1Label);
+    layout->addWidget(ch2Label);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -30,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::refreshClicked);
 
-    resize(400, 200);
+    resize(500, 250);
 }
 
 
@@ -38,9 +40,28 @@ void MainWindow::refreshClicked()
 {
     if (!generator.connectTo("192.168.48.28"))
     {
-        statusLabel->setText("Connection failed");
+        idLabel->setText("Connection failed");
         return;
     }
 
-    statusLabel->setText(generator.identification());
+    idLabel->setText(generator.identification());
+
+    auto ch1 = generator.getChannelState(1);
+
+    ch1Label->setText(
+        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V")
+            .arg(ch1.waveform)
+            .arg(ch1.frequency)
+            .arg(ch1.amplitude)
+            .arg(ch1.offset));
+
+
+    auto ch2 = generator.getChannelState(2);
+
+    ch2Label->setText(
+        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V")
+            .arg(ch2.waveform)
+            .arg(ch2.frequency)
+            .arg(ch2.amplitude)
+            .arg(ch2.offset));
 }
