@@ -22,6 +22,7 @@ private:
     QLabel *ch1Label;
     QLabel *ch2Label;
     QCheckBox *ch1OutputCheck;
+    QCheckBox *ch2OutputCheck;
 
     SDG2000X generator;
 };

@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     ch2Label = new QLabel("CH2: --", central);
 
     ch1OutputCheck = new QCheckBox("CH1 Output", central);
+    ch2OutputCheck = new QCheckBox("CH2 Output", central);
 
     auto *refresh = new QPushButton("Refresh", central);
 
@@ -27,6 +28,7 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(ch1Label);
     layout->addWidget(ch2Label);
     layout->addWidget(ch1OutputCheck);
+    layout->addWidget(ch2OutputCheck);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
@@ -48,6 +50,20 @@ MainWindow::MainWindow(QWidget *parent)
                 ch1OutputCheck->blockSignals(true);
                 ch1OutputCheck->setChecked(actual);
                 ch1OutputCheck->blockSignals(false);
+            });
+
+    connect(ch2OutputCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool enabled)
+            {
+                generator.output(2, enabled);
+
+                bool actual = generator.getOutputState(2);
+
+                ch2OutputCheck->blockSignals(true);
+                ch2OutputCheck->setChecked(actual);
+                ch2OutputCheck->blockSignals(false);
             });
 
     if (!generator.connectTo("192.168.48.28"))
@@ -88,5 +104,9 @@ void MainWindow::refreshClicked()
     ch1OutputCheck->blockSignals(true);
     ch1OutputCheck->setChecked(ch1Output);
     ch1OutputCheck->blockSignals(false);
+
+    ch2OutputCheck->blockSignals(true);
+    ch2OutputCheck->setChecked(ch2Output);
+    ch2OutputCheck->blockSignals(false);
 }
 
