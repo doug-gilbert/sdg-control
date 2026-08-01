@@ -43,3 +43,36 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     layout->addWidget(offsetSpin);
     layout->addWidget(outputCheck);
 }
+
+void ChannelWidget::setFrequency(double value)
+{
+    frequencySpin->blockSignals(true);
+    frequencySpin->setValue(value);
+    frequencySpin->blockSignals(false);
+}
+
+void ChannelWidget::setAmplitude(double value)
+{
+    amplitudeSpin->blockSignals(true);
+    amplitudeSpin->setValue(value);
+    amplitudeSpin->blockSignals(false);
+}
+
+void ChannelWidget::setOffset(double value)
+{
+    offsetSpin->blockSignals(true);
+    offsetSpin->setValue(value);
+    blockSignals(false);
+}
+
+void ChannelWidget::setOutput(bool enabled)
+{
+    outputCheck->blockSignals(true);
+    outputCheck->setChecked(enabled);
+    outputCheck->blockSignals(false);
+}
+
+void ChannelWidget::setStatus(const QString &text)
+{
+    label->setText(text);
+}

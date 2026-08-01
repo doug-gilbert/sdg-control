@@ -4,6 +4,7 @@
 #include <QDoubleSpinBox>
 
 #include "SDG2000X.h"
+#include "ChannelWidget.h"
 
 class QLabel;
 class QCheckBox;
@@ -21,17 +22,8 @@ private slots:
 private:
     QLabel *idLabel;
 
-    QLabel *ch1Label;
-    QCheckBox *ch1OutputCheck;
-    QDoubleSpinBox *ch1FrequencySpin;
-    QDoubleSpinBox *ch1AmplitudeSpin;
-    QDoubleSpinBox *ch1OffsetSpin;
-
-    QLabel *ch2Label;
-    QCheckBox *ch2OutputCheck;
-    QDoubleSpinBox *ch2FrequencySpin;
-    QDoubleSpinBox *ch2AmplitudeSpin;
-    QDoubleSpinBox *ch2OffsetSpin;
+    ChannelWidget *ch1Widget;
+    ChannelWidget *ch2Widget;
 
     SDG2000X generator;
 };
