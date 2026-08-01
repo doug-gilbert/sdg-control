@@ -10,6 +10,8 @@ target_link_libraries(instrument
     Qt6::Network
 )
 
+target_compile_definitions(instrument PRIVATE SDG_DEBUG)
+
 target_include_directories(instrument PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

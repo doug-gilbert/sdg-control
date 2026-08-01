@@ -25,6 +25,7 @@ private:
     QCheckBox *ch1OutputCheck;
     QCheckBox *ch2OutputCheck;
     QDoubleSpinBox *ch1FrequencySpin;
+    QDoubleSpinBox *ch1AmplitudeSpin;
 
     SDG2000X generator;
 };
