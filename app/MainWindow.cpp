@@ -14,14 +14,27 @@ MainWindow::MainWindow(QWidget *parent)
     auto *layout = new QVBoxLayout(central);
 
     auto *title = new QLabel("SDG Control", central);
-    auto *status = new QLabel("Instrument: Not connected", central);
+
+    statusLabel = new QLabel("Instrument: Not connected", central);
+
     auto *refresh = new QPushButton("Refresh", central);
 
     layout->addWidget(title);
-    layout->addWidget(status);
+    layout->addWidget(statusLabel);
     layout->addWidget(refresh);
 
     setCentralWidget(central);
 
+    connect(refresh,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::refreshClicked);
+
     resize(400, 200);
+}
+
+
+void MainWindow::refreshClicked()
+{
+    statusLabel->setText("Refresh pressed");
 }
