@@ -10,7 +10,11 @@ target_link_libraries(instrument
     Qt6::Network
 )
 
-target_compile_definitions(instrument PRIVATE SDG_DEBUG)
+option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
+
+if(SDG_DEBUG)
+    target_compile_definitions(instrument PRIVATE SDG_DEBUG)
+endif()
 
 target_include_directories(instrument PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}

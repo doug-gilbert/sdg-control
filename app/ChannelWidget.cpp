@@ -20,9 +20,9 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
         this);
 
     frequencySpin = new QDoubleSpinBox(this);
-    frequencySpin->setRange(0.001, 120'000'000);
-    frequencySpin->setDecimals(3);
-    frequencySpin->setSingleStep(1.0);
+    frequencySpin->setRange(0.000'01, 120'000'000);
+    frequencySpin->setDecimals(6);
+    frequencySpin->setSingleStep(0.000'01);
     frequencySpin->setSuffix(" Hz");
 
     amplitudeSpin = new QDoubleSpinBox(this);
@@ -42,6 +42,38 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     layout->addWidget(amplitudeSpin);
     layout->addWidget(offsetSpin);
     layout->addWidget(outputCheck);
+
+    connect(outputCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool enabled)
+            {
+                emit outputChanged(this->channel, enabled);
+            });
+
+    connect(frequencySpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit frequencyChanged(this->channel, value);
+            });
+
+    connect(amplitudeSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit amplitudeChanged(this->channel, value);
+            });
+
+    connect(offsetSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit offsetChanged(this->channel, value);
+            });
 }
 
 void ChannelWidget::setFrequency(double value)
@@ -62,7 +94,7 @@ void ChannelWidget::setOffset(double value)
 {
     offsetSpin->blockSignals(true);
     offsetSpin->setValue(value);
-    blockSignals(false);
+    offsetSpin->blockSignals(false);
 }
 
 void ChannelWidget::setOutput(bool enabled)

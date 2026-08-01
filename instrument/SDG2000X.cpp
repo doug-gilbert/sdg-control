@@ -29,7 +29,7 @@ bool SDG2000X::setFrequency(int channel, double hz)
     QString cmd =
         QString("%1:BSWV FRQ,%2")
         .arg(channelPrefix(channel))
-        .arg(hz);
+        .arg(QString::number(hz, 'f', 6));
 
     return scpi.command(cmd);
 }
@@ -51,7 +51,7 @@ bool SDG2000X::setAmplitude(int channel, double volts)
     QString cmd =
         QString("%1:BSWV AMP,%2")
         .arg(channelPrefix(channel))
-        .arg(volts);
+        .arg(QString::number(volts, 'f', 3));
 
     return scpi.command(cmd);
 }
@@ -62,37 +62,11 @@ bool SDG2000X::setOffset(int channel, double volts)
     QString cmd =
         QString("%1:BSWV OFST,%2")
         .arg(channelPrefix(channel))
-        .arg(volts);
+        .arg(QString::number(volts, 'f', 3));
 
     return scpi.command(cmd);
 }
 
-
-#if 0
-bool SDG2000X::output(int channel, bool enabled)
-{
-    QString cmd =
-        QString("%1:OUTP %2")
-        .arg(channelPrefix(channel))
-        .arg(enabled ? "ON" : "OFF");
-
-    return scpi.command(cmd);
-}
-
-bool SDG2000X::output(int channel, bool enabled)
-{
-    QString cmd =
-        QString("%1:OUTP %2")
-        .arg(channelPrefix(channel))
-        .arg(enabled ? "ON" : "OFF");
-
-#ifdef SDG_DEBUG
-    qDebug() << "Sending:" << cmd;
-#endif
-
-    return scpi.command(cmd);
-}
-#endif
 
 bool SDG2000X::output(int channel, bool enabled)
 {
@@ -174,16 +148,6 @@ bool SDG2000X::getOutputState(int channel)
 
     return response.contains("OUTP ON");
 }
-
-#if 0
-bool SDG2000X::getOutputState(int channel)
-{
-    QString response =
-        scpi.query(channelPrefix(channel) + ":OUTP?");
-
-    return response.contains("OUTP ON");
-}
-#endif
 
 QString SDG2000X::getError()
 {
