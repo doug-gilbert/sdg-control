@@ -21,9 +21,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *hostLabel = new QLabel("Host / IP:", central);
 
-    ipEdit = new QLineEdit("sdg2000x", central);
     QSettings settings("sdg-control", "sdg-control");
-    ipEdit->setText(settings.value("host", "sdg2000x").toString());
+    ipEdit = new QLineEdit(
+        settings.value("host", "sdg2000x").toString(),
+        central);
 
     connectButton = new QPushButton("Connect", central);
 
@@ -199,15 +200,15 @@ void MainWindow::refreshClicked()
 
 void MainWindow::connectClicked()
 {
-    QSettings settings("sdg-control", "sdg-control");
-
-    settings.setValue("host", ipEdit->text());
     if (!generator.connectTo(ipEdit->text()))
     {
         idEdit->setText("Connection failed: " +
                         generator.getConnectionError());
         return;
     }
+
+    QSettings settings("sdg-control", "sdg-control");
+    settings.setValue("host", ipEdit->text());
 
     idEdit->setText(generator.identification());
 
