@@ -49,11 +49,18 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     offsetSpin->setSingleStep(0.1);
     offsetSpin->setSuffix(" V");
 
+    phaseSpin = new QDoubleSpinBox(this);
+    phaseSpin->setRange(-360.0, 360.0);
+    phaseSpin->setDecimals(1);
+    phaseSpin->setSingleStep(1.0);
+    phaseSpin->setSuffix("°");
+
     layout->addWidget(label);
     layout->addWidget(waveformCombo);
     layout->addWidget(frequencySpin);
     layout->addWidget(amplitudeSpin);
     layout->addWidget(offsetSpin);
+    layout->addWidget(phaseSpin);
     layout->addWidget(outputCheck);
 
     connect(outputCheck,
@@ -86,6 +93,14 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
             [this](double value)
             {
                 emit offsetChanged(this->channel, value);
+            });
+
+    connect(phaseSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit phaseChanged(this->channel, value);
             });
 
     connect(waveformCombo,
@@ -135,4 +150,11 @@ void ChannelWidget::setWaveform(const QString &waveform)
     waveformCombo->blockSignals(true);
     waveformCombo->setCurrentText(waveform);
     waveformCombo->blockSignals(false);
+}
+
+void ChannelWidget::setPhase(double value)
+{
+    phaseSpin->blockSignals(true);
+    phaseSpin->setValue(value);
+    phaseSpin->blockSignals(false);
 }

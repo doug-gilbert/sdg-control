@@ -143,18 +143,29 @@ MainWindow::MainWindow(QWidget *parent)
                 generator.setWaveform(channel, waveform);
             });
 
+    connect(ch1Widget,
+            &ChannelWidget::phaseChanged,
+            this,
+            [this](int channel, double phase)
+            {
+                generator.setPhase(channel, phase);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::phaseChanged,
+            this,
+            [this](int channel, double phase)
+            {
+                generator.setPhase(channel, phase);
+            });
+
     connect(connectButton,
             &QPushButton::clicked,
             this,
             &MainWindow::connectClicked);
 
-#if 0
-    if (!generator.connectTo("192.168.48.28"))
-    {
-        idEdit->setText("Connection failed");
-        return;
-    }
-#endif
+    ch1Widget->setEnabled(false);
+    ch2Widget->setEnabled(false);
 
     resize(500, 250);
 }
@@ -171,13 +182,15 @@ void MainWindow::refreshClicked()
     ch1Widget->setAmplitude(ch1.amplitude);
     ch1Widget->setOffset(ch1.offset);
     ch1Widget->setOutput(ch1Output);
+    ch1Widget->setPhase(ch1.phase);
 
     ch1Widget->setStatus(
-        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
+        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
             .arg(ch1.waveform)
             .arg(ch1.frequency)
             .arg(ch1.amplitude)
             .arg(ch1.offset)
+            .arg(ch1.phase)
             .arg(ch1Output ? "ON" : "OFF"));
 
     auto ch2 = generator.getChannelState(2);
@@ -188,13 +201,15 @@ void MainWindow::refreshClicked()
     ch2Widget->setAmplitude(ch2.amplitude);
     ch2Widget->setOffset(ch2.offset);
     ch2Widget->setOutput(ch2Output);
+    ch2Widget->setPhase(ch2.phase);
 
     ch2Widget->setStatus(
-        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Output %5")
+        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
             .arg(ch2.waveform)
             .arg(ch2.frequency)
             .arg(ch2.amplitude)
             .arg(ch2.offset)
+            .arg(ch2.phase)
             .arg(ch2Output ? "ON" : "OFF"));
 }
 
@@ -204,8 +219,14 @@ void MainWindow::connectClicked()
     {
         idEdit->setText("Connection failed: " +
                         generator.getConnectionError());
+
+        ch1Widget->setEnabled(false);
+        ch2Widget->setEnabled(false);
+
         return;
     }
+    ch1Widget->setEnabled(true);
+    ch2Widget->setEnabled(true);
 
     QSettings settings("sdg-control", "sdg-control");
     settings.setValue("host", ipEdit->text());

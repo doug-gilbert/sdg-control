@@ -26,6 +26,9 @@ QString SDG2000X::channelPrefix(int channel)
 
 bool SDG2000X::setFrequency(int channel, double hz)
 {
+    if (!scpi.isConnected())
+        return false;
+
     QString cmd =
         QString("%1:BSWV FRQ,%2")
         .arg(channelPrefix(channel))
@@ -37,10 +40,17 @@ bool SDG2000X::setFrequency(int channel, double hz)
 
 bool SDG2000X::setWaveform(int channel, const QString& waveform)
 {
+    if (!scpi.isConnected())
+        return false;
+
     QString cmd =
         QString("%1:BSWV WVTP,%2")
         .arg(channelPrefix(channel))
         .arg(waveform);
+
+#ifdef SDG_DEBUG
+    qDebug() << "Waveform:" << cmd;
+#endif
 
     return scpi.command(cmd);
 }
@@ -48,6 +58,9 @@ bool SDG2000X::setWaveform(int channel, const QString& waveform)
 
 bool SDG2000X::setAmplitude(int channel, double volts)
 {
+    if (!scpi.isConnected())
+        return false;
+
     QString cmd =
         QString("%1:BSWV AMP,%2")
         .arg(channelPrefix(channel))
@@ -59,6 +72,9 @@ bool SDG2000X::setAmplitude(int channel, double volts)
 
 bool SDG2000X::setOffset(int channel, double volts)
 {
+    if (!scpi.isConnected())
+        return false;
+
     QString cmd =
         QString("%1:BSWV OFST,%2")
         .arg(channelPrefix(channel))
@@ -70,6 +86,9 @@ bool SDG2000X::setOffset(int channel, double volts)
 
 bool SDG2000X::output(int channel, bool enabled)
 {
+    if (!scpi.isConnected())
+        return false;
+
     QString cmd =
         QString("%1:OUTP %2")
         .arg(channelPrefix(channel))
@@ -134,6 +153,9 @@ qDebug() << "BSWV raw response:" << response;
 
 bool SDG2000X::clearErrors()
 {
+    if (!scpi.isConnected())
+        return false;
+
     return scpi.command("*CLS");
 }
 
@@ -157,4 +179,17 @@ QString SDG2000X::getError()
 QString SDG2000X::getConnectionError() const
 {
     return scpi.errorString();
+}
+
+bool SDG2000X::setPhase(int channel, double degrees)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV PHSE,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(degrees, 'f', 1));
+
+    return scpi.command(cmd);
 }

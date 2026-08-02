@@ -19,6 +19,7 @@ public:
     void setFrequency(double value);
     void setAmplitude(double value);
     void setOffset(double value);
+    void setPhase(double value);
     void setOutput(bool enabled);
     void setStatus(const QString &text);
 
@@ -28,6 +29,7 @@ signals:
     void amplitudeChanged(int channel, double value);
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
+    void phaseChanged(int channel, double phase);
 
 private:
     int channel;
@@ -39,4 +41,5 @@ private:
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
+    QDoubleSpinBox *phaseSpin;
 };

@@ -33,6 +33,8 @@ public:
 
     bool setOffset(int channel, double volts);
 
+    bool setPhase(int channel, double degrees);
+
     bool output(int channel, bool enabled);
 
     bool clearErrors();
