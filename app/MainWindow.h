@@ -1,13 +1,12 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QDoubleSpinBox>
 
 #include "SDG2000X.h"
 #include "ChannelWidget.h"
 
-class QLabel;
-class QCheckBox;
+class QLineEdit;
+class QPushButton;
 
 class MainWindow : public QMainWindow
 {
@@ -18,9 +17,13 @@ public:
 
 private slots:
     void refreshClicked();
+    void connectClicked();
 
 private:
-    QLabel *idLabel;
+    QLineEdit *ipEdit;
+    QPushButton *connectButton;
+
+    QLineEdit *idEdit;
 
     ChannelWidget *ch1Widget;
     ChannelWidget *ch2Widget;

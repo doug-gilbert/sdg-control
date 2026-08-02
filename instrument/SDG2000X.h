@@ -41,6 +41,8 @@ public:
 
     QString getError();
 
+    QString getConnectionError() const;
+
 private:
 
     ScpiConnection scpi;

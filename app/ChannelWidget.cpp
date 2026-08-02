@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QComboBox>
 
 ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     : QWidget(parent),
@@ -18,6 +19,17 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     outputCheck = new QCheckBox(
         QString("CH%1 Output").arg(channel),
         this);
+
+    waveformCombo = new QComboBox(this);
+
+    waveformCombo->addItems({
+        "SINE",
+        "SQUARE",
+        "RAMP",
+        "PULSE",
+        "NOISE",
+        "ARB"
+    });
 
     frequencySpin = new QDoubleSpinBox(this);
     frequencySpin->setRange(0.000'01, 120'000'000);
@@ -38,6 +50,7 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
     offsetSpin->setSuffix(" V");
 
     layout->addWidget(label);
+    layout->addWidget(waveformCombo);
     layout->addWidget(frequencySpin);
     layout->addWidget(amplitudeSpin);
     layout->addWidget(offsetSpin);
@@ -74,6 +87,14 @@ ChannelWidget::ChannelWidget(int channel, QWidget *parent)
             {
                 emit offsetChanged(this->channel, value);
             });
+
+    connect(waveformCombo,
+            &QComboBox::currentTextChanged,
+            this,
+            [this](const QString &waveform)
+            {
+                emit waveformChanged(this->channel, waveform);
+            });
 }
 
 void ChannelWidget::setFrequency(double value)
@@ -107,4 +128,11 @@ void ChannelWidget::setOutput(bool enabled)
 void ChannelWidget::setStatus(const QString &text)
 {
     label->setText(text);
+}
+
+void ChannelWidget::setWaveform(const QString &waveform)
+{
+    waveformCombo->blockSignals(true);
+    waveformCombo->setCurrentText(waveform);
+    waveformCombo->blockSignals(false);
 }

@@ -153,3 +153,8 @@ QString SDG2000X::getError()
 {
     return scpi.query("SYST:ERR?");
 }
+
+QString SDG2000X::getConnectionError() const
+{
+    return scpi.errorString();
+}

@@ -14,6 +14,8 @@ public:
 
     bool isConnected() const;
 
+    QString errorString() const;
+
 private:
     QTcpSocket socket;
 };

@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QCheckBox>
+#include <QHBoxLayout>
+#include <QLineEdit>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,14 +17,35 @@ MainWindow::MainWindow(QWidget *parent)
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
 
-    idLabel = new QLabel("Instrument: Not connected", central);
+    auto *connectionLayout = new QHBoxLayout;
+
+    auto *hostLabel = new QLabel("Host / IP:", central);
+
+    ipEdit = new QLineEdit("sdg2000x", central);
+    connectButton = new QPushButton("Connect", central);
+
+    connectionLayout->addWidget(hostLabel);
+    connectionLayout->addWidget(ipEdit);
+    connectionLayout->addWidget(connectButton);
+
+    layout->addLayout(connectionLayout);
+
+    idEdit = new QLineEdit(central);
+    idEdit->setReadOnly(true);
+    idEdit->setText("Not connected");
+
+#if 0
+    idLabel = new QLabel("Not connected", central);
+    idLabel->setTextInteractionFlags(Qt::TextSelectableByMouse |
+                                     Qt::TextSelectableByKeyboard);
+#endif
 
     ch1Widget = new ChannelWidget(1, central);
     ch2Widget = new ChannelWidget(2, central);
 
     auto *refresh = new QPushButton("Refresh", central);
 
-    layout->addWidget(idLabel);
+    layout->addWidget(idEdit);
 
     layout->addWidget(ch1Widget);
     layout->addWidget(ch2Widget);
@@ -100,22 +123,46 @@ MainWindow::MainWindow(QWidget *parent)
                 generator.setOffset(channel, value);
             });
 
+    connect(ch1Widget,
+            &ChannelWidget::waveformChanged,
+            this,
+            [this](int channel, const QString &waveform)
+            {
+                generator.setWaveform(channel, waveform);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::waveformChanged,
+            this,
+            [this](int channel, const QString &waveform)
+            {
+                generator.setWaveform(channel, waveform);
+            });
+
+    connect(connectButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::connectClicked);
+
+#if 0
     if (!generator.connectTo("192.168.48.28"))
     {
-        idLabel->setText("Connection failed");
+        idEdit->setText("Connection failed");
         return;
     }
+#endif
 
     resize(500, 250);
 }
 
 void MainWindow::refreshClicked()
 {
-    idLabel->setText(generator.identification());
+    idEdit->setText(generator.identification());
 
     auto ch1 = generator.getChannelState(1);
     bool ch1Output = generator.getOutputState(1);
 
+    ch1Widget->setWaveform(ch1.waveform);
     ch1Widget->setFrequency(ch1.frequency);
     ch1Widget->setAmplitude(ch1.amplitude);
     ch1Widget->setOffset(ch1.offset);
@@ -132,6 +179,7 @@ void MainWindow::refreshClicked()
     auto ch2 = generator.getChannelState(2);
     bool ch2Output = generator.getOutputState(2);
 
+    ch2Widget->setWaveform(ch2.waveform);
     ch2Widget->setFrequency(ch2.frequency);
     ch2Widget->setAmplitude(ch2.amplitude);
     ch2Widget->setOffset(ch2.offset);
@@ -144,4 +192,18 @@ void MainWindow::refreshClicked()
             .arg(ch2.amplitude)
             .arg(ch2.offset)
             .arg(ch2Output ? "ON" : "OFF"));
+}
+
+void MainWindow::connectClicked()
+{
+    if (!generator.connectTo(ipEdit->text()))
+    {
+        idEdit->setText("Connection failed: " +
+                        generator.getConnectionError());
+        return;
+    }
+
+    idEdit->setText(generator.identification());
+
+    refreshClicked();
 }

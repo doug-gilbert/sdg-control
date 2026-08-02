@@ -6,6 +6,7 @@
 class QLabel;
 class QCheckBox;
 class QDoubleSpinBox;
+class QComboBox;
 
 class ChannelWidget : public QWidget
 {
@@ -14,6 +15,7 @@ class ChannelWidget : public QWidget
 public:
     explicit ChannelWidget(int channel, QWidget *parent = nullptr);
 
+    void setWaveform(const QString &waveform);
     void setFrequency(double value);
     void setAmplitude(double value);
     void setOffset(double value);
@@ -25,6 +27,7 @@ signals:
     void frequencyChanged(int channel, double value);
     void amplitudeChanged(int channel, double value);
     void offsetChanged(int channel, double value);
+    void waveformChanged(int channel, const QString &waveform);
 
 private:
     int channel;
@@ -32,6 +35,7 @@ private:
     QLabel *label;
     QCheckBox *outputCheck;
 
+    QComboBox *waveformCombo;
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;

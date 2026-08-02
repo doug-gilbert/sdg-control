@@ -1,15 +1,32 @@
 #include "ScpiConnection.h"
 
 #include <QThread>
-#ifdef DEBUG
+#include <QAbstractSocket>
+
+#ifdef SDG_DEBUG
 #include <QDebug>
 #endif
 
+
 bool ScpiConnection::connectTo(const QString& host, quint16 port)
 {
+    if (socket.state() != QAbstractSocket::UnconnectedState)
+    {
+        socket.abort();
+    }
+
     socket.connectToHost(host, port);
 
-    return socket.waitForConnected(3000);
+    if (!socket.waitForConnected(3000))
+    {
+        qDebug() << "Connection failed:"
+                 << socket.errorString();
+
+        socket.abort();
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -60,57 +77,13 @@ bool ScpiConnection::command(const QString& command)
     return true;
 }
 
-#if 0
-bool ScpiConnection::command(const QString& command)
-{
-    QByteArray cmd = command.toUtf8() + "\r\n";
-
-    qDebug() << "TX command:" << cmd;
-
-    socket.write(cmd);
-    socket.flush();
-
-    if (!socket.waitForBytesWritten(1000))
-        return false;
-
-    // See if the instrument sends anything back
-    if (socket.waitForReadyRead(500))
-    {
-        QByteArray reply = socket.readAll();
-        qDebug() << "Unexpected RX:" << reply;
-    }
-
-    return true;
-}
-
-bool ScpiConnection::command(const QString& command)
-{
-    QByteArray cmd = command.toUtf8() + "\r\n";
-
-    socket.write(cmd);
-    socket.flush();
-
-    if (!socket.waitForBytesWritten(1000))
-        return false;
-
-    // Allow instrument time to process the command
-    QThread::msleep(100);
-
-    return true;
-}
-
-bool ScpiConnection::command(const QString& command)
-{
-    QByteArray cmd = command.toUtf8() + "\r\n";
-
-    socket.write(cmd);
-
-    return socket.waitForBytesWritten(1000);
-}
-#endif
-
 
 bool ScpiConnection::isConnected() const
 {
     return socket.state() == QAbstractSocket::ConnectedState;
+}
+
+QString ScpiConnection::errorString() const
+{
+    return socket.errorString();
 }
