@@ -21,6 +21,10 @@ public:
 
     bool connectTo(const QString& ip);
 
+    void disconnect();
+
+    bool isConnected() const;
+
     QString identification();
 
     ChannelState getChannelState(int channel);
@@ -51,4 +55,3 @@ private:
 
     QString channelPrefix(int channel);
 };
-

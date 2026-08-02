@@ -27,10 +27,13 @@ MainWindow::MainWindow(QWidget *parent)
         central);
 
     connectButton = new QPushButton("Connect", central);
+    disconnectButton = new QPushButton("Disconnect", central);
+    disconnectButton->setEnabled(false);
 
     connectionLayout->addWidget(hostLabel);
     connectionLayout->addWidget(ipEdit);
     connectionLayout->addWidget(connectButton);
+    connectionLayout->addWidget(disconnectButton);
 
     layout->addLayout(connectionLayout);
 
@@ -47,21 +50,17 @@ MainWindow::MainWindow(QWidget *parent)
     ch1Widget = new ChannelWidget(1, central);
     ch2Widget = new ChannelWidget(2, central);
 
-    auto *refresh = new QPushButton("Refresh", central);
+    refreshButton = new QPushButton("Refresh", central);
+    refreshButton->setEnabled(false);
 
     layout->addWidget(idEdit);
 
     layout->addWidget(ch1Widget);
     layout->addWidget(ch2Widget);
 
-    layout->addWidget(refresh);
+    layout->addWidget(refreshButton);
 
     setCentralWidget(central);
-
-    connect(refresh,
-            &QPushButton::clicked,
-            this,
-            &MainWindow::refreshClicked);
 
     connect(ch1Widget,
             &ChannelWidget::outputChanged,
@@ -164,6 +163,16 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::connectClicked);
 
+    connect(disconnectButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::disconnectClicked);
+
+    connect(refreshButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::refreshClicked);
+
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
 
@@ -172,6 +181,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::refreshClicked()
 {
+    if (!generator.isConnected())
+    {
+        idEdit->setText("Not connected");
+        return;
+    }
+
     idEdit->setText(generator.identification());
 
     auto ch1 = generator.getChannelState(1);
@@ -227,11 +242,30 @@ void MainWindow::connectClicked()
     }
     ch1Widget->setEnabled(true);
     ch2Widget->setEnabled(true);
+    refreshButton->setEnabled(true);
 
     QSettings settings("sdg-control", "sdg-control");
     settings.setValue("host", ipEdit->text());
 
     idEdit->setText(generator.identification());
 
+    connectButton->setEnabled(false);
+    disconnectButton->setEnabled(true);
+
     refreshClicked();
+}
+
+void MainWindow::disconnectClicked()
+{
+    generator.disconnect();
+
+    connectButton->setEnabled(true);
+    disconnectButton->setEnabled(false);
+    refreshButton->setEnabled(false);
+
+    ch1Widget->setEnabled(false);
+    ch2Widget->setEnabled(false);
+
+    // idEdit->clear();
+    idEdit->setText("Disconnected");
 }

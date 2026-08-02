@@ -19,10 +19,13 @@ public:
 private slots:
     void refreshClicked();
     void connectClicked();
+    void disconnectClicked();
 
 private:
     QLineEdit *ipEdit;
     QPushButton *connectButton;
+    QPushButton *disconnectButton;
+    QPushButton *refreshButton;
 
     QLineEdit *idEdit;
 

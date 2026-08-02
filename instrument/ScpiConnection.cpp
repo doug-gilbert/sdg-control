@@ -29,6 +29,10 @@ bool ScpiConnection::connectTo(const QString& host, quint16 port)
     return true;
 }
 
+void ScpiConnection::disconnect()
+{
+    socket.abort();
+}
 
 QString ScpiConnection::query(const QString& command)
 {

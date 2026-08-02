@@ -11,18 +11,25 @@ bool SDG2000X::connectTo(const QString& ip)
     return scpi.connectTo(ip);
 }
 
+void SDG2000X::disconnect()
+{
+    scpi.disconnect();
+}
+
+bool SDG2000X::isConnected() const
+{
+    return scpi.isConnected();
+}
 
 QString SDG2000X::identification()
 {
     return scpi.query("*IDN?");
 }
 
-
 QString SDG2000X::channelPrefix(int channel)
 {
     return QString("C%1").arg(channel);
 }
-
 
 bool SDG2000X::setFrequency(int channel, double hz)
 {
@@ -36,7 +43,6 @@ bool SDG2000X::setFrequency(int channel, double hz)
 
     return scpi.command(cmd);
 }
-
 
 bool SDG2000X::setWaveform(int channel, const QString& waveform)
 {
@@ -55,7 +61,6 @@ bool SDG2000X::setWaveform(int channel, const QString& waveform)
     return scpi.command(cmd);
 }
 
-
 bool SDG2000X::setAmplitude(int channel, double volts)
 {
     if (!scpi.isConnected())
@@ -69,7 +74,6 @@ bool SDG2000X::setAmplitude(int channel, double volts)
     return scpi.command(cmd);
 }
 
-
 bool SDG2000X::setOffset(int channel, double volts)
 {
     if (!scpi.isConnected())
@@ -82,7 +86,6 @@ bool SDG2000X::setOffset(int channel, double volts)
 
     return scpi.command(cmd);
 }
-
 
 bool SDG2000X::output(int channel, bool enabled)
 {
@@ -99,7 +102,6 @@ bool SDG2000X::output(int channel, bool enabled)
 
     return getOutputState(channel) == enabled;
 }
-
 
 ChannelState SDG2000X::getChannelState(int channel)
 {
