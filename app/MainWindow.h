@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QSettings>
 
 #include "SDG2000X.h"
 #include "ChannelWidget.h"
