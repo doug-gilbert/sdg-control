@@ -10,6 +10,10 @@ add_library(instrument
 
 if ( SDG_DEBUG )
     target_compile_definitions(instrument PRIVATE SDG_DEBUG)
+    target_compile_options(instrument PRIVATE
+        -Wextra -Wmisleading-indentation -Wduplicated-cond -Wlogical-op
+        -Wnull-dereference -Wshadow -Wunused -Wsizeof-array-argument
+        -Wduplicated-branches -Wparentheses)
 endif ()
 
 target_include_directories(instrument PRIVATE ${CMAKE_BINARY_DIR})

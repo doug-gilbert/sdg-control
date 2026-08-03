@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(sdg-control)
+project(sdg-control VERSION 0.6 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -102,3 +102,36 @@ add_subdirectory(instrument)
 # Speed up build by leaving out test_scpi
 # add_subdirectory(test_scpi)
 add_subdirectory(app)
+
+
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VENDOR "Douglas Gilbert")
+set(CPACK_PACKAGE_CONTACT "dgilbert@interlog.com")
+set(CPACK_PROJECT_VERSION "${PROJECT_VERSION}")
+
+SET(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Siglent SDG2000X function generator controller, QT based using SCPI over TCP")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Douglas Gilbert")
+SET(CPACK_DEBIAN_PACKAGE_SECTION "admin")
+
+SET(CPACK_RPM_PACKAGE_DESCRIPTION "Siglent SDG2000X function generator controller, QT based using SCPI over TCP")
+SET(CPACK_RPM_PACKAGE_LICENSE "BSD-2-clause")
+SET(CPACK_RPM_PACKAGE_VENDOR "Douglas Gilbert")
+
+if ( CONTAINS_LINUX )
+    set(CPACK_GENERATOR "")
+    find_program(DPKG_EXECUTABLE dpkg)
+    if (DPKG_EXECUTABLE)
+        list(APPEND CPACK_GENERATOR "DEB")
+    endif ()
+    find_program(RPMBUILD_EXECUTABLE rpmbuild)
+    if (RPMBUILD_EXECUTABLE)
+        list(APPEND CPACK_GENERATOR "RPM")
+    endif ()
+elseif ( OS_FREEBSD )
+    SET(CPACK_GENERATOR "FREEBSD")
+else ()
+    MESSAGE(STATUS "<<>> No cpack generator available")
+endif ( CONTAINS_LINUX )
+
+include(CPack)
+include(CTest)

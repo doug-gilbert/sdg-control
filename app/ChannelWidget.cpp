@@ -6,9 +6,9 @@
 #include <QDoubleSpinBox>
 #include <QComboBox>
 
-ChannelWidget::ChannelWidget(int channel, QWidget *parent)
+ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     : QWidget(parent),
-      channel(channel)
+      channel(my_channel)
 {
     auto *layout = new QVBoxLayout(this);
 
