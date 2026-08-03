@@ -1,4 +1,3 @@
-#include "MainWindow.h"
 
 #include <QLabel>
 #include <QPushButton>
@@ -7,6 +6,20 @@
 #include <QCheckBox>
 #include <QHBoxLayout>
 #include <QLineEdit>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#ifdef DEBUG
+#warning "config.h file NOT found"
+#endif
+#endif
+
+/* Include config.h _before_ any local includes in case they need it */
+
+#include "MainWindow.h"
+#include "debug.h"
+
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -173,6 +186,11 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::refreshClicked);
 
+    connect(&generator,
+            &SDG2000X::disconnected,
+            this,
+            &MainWindow::connectionLost);
+
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
 
@@ -181,6 +199,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::refreshClicked()
 {
+    sdgDebug() << "Refresh clicked";
+
     if (!generator.isConnected())
     {
         idEdit->setText("Not connected");
@@ -190,6 +210,14 @@ void MainWindow::refreshClicked()
     idEdit->setText(generator.identification());
 
     auto ch1 = generator.getChannelState(1);
+
+    if (ch1.waveform == "READ TIMEOUT" ||
+        ch1.waveform == "WRITE ERROR")
+    {
+        sdgDebug() << __func__ << ":ch1: WRITE or READ error";
+        return;
+    }
+
     bool ch1Output = generator.getOutputState(1);
 
     ch1Widget->setWaveform(ch1.waveform);
@@ -209,6 +237,14 @@ void MainWindow::refreshClicked()
             .arg(ch1Output ? "ON" : "OFF"));
 
     auto ch2 = generator.getChannelState(2);
+
+    if (ch2.waveform == "READ TIMEOUT" ||
+        ch2.waveform == "WRITE ERROR")
+    {
+        sdgDebug() << __func__ << ":ch2: WRITE or READ error";
+        return;
+    }
+
     bool ch2Output = generator.getOutputState(2);
 
     ch2Widget->setWaveform(ch2.waveform);
@@ -268,4 +304,10 @@ void MainWindow::disconnectClicked()
 
     // idEdit->clear();
     idEdit->setText("Disconnected");
+}
+
+void MainWindow::connectionLost()
+{
+    disconnectClicked();
+    idEdit->setText("Connection lost");
 }

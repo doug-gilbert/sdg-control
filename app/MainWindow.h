@@ -20,6 +20,7 @@ private slots:
     void refreshClicked();
     void connectClicked();
     void disconnectClicked();
+    void connectionLost();
 
 private:
     QLineEdit *ipEdit;

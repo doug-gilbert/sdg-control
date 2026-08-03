@@ -3,10 +3,25 @@
 #include <QThread>
 #include <QAbstractSocket>
 
-#ifdef SDG_DEBUG
-#include <QDebug>
-#endif
+#include "debug.h"      /* in common sub-directory */
 
+
+ScpiConnection::ScpiConnection(QObject *parent)
+    : QObject(parent)
+{
+    connect(&socket,
+            &QTcpSocket::disconnected,
+            this,
+            &ScpiConnection::disconnected);
+
+    connect(&socket,
+            &QTcpSocket::errorOccurred,
+            this,
+            [this](QAbstractSocket::SocketError)
+            {
+                emit connectionError(socket.errorString());
+            });
+}
 
 bool ScpiConnection::connectTo(const QString& host, quint16 port)
 {
@@ -19,8 +34,8 @@ bool ScpiConnection::connectTo(const QString& host, quint16 port)
 
     if (!socket.waitForConnected(3000))
     {
-        qDebug() << "Connection failed:"
-                 << socket.errorString();
+        sdgDebug() << "Connection failed:"
+                   << socket.errorString();
 
         socket.abort();
         return false;
@@ -41,10 +56,18 @@ QString ScpiConnection::query(const QString& command)
     socket.write(cmd);
 
     if (!socket.waitForBytesWritten(1000))
+    {
+        socket.abort();
+        emit disconnected();
         return "WRITE ERROR";
+    }
 
     if (!socket.waitForReadyRead(3000))
+    {
+        socket.abort();
+        emit disconnected();
         return "READ TIMEOUT";
+    }
 
     QByteArray reply;
 
@@ -61,26 +84,31 @@ QString ScpiConnection::query(const QString& command)
 
 bool ScpiConnection::command(const QString& command)
 {
-    QByteArray cmd = command.toUtf8() + "\r\n";
+    if (!isConnected())
+        return false;
 
-#ifdef SDG_DEBUG
-    qDebug() << "TX command:" << cmd;
-#endif
+    sdgDebug() << "TX command:" << command;
+    QByteArray cmd = command.toUtf8() + "\r\n";
 
     socket.write(cmd);
 
     if (!socket.waitForBytesWritten(1000))
+    {
+        socket.abort();
+        emit disconnected();
         return false;
+    }
 
+#if 0
     // Wait until the SDG TCP stack has accepted the command
     while (socket.waitForReadyRead(50))
     {
         socket.readAll();
     }
+#endif
 
     return true;
 }
-
 
 bool ScpiConnection::isConnected() const
 {

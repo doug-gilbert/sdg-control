@@ -1,10 +1,28 @@
-#include "SDG2000X.h"
 
 #include <QRegularExpression>
-#ifdef SDG_DEBUG
-#include <QDebug>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#ifdef DEBUG
+#warning "config.h file NOT found"
+#endif
 #endif
 
+/* Include config.h _before_ any local includes in case they need it */
+
+#include "SDG2000X.h"
+#include "debug.h"      /* in common sub-directory */
+
+
+SDG2000X::SDG2000X(QObject *parent)
+    : QObject(parent)
+{
+    connect(&scpi,
+            &ScpiConnection::disconnected,
+            this,
+            &SDG2000X::disconnected);
+}
 
 bool SDG2000X::connectTo(const QString& ip)
 {
@@ -54,9 +72,7 @@ bool SDG2000X::setWaveform(int channel, const QString& waveform)
         .arg(channelPrefix(channel))
         .arg(waveform);
 
-#ifdef SDG_DEBUG
-    qDebug() << "Waveform:" << cmd;
-#endif
+    sdgDebug() << "Waveform:" << cmd;
 
     return scpi.command(cmd);
 }
@@ -110,12 +126,17 @@ ChannelState SDG2000X::getChannelState(int channel)
     QString response =
         scpi.query(channelPrefix(channel) + ":BSWV?");
 
-#ifdef SDG_DEBUG
-qDebug() << "BSWV raw response:" << response;
-#endif
+    sdgDebug() << "BSWV raw response:" << response;
 
-    QStringList fields =
-        response.split(',');
+    if (response == "WRITE ERROR") {
+        state.waveform = response;
+        return state;
+    } else if (response == "READ TIMEOUT") {
+        state.waveform = response;
+        return state;
+    }
+
+    QStringList fields = response.split(',');
 
     for (int i = 0; i + 1 < fields.size(); i += 2)
     {
@@ -166,9 +187,7 @@ bool SDG2000X::getOutputState(int channel)
     QString response =
         scpi.query(channelPrefix(channel) + ":OUTP?");
 
-#ifdef SDG_DEBUG
-    qDebug() << "OUTP response:" << response;
-#endif
+    sdgDebug() << "OUTP response:" << response;
 
     return response.contains("OUTP ON");
 }

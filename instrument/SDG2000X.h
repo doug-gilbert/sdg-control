@@ -15,9 +15,13 @@ struct ChannelState
 };
 
 
-class SDG2000X
+class SDG2000X : public QObject
 {
+    Q_OBJECT
+
 public:
+
+    explicit SDG2000X(QObject *parent = nullptr);
 
     bool connectTo(const QString& ip);
 
@@ -48,6 +52,9 @@ public:
     QString getError();
 
     QString getConnectionError() const;
+
+signals:
+    void disconnected();
 
 private:
 
