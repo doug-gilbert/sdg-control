@@ -101,6 +101,17 @@ app/sdg-control
 The second last line above builds a 'deb' and/or a 'rpm' package. The last
 line executes the app that has just been built.
 
+Note that both cmake build examples above do an "out-of-tree" build. All
+build artifacts, including the executable and any packages generated, are
+placed under the build sub-directory leaving the rest of the sdg-control
+directory structure "clean". Doing
+```sh
+cd <top_level_source_directory>
+rm -rf build
+```
+will result in a completely clean package structure. It is also a good way
+to make sure any cached values from previous builds are removed. And that
+is useful before a new build.
 
 ## Test utility
 

@@ -55,6 +55,8 @@ MainWindow::MainWindow(QWidget *parent)
     idEdit->setText("Not connected");
 
 #if 0
+    // QLabel can be made selectable, but QLineEdit(read-only) was chosen
+    // because it provides a more obvious copyable text field.
     idLabel = new QLabel("Not connected", central);
     idLabel->setTextInteractionFlags(Qt::TextSelectableByMouse |
                                      Qt::TextSelectableByKeyboard);
@@ -68,8 +70,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     layout->addWidget(idEdit);
 
-    layout->addWidget(ch1Widget);
-    layout->addWidget(ch2Widget);
+    auto *channelLayout = new QHBoxLayout;
+
+    channelLayout->addWidget(ch1Widget);
+    channelLayout->addWidget(ch2Widget);
+
+    layout->addLayout(channelLayout);
 
     layout->addWidget(refreshButton);
 
@@ -194,7 +200,7 @@ MainWindow::MainWindow(QWidget *parent)
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
 
-    resize(500, 250);
+    resize(800, 350);
 }
 
 void MainWindow::refreshClicked()
