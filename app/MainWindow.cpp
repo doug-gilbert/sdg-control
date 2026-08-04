@@ -6,6 +6,9 @@
 #include <QCheckBox>
 #include <QHBoxLayout>
 #include <QLineEdit>
+#include <QCloseEvent>
+#include <QMenuBar>
+#include <QAction>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -197,6 +200,15 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::connectionLost);
 
+    auto *fileMenu = menuBar()->addMenu("&File");
+
+    auto *quitAction = fileMenu->addAction("&Quit");
+
+    connect(quitAction,
+            &QAction::triggered,
+            this,
+            &QWidget::close);
+
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
 
@@ -316,4 +328,17 @@ void MainWindow::connectionLost()
 {
     disconnectClicked();
     idEdit->setText("Connection lost");
+}
+
+// Investigated delayed busy cursor after exit under Ubuntu GNOME.
+// Application exits cleanly. No remaining process or socket. Likely
+// desktop startup notification/state issue. Deferred until packaging.
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (generator.isConnected())
+    {
+        generator.disconnect();
+    }
+    // sdgDebug() << "closeEvent: accepting";
+    event->accept();
 }

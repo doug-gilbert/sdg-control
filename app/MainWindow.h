@@ -8,6 +8,7 @@
 
 class QLineEdit;
 class QPushButton;
+class QCloseEvent;
 
 class MainWindow : public QMainWindow
 {
@@ -15,6 +16,9 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void refreshClicked();
