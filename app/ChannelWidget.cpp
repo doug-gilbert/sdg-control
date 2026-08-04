@@ -1,16 +1,26 @@
-#include "ChannelWidget.h"
 
-#include <QVBoxLayout>
 #include <QLabel>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QComboBox>
+#include <QFormLayout>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#ifdef DEBUG
+#warning "config.h file NOT found"
+#endif
+#endif
+
+#include "debug.h"
+#include "ChannelWidget.h"
 
 ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     : QWidget(parent),
       channel(my_channel)
 {
-    auto *layout = new QVBoxLayout(this);
+    auto *layout = new QFormLayout(this);
 
     label = new QLabel(
         QString("CH%1: --").arg(channel),
@@ -55,13 +65,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     phaseSpin->setSingleStep(1.0);
     phaseSpin->setSuffix("°");
 
-    layout->addWidget(label);
-    layout->addWidget(waveformCombo);
-    layout->addWidget(frequencySpin);
-    layout->addWidget(amplitudeSpin);
-    layout->addWidget(offsetSpin);
-    layout->addWidget(phaseSpin);
-    layout->addWidget(outputCheck);
+    layout->addRow(label);
+
+    layout->addRow("Waveform:", waveformCombo);
+    layout->addRow("Frequency:", frequencySpin);
+    layout->addRow("Amplitude:", amplitudeSpin);
+    layout->addRow("Offset:", offsetSpin);
+    layout->addRow("Phase:", phaseSpin);
+    layout->addRow(outputCheck);
 
     connect(outputCheck,
             &QCheckBox::toggled,
