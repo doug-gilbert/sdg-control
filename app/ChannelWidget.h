@@ -7,6 +7,7 @@ class QLabel;
 class QCheckBox;
 class QDoubleSpinBox;
 class QComboBox;
+class QGroupBox;
 
 class ChannelWidget : public QWidget
 {
@@ -34,12 +35,15 @@ signals:
 private:
     int channel;
 
+    QGroupBox *groupBox;
+
     QLabel *label;
-    QCheckBox *outputCheck;
 
     QComboBox *waveformCombo;
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
     QDoubleSpinBox *phaseSpin;
+
+    QCheckBox *outputCheck;
 };

@@ -4,6 +4,7 @@
 #include <QDoubleSpinBox>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QGroupBox>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -20,7 +21,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     : QWidget(parent),
       channel(my_channel)
 {
-    auto *layout = new QFormLayout(this);
+    auto *outerLayout = new QVBoxLayout(this);
+
+    groupBox = new QGroupBox(
+        QString("Channel %1").arg(channel),
+        this);
+
+    auto *layout = new QFormLayout(groupBox);
 
     label = new QLabel(
         QString("CH%1: --").arg(channel),
@@ -73,6 +80,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     layout->addRow("Offset:", offsetSpin);
     layout->addRow("Phase:", phaseSpin);
     layout->addRow(outputCheck);
+
+    outerLayout->addWidget(groupBox);
 
     connect(outputCheck,
             &QCheckBox::toggled,
