@@ -28,6 +28,8 @@ public:
 
     explicit SDG2000X(QObject *parent = nullptr);
 
+    ~SDG2000X();
+
     bool connectTo(const QString& ip);
 
     void disconnect();

@@ -10,6 +10,8 @@ class ScpiConnection : public QObject
 public:
     explicit ScpiConnection(QObject *parent = nullptr);
 
+    ~ScpiConnection();
+
     bool connectTo(const QString& host, quint16 port = 5025);
 
     void disconnect();

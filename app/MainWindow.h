@@ -11,6 +11,8 @@
 class QLineEdit;
 class QPushButton;
 class QCloseEvent;
+class QCheckBox;
+
 
 class MainWindow : public QMainWindow
 {
@@ -18,6 +20,8 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+
+    ~MainWindow();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -35,11 +39,17 @@ private:
     std::array<ChannelState, 2> pendingState;
 
     void setDirty(bool value);
+
+    void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
     void setAmplitude(int channel, double value);
     void setOffset(int channel, double value);
     void setPhase(int channel, double value);
     void setSymmetry(int channel, double value);
+    void setOutput(int channel, bool enabled);
+
+    QCheckBox *immediateCheck;
+    QPushButton *sendButton;
 
     QLineEdit *ipEdit;
     QPushButton *connectButton;

@@ -24,6 +24,11 @@ SDG2000X::SDG2000X(QObject *parent)
             &SDG2000X::disconnected);
 }
 
+SDG2000X::~SDG2000X()
+{
+    sdgDebug() << "SDG2000X destructor";
+}
+
 bool SDG2000X::connectTo(const QString& ip)
 {
     return scpi.connectTo(ip);

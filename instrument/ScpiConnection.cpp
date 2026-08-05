@@ -33,6 +33,19 @@ ScpiConnection::ScpiConnection(QObject *parent)
             });
 }
 
+ScpiConnection::~ScpiConnection()
+{
+    sdgDebug() << "ScpiConnection destructor";
+
+    if (socket.state() != QAbstractSocket::UnconnectedState)
+    {
+        socket.disconnectFromHost();
+
+        if (socket.state() != QAbstractSocket::UnconnectedState)
+            socket.waitForDisconnected(1000);
+    }
+}
+
 bool ScpiConnection::connectTo(const QString& host, quint16 port)
 {
     if (socket.state() != QAbstractSocket::UnconnectedState)

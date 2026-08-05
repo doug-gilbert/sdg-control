@@ -47,6 +47,21 @@ MainWindow::MainWindow(QWidget *parent)
     disconnectButton = new QPushButton("Disconnect", central);
     disconnectButton->setEnabled(false);
 
+    immediateCheck = new QCheckBox("Immediate updates", central);
+    immediateCheck->setChecked(true);
+
+    sendButton = new QPushButton("Send", central);
+    sendButton->hide();
+    sendButton->setEnabled(false);
+
+    auto *modeLayout = new QHBoxLayout;
+
+    modeLayout->addWidget(immediateCheck);
+    modeLayout->addStretch();
+    modeLayout->addWidget(sendButton);
+
+    layout->addLayout(modeLayout);
+
     connectionLayout->addWidget(hostLabel);
     connectionLayout->addWidget(ipEdit);
     connectionLayout->addWidget(connectButton);
@@ -85,12 +100,31 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(central);
 
+    connect(immediateCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool checked)
+            {
+                immediateMode = checked;
+
+                if (checked)
+                {
+                    sendButton->hide();
+                    setDirty(false);
+                }
+                else
+                {
+                    sendButton->show();
+                    sendButton->setEnabled(dirty);
+                }
+            });
+
     connect(ch1Widget,
             &ChannelWidget::waveformChanged,
             this,
             [this](int channel, const QString &waveform)
             {
-                generator.setWaveform(channel, waveform);
+                setWaveform(channel, waveform);
             });
 
     connect(ch2Widget,
@@ -98,7 +132,7 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](int channel, const QString &waveform)
             {
-                generator.setWaveform(channel, waveform);
+                setWaveform(channel, waveform);
             });
 
     connect(ch1Widget,
@@ -108,16 +142,6 @@ MainWindow::MainWindow(QWidget *parent)
             {
                 setFrequency(channel, value);
             });
-
-#if 0
-    connect(ch1Widget,
-            &ChannelWidget::frequencyChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setFrequency(channel, value);
-            });
-#endif
 
     connect(ch2Widget,
             &ChannelWidget::frequencyChanged,
@@ -197,7 +221,7 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](int channel, bool enabled)
             {
-                generator.output(channel, enabled);
+                setOutput(channel, enabled);
             });
 
     connect(ch2Widget,
@@ -205,8 +229,9 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             [this](int channel, bool enabled)
             {
-                generator.output(channel, enabled);
+                setOutput(channel, enabled);
             });
+
 
     connect(connectButton,
             &QPushButton::clicked,
@@ -263,6 +288,11 @@ MainWindow::MainWindow(QWidget *parent)
     ch2Widget->setEnabled(false);
 
     resize(800, 350);
+}
+
+MainWindow::~MainWindow()
+{
+    sdgDebug() << "MainWindow destructor";
 }
 
 void MainWindow::refreshClicked()
@@ -344,6 +374,7 @@ void MainWindow::refreshClicked()
 
 void MainWindow::connectClicked()
 {
+    sdgDebug() << __func__ ;
     if (!generator.connectTo(ipEdit->text()))
     {
         idEdit->setText("Connection failed: " +
@@ -371,6 +402,7 @@ void MainWindow::connectClicked()
 
 void MainWindow::disconnectClicked()
 {
+    sdgDebug() << __func__ ;
     generator.disconnect();
 
     connectButton->setEnabled(true);
@@ -386,8 +418,13 @@ void MainWindow::disconnectClicked()
 
 void MainWindow::connectionLost()
 {
-    disconnectClicked();
+
     idEdit->setText("Connection lost");
+
+    // Update UI state only
+    disconnectButton->setEnabled(false);
+
+    connectButton->setEnabled(true);
 }
 
 // Investigated delayed busy cursor after exit under Ubuntu GNOME.
@@ -401,6 +438,17 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // sdgDebug() << "closeEvent: accepting";
     event->accept();
+}
+
+void MainWindow::setWaveform(int channel, const QString & waveform)
+{
+    if (immediateMode)
+        generator.setWaveform(channel, waveform);
+    else
+    {
+        pendingState[channel].waveform = waveform;
+        setDirty(true);
+    }
 }
 
 void MainWindow::setFrequency(int channel, double value)
@@ -458,8 +506,21 @@ void MainWindow::setSymmetry(int channel, double value)
     }
 }
 
+void MainWindow::setOutput(int channel, bool enabled)
+{
+    if (immediateMode)
+        generator.output(channel, enabled);
+    else
+    {
+        pendingState[channel - 1].output = enabled;
+        setDirty(true);
+    }
+}
+
 void MainWindow::setDirty(bool value)
 {
     dirty = value;
-    // sendButton->setEnabled(dirty);
+
+    if (!immediateMode)
+        sendButton->setEnabled(dirty);
 }
