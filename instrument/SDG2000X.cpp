@@ -103,6 +103,14 @@ bool SDG2000X::setOffset(int channel, double volts)
     return scpi.command(cmd);
 }
 
+bool SDG2000X::setSymmetry(int channel, double percent)
+{
+    return scpi.command(
+        QString("%1:BSWV SYM,%2")
+            .arg(channelPrefix(channel))
+            .arg(percent, 0, 'f', 1));
+}
+
 bool SDG2000X::output(int channel, bool enabled)
 {
     if (!scpi.isConnected())

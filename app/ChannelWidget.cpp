@@ -61,30 +61,35 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
     frequencySpin->setSuffix(" Hz");
+    frequencySpin->setKeyboardTracking(false);
 
     amplitudeSpin = new QDoubleSpinBox(groupBox);
     amplitudeSpin->setRange(0, 20);
     amplitudeSpin->setDecimals(3);
     amplitudeSpin->setSingleStep(0.1);
     amplitudeSpin->setSuffix(" V");
+    amplitudeSpin->setKeyboardTracking(false);
 
     offsetSpin = new QDoubleSpinBox(groupBox);
     offsetSpin->setRange(-10, 10);
     offsetSpin->setDecimals(3);
     offsetSpin->setSingleStep(0.1);
     offsetSpin->setSuffix(" V");
+    offsetSpin->setKeyboardTracking(false);
 
     phaseSpin = new QDoubleSpinBox(groupBox);
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
     phaseSpin->setSingleStep(1.0);
     phaseSpin->setSuffix("°");
+    phaseSpin->setKeyboardTracking(false);
 
     symmetrySpin = new QDoubleSpinBox(groupBox);
     symmetrySpin->setRange(0.0, 100.0);
     symmetrySpin->setDecimals(1);
     symmetrySpin->setSingleStep(1.0);
     symmetrySpin->setSuffix(" %");
+    symmetrySpin->setKeyboardTracking(false);
 
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);

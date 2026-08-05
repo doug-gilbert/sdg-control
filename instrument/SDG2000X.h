@@ -48,6 +48,8 @@ public:
 
     bool setPhase(int channel, double degrees);
 
+    bool setSymmetry(int channel, double percent);
+
     bool output(int channel, bool enabled);
 
     bool clearErrors();

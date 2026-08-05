@@ -181,6 +181,22 @@ MainWindow::MainWindow(QWidget *parent)
                 generator.setPhase(channel, phase);
             });
 
+    connect(ch1Widget,
+            &ChannelWidget::symmetryChanged,
+            this,
+            [this](int channel, double symmetry)
+            {
+                generator.setSymmetry(channel, symmetry);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::symmetryChanged,
+            this,
+            [this](int channel, double symmetry)
+            {
+                generator.setSymmetry(channel, symmetry);
+            });
+
     connect(connectButton,
             &QPushButton::clicked,
             this,
@@ -267,6 +283,7 @@ void MainWindow::refreshClicked()
     ch1Widget->setOffset(ch1.offset);
     ch1Widget->setOutput(ch1Output);
     ch1Widget->setPhase(ch1.phase);
+    ch1Widget->setSymmetry(ch1.symmetry);
 
     ch1Widget->setStatus(
         QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
@@ -294,6 +311,7 @@ void MainWindow::refreshClicked()
     ch2Widget->setOffset(ch2.offset);
     ch2Widget->setOutput(ch2Output);
     ch2Widget->setPhase(ch2.phase);
+    ch2Widget->setSymmetry(ch2.symmetry);
 
     ch2Widget->setStatus(
         QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
