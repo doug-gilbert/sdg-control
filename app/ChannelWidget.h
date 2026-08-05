@@ -8,6 +8,7 @@ class QCheckBox;
 class QDoubleSpinBox;
 class QComboBox;
 class QGroupBox;
+class QFormLayout;
 
 class ChannelWidget : public QWidget
 {
@@ -36,14 +37,23 @@ private:
     int channel;
 
     QGroupBox *groupBox;
+    QFormLayout *formLayout;
 
-    QLabel *label;
+#ifdef SDG_DEVELOPER_UI
+    QLabel *statusLabel;
+#endif
+
+    QLabel *waveformLabel;
+    QLabel *frequencyLabel;
+    QLabel *amplitudeLabel;
+    QLabel *offsetLabel;
+    QLabel *phaseLabel;
+
+    QCheckBox *outputCheck;
 
     QComboBox *waveformCombo;
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
     QDoubleSpinBox *phaseSpin;
-
-    QCheckBox *outputCheck;
 };

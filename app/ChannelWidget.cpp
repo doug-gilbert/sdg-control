@@ -27,17 +27,25 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         QString("Channel %1").arg(channel),
         this);
 
-    auto *layout = new QFormLayout(groupBox);
+    formLayout = new QFormLayout(groupBox);
 
-    label = new QLabel(
+#ifdef SDG_DEVELOPER_UI
+    statusLabel = new QLabel(
         QString("CH%1: --").arg(channel),
-        this);
+        groupBox);
+
+    statusLabel->setTextInteractionFlags(
+        Qt::TextSelectableByMouse |
+        Qt::TextSelectableByKeyboard);
+
+    formLayout->addRow("Status:", statusLabel);
+#endif
 
     outputCheck = new QCheckBox(
         QString("CH%1 Output").arg(channel),
-        this);
+        groupBox);
 
-    waveformCombo = new QComboBox(this);
+    waveformCombo = new QComboBox(groupBox);
 
     waveformCombo->addItems({
         "SINE",
@@ -48,40 +56,45 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "ARB"
     });
 
-    frequencySpin = new QDoubleSpinBox(this);
+    frequencySpin = new QDoubleSpinBox(groupBox);
     frequencySpin->setRange(0.000'01, 120'000'000);
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
     frequencySpin->setSuffix(" Hz");
 
-    amplitudeSpin = new QDoubleSpinBox(this);
+    amplitudeSpin = new QDoubleSpinBox(groupBox);
     amplitudeSpin->setRange(0, 20);
     amplitudeSpin->setDecimals(3);
     amplitudeSpin->setSingleStep(0.1);
     amplitudeSpin->setSuffix(" V");
 
-    offsetSpin = new QDoubleSpinBox(this);
+    offsetSpin = new QDoubleSpinBox(groupBox);
     offsetSpin->setRange(-10, 10);
     offsetSpin->setDecimals(3);
     offsetSpin->setSingleStep(0.1);
     offsetSpin->setSuffix(" V");
 
-    phaseSpin = new QDoubleSpinBox(this);
+    phaseSpin = new QDoubleSpinBox(groupBox);
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
     phaseSpin->setSingleStep(1.0);
     phaseSpin->setSuffix("°");
 
-    layout->addRow(label);
+    waveformLabel = new QLabel("Waveform:", groupBox);
+    frequencyLabel = new QLabel("Frequency:", groupBox);
+    amplitudeLabel = new QLabel("Amplitude:", groupBox);
+    offsetLabel = new QLabel("Offset:", groupBox);
+    phaseLabel = new QLabel("Phase:", groupBox);
 
-    layout->addRow("Waveform:", waveformCombo);
-    layout->addRow("Frequency:", frequencySpin);
-    layout->addRow("Amplitude:", amplitudeSpin);
-    layout->addRow("Offset:", offsetSpin);
-    layout->addRow("Phase:", phaseSpin);
-    layout->addRow(outputCheck);
+    formLayout->addRow(waveformLabel, waveformCombo);
+    formLayout->addRow(frequencyLabel, frequencySpin);
+    formLayout->addRow(amplitudeLabel, amplitudeSpin);
+    formLayout->addRow(offsetLabel, offsetSpin);
+    formLayout->addRow(phaseLabel, phaseSpin);
+    formLayout->addRow(outputCheck);
 
     outerLayout->addWidget(groupBox);
+setMinimumHeight(250);
 
     connect(outputCheck,
             &QCheckBox::toggled,
@@ -162,7 +175,11 @@ void ChannelWidget::setOutput(bool enabled)
 
 void ChannelWidget::setStatus(const QString &text)
 {
-    label->setText(text);
+#ifdef SDG_DEVELOPER_UI
+    statusLabel->setText(text);
+#else
+    Q_UNUSED(text);
+#endif
 }
 
 void ChannelWidget::setWaveform(const QString &waveform)

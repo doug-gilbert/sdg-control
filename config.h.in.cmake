@@ -33,6 +33,9 @@
 #cmakedefine HAVE_SETMODE 1
 #cmakedefine HAVE__SETMODE 1
 
+#cmakedefine SDG_DEBUG 1
+#cmakedefine SDG_DEVELOPER_UI 1
+
 #define BUILD_TIME "@BUILD_TIME@"
 #define SDG_CONTROL_VERSION "@PROJECT_VERSION@"
 

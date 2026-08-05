@@ -15,9 +15,13 @@ find_package ( PkgConfig )
 string(TIMESTAMP BUILD_TIME "%Y%m%d %H:%M:%S")
 
 option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
+option(SDG_DEVELOPER_UI "Extra fields to aid development" OFF)
 
 if (SDG_DEBUG)
-    MESSAGE( STATUS ">> Compile with SDG_DEBUG set" )
+    MESSAGE( STATUS ">> SDG_DEBUG set, messages to console" )
+endif ()
+if (SDG_DEVELOPER_UI)
+    MESSAGE( STATUS ">> SDG_DEVELOPER_UI set, extra fields to aid development" )
 endif ()
 
 set(OS_LINUX 0)
