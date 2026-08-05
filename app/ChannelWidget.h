@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <QWidget>
 #include <QString>
 
@@ -22,6 +26,7 @@ public:
     void setAmplitude(double value);
     void setOffset(double value);
     void setPhase(double value);
+    void setSymmetry(double value);
     void setOutput(bool enabled);
     void setStatus(const QString &text);
 
@@ -32,8 +37,11 @@ signals:
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
     void phaseChanged(int channel, double phase);
+    void symmetryChanged(int channel, double percent);
 
 private:
+    void updateControlVisibility();
+
     int channel;
 
     QGroupBox *groupBox;
@@ -48,6 +56,7 @@ private:
     QLabel *amplitudeLabel;
     QLabel *offsetLabel;
     QLabel *phaseLabel;
+    QLabel *symmetryLabel;
 
     QCheckBox *outputCheck;
 
@@ -56,4 +65,5 @@ private:
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
     QDoubleSpinBox *phaseSpin;
+    QDoubleSpinBox *symmetrySpin;
 };

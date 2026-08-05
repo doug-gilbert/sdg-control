@@ -80,21 +80,30 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     phaseSpin->setSingleStep(1.0);
     phaseSpin->setSuffix("°");
 
+    symmetrySpin = new QDoubleSpinBox(groupBox);
+    symmetrySpin->setRange(0.0, 100.0);
+    symmetrySpin->setDecimals(1);
+    symmetrySpin->setSingleStep(1.0);
+    symmetrySpin->setSuffix(" %");
+
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
     offsetLabel = new QLabel("Offset:", groupBox);
     phaseLabel = new QLabel("Phase:", groupBox);
+    symmetryLabel = new QLabel("Symmetry:", groupBox);
+    // Expect this call will hide Symmetry field if waveform != RAMP
+    updateControlVisibility();
 
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencySpin);
     formLayout->addRow(amplitudeLabel, amplitudeSpin);
     formLayout->addRow(offsetLabel, offsetSpin);
     formLayout->addRow(phaseLabel, phaseSpin);
+    formLayout->addRow(symmetryLabel, symmetrySpin);
     formLayout->addRow(outputCheck);
 
     outerLayout->addWidget(groupBox);
-setMinimumHeight(250);
 
     connect(outputCheck,
             &QCheckBox::toggled,
@@ -136,34 +145,50 @@ setMinimumHeight(250);
                 emit phaseChanged(this->channel, value);
             });
 
+    connect(symmetrySpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit symmetryChanged(this->channel, value);
+            });
+
     connect(waveformCombo,
             &QComboBox::currentTextChanged,
             this,
             [this](const QString &waveform)
             {
+                updateControlVisibility();
                 emit waveformChanged(this->channel, waveform);
             });
 }
 
-void ChannelWidget::setFrequency(double value)
+void ChannelWidget::setFrequency(double frequency)
 {
     frequencySpin->blockSignals(true);
-    frequencySpin->setValue(value);
+    frequencySpin->setValue(frequency);
     frequencySpin->blockSignals(false);
 }
 
-void ChannelWidget::setAmplitude(double value)
+void ChannelWidget::setAmplitude(double amplitude)
 {
     amplitudeSpin->blockSignals(true);
-    amplitudeSpin->setValue(value);
+    amplitudeSpin->setValue(amplitude);
     amplitudeSpin->blockSignals(false);
 }
 
-void ChannelWidget::setOffset(double value)
+void ChannelWidget::setOffset(double offset)
 {
     offsetSpin->blockSignals(true);
-    offsetSpin->setValue(value);
+    offsetSpin->setValue(offset);
     offsetSpin->blockSignals(false);
+}
+
+void ChannelWidget::setSymmetry(double percent)
+{
+    symmetrySpin->blockSignals(true);
+    symmetrySpin->setValue(percent);
+    symmetrySpin->blockSignals(false);
 }
 
 void ChannelWidget::setOutput(bool enabled)
@@ -187,6 +212,7 @@ void ChannelWidget::setWaveform(const QString &waveform)
     waveformCombo->blockSignals(true);
     waveformCombo->setCurrentText(waveform);
     waveformCombo->blockSignals(false);
+    updateControlVisibility();
 }
 
 void ChannelWidget::setPhase(double value)
@@ -194,4 +220,13 @@ void ChannelWidget::setPhase(double value)
     phaseSpin->blockSignals(true);
     phaseSpin->setValue(value);
     phaseSpin->blockSignals(false);
+}
+
+void ChannelWidget::updateControlVisibility()
+{
+    bool showSymmetry =
+        (waveformCombo->currentText() == "RAMP");
+
+    symmetryLabel->setVisible(showSymmetry);
+    symmetrySpin->setVisible(showSymmetry);
 }
