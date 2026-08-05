@@ -31,6 +31,7 @@ private slots:
     void connectClicked();
     void disconnectClicked();
     void connectionLost();
+    void sendClicked();
 
 private:
     bool immediateMode = true;

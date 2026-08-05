@@ -248,6 +248,12 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::refreshClicked);
 
+    connect(sendButton,
+            &QPushButton::clicked,
+            this,
+            &MainWindow::sendClicked);
+
+
     connect(&generator,
             &SDG2000X::disconnected,
             this,
@@ -414,6 +420,39 @@ void MainWindow::disconnectClicked()
 
     // idEdit->clear();
     idEdit->setText("Disconnected");
+}
+
+void MainWindow::sendClicked()
+{
+    bool ok = true;
+
+    sdgDebug() << __func__;
+
+    if (!generator.isConnected())
+        return;
+
+    sendButton->setEnabled(false);
+    for (int channel = 1; channel <= 2; channel++)
+    {
+        const auto &state = pendingState.at(channel - 1);
+
+        ok &= generator.setWaveform(channel, state.waveform);
+        ok &= generator.setFrequency(channel, state.frequency);
+        ok &= generator.setAmplitude(channel, state.amplitude);
+        ok &= generator.setOffset(channel, state.offset);
+        ok &= generator.setPhase(channel, state.phase);
+        if (state.waveform == "RAMP")
+        {
+            ok &= generator.setSymmetry(channel, state.symmetry);
+        }
+        ok &= generator.output(channel, state.output);
+    }
+
+    if (ok)
+        setDirty(false);
+    else
+        sdgDebug() << __func__ << "setting of at least one field failed";
+    sendButton->setEnabled(true);
 }
 
 void MainWindow::connectionLost()
