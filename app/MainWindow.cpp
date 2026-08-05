@@ -9,6 +9,7 @@
 #include <QCloseEvent>
 #include <QMenuBar>
 #include <QAction>
+#include <QMessageBox>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -208,6 +209,28 @@ MainWindow::MainWindow(QWidget *parent)
             &QAction::triggered,
             this,
             &QWidget::close);
+
+    auto *helpMenu = menuBar()->addMenu("&Help");
+
+    auto *aboutAction = helpMenu->addAction("&About SDG Control");
+
+    connect(aboutAction,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                QString text;
+
+                text += QString("SDG Control\n\n");
+                text += QString("Version: %1\n")
+                            .arg(SDG_CONTROL_VERSION);
+                text += QString("Build time: %1")
+                            .arg(BUILD_TIME);
+
+                QMessageBox::about(this,
+                                   "About SDG Control",
+                                   text);
+            });
 
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
