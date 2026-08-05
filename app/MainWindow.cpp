@@ -86,70 +86,6 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(central);
 
     connect(ch1Widget,
-            &ChannelWidget::outputChanged,
-            this,
-            [this](int channel, bool enabled)
-            {
-                generator.output(channel, enabled);
-            });
-
-    connect(ch2Widget,
-            &ChannelWidget::outputChanged,
-            this,
-            [this](int channel, bool enabled)
-            {
-                generator.output(channel, enabled);
-            });
-
-    connect(ch1Widget,
-            &ChannelWidget::frequencyChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setFrequency(channel, value);
-            });
-
-    connect(ch2Widget,
-            &ChannelWidget::frequencyChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setFrequency(channel, value);
-            });
-
-    connect(ch1Widget,
-            &ChannelWidget::amplitudeChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setAmplitude(channel, value);
-            });
-
-    connect(ch2Widget,
-            &ChannelWidget::amplitudeChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setAmplitude(channel, value);
-            });
-
-    connect(ch1Widget,
-            &ChannelWidget::offsetChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setOffset(channel, value);
-            });
-
-    connect(ch2Widget,
-            &ChannelWidget::offsetChanged,
-            this,
-            [this](int channel, double value)
-            {
-                generator.setOffset(channel, value);
-            });
-
-    connect(ch1Widget,
             &ChannelWidget::waveformChanged,
             this,
             [this](int channel, const QString &waveform)
@@ -166,35 +102,110 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
     connect(ch1Widget,
+            &ChannelWidget::frequencyChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setFrequency(channel, value);
+            });
+
+#if 0
+    connect(ch1Widget,
+            &ChannelWidget::frequencyChanged,
+            this,
+            [this](int channel, double value)
+            {
+                generator.setFrequency(channel, value);
+            });
+#endif
+
+    connect(ch2Widget,
+            &ChannelWidget::frequencyChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setFrequency(channel, value);
+            });
+
+    connect(ch1Widget,
+            &ChannelWidget::amplitudeChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setAmplitude(channel, value);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::amplitudeChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setAmplitude(channel, value);
+            });
+
+    connect(ch1Widget,
+            &ChannelWidget::offsetChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setOffset(channel, value);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::offsetChanged,
+            this,
+            [this](int channel, double value)
+            {
+                setOffset(channel, value);
+            });
+
+    connect(ch1Widget,
             &ChannelWidget::phaseChanged,
             this,
-            [this](int channel, double phase)
+            [this](int channel, double value)
             {
-                generator.setPhase(channel, phase);
+                setPhase(channel, value);
             });
 
     connect(ch2Widget,
             &ChannelWidget::phaseChanged,
             this,
-            [this](int channel, double phase)
+            [this](int channel, double value)
             {
-                generator.setPhase(channel, phase);
+                setPhase(channel, value);
             });
 
     connect(ch1Widget,
             &ChannelWidget::symmetryChanged,
             this,
-            [this](int channel, double symmetry)
+            [this](int channel, double value)
             {
-                generator.setSymmetry(channel, symmetry);
+                setSymmetry(channel, value);
             });
 
     connect(ch2Widget,
             &ChannelWidget::symmetryChanged,
             this,
-            [this](int channel, double symmetry)
+            [this](int channel, double value)
             {
-                generator.setSymmetry(channel, symmetry);
+                setSymmetry(channel, value);
+            });
+
+
+    connect(ch1Widget,
+            &ChannelWidget::outputChanged,
+            this,
+            [this](int channel, bool enabled)
+            {
+                generator.output(channel, enabled);
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::outputChanged,
+            this,
+            [this](int channel, bool enabled)
+            {
+                generator.output(channel, enabled);
             });
 
     connect(connectButton,
@@ -321,6 +332,14 @@ void MainWindow::refreshClicked()
             .arg(ch2.offset)
             .arg(ch2.phase)
             .arg(ch2Output ? "ON" : "OFF"));
+
+    ch1.output = ch1Output;
+    pendingState[0] = ch1;
+
+    ch2.output = ch2Output;
+    pendingState[1] = ch2;
+
+    setDirty(false);
 }
 
 void MainWindow::connectClicked()
@@ -382,4 +401,65 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     // sdgDebug() << "closeEvent: accepting";
     event->accept();
+}
+
+void MainWindow::setFrequency(int channel, double value)
+{
+    if (immediateMode)
+        generator.setFrequency(channel, value);
+    else
+    {
+        pendingState[channel].frequency = value;
+        setDirty(true);
+    }
+}
+
+void MainWindow::setAmplitude(int channel, double value)
+{
+    if (immediateMode)
+        generator.setAmplitude(channel, value);
+    else
+    {
+        pendingState[channel - 1].amplitude = value;
+        setDirty(true);
+    }
+}
+
+void MainWindow::setOffset(int channel, double value)
+{
+    if (immediateMode)
+        generator.setOffset(channel, value);
+    else
+    {
+        pendingState[channel - 1].offset = value;
+        setDirty(true);
+    }
+}
+
+void MainWindow::setPhase(int channel, double value)
+{
+    if (immediateMode)
+        generator.setPhase(channel, value);
+    else
+    {
+        pendingState[channel - 1].phase = value;
+        setDirty(true);
+    }
+}
+
+void MainWindow::setSymmetry(int channel, double value)
+{
+    if (immediateMode)
+        generator.setSymmetry(channel, value);
+    else
+    {
+        pendingState[channel - 1].symmetry = value;
+        setDirty(true);
+    }
+}
+
+void MainWindow::setDirty(bool value)
+{
+    dirty = value;
+    // sendButton->setEnabled(dirty);
 }
