@@ -169,6 +169,10 @@ ChannelState SDG2000X::getChannelState(int channel)
         {
             state.phase = value.toDouble();
         }
+        else if (key == "SYM")
+        {
+            state.symmetry = value.toDouble();
+        }
     }
 
     return state;
