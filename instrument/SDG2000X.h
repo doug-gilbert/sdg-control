@@ -58,6 +58,8 @@ public:
 
     bool getOutputState(int channel);
 
+    bool waitForOperationComplete();
+
     QString getError();
 
     QString getConnectionError() const;

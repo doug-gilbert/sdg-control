@@ -9,7 +9,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#ifdef DEBUG
+#ifdef SDG_DEBUG
 #warning "config.h file NOT found"
 #endif
 #endif
@@ -110,12 +110,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     outerLayout->addWidget(groupBox);
 
-    connect(outputCheck,
-            &QCheckBox::toggled,
+    connect(waveformCombo,
+            &QComboBox::currentTextChanged,
             this,
-            [this](bool enabled)
+            [this](const QString &waveform)
             {
-                emit outputChanged(this->channel, enabled);
+                updateControlVisibility();
+                emit waveformChanged(this->channel, waveform);
             });
 
     connect(frequencySpin,
@@ -158,13 +159,12 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                 emit symmetryChanged(this->channel, value);
             });
 
-    connect(waveformCombo,
-            &QComboBox::currentTextChanged,
+    connect(outputCheck,
+            &QCheckBox::toggled,
             this,
-            [this](const QString &waveform)
+            [this](bool enabled)
             {
-                updateControlVisibility();
-                emit waveformChanged(this->channel, waveform);
+                emit outputChanged(this->channel, enabled);
             });
 }
 

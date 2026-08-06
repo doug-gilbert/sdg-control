@@ -4,7 +4,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#ifdef DEBUG
+#ifdef SDG_DEBUG
 #warning "config.h file NOT found"
 #endif
 #endif
@@ -127,7 +127,10 @@ bool SDG2000X::output(int channel, bool enabled)
         .arg(enabled ? "ON" : "OFF");
 
     if (!scpi.command(cmd))
+    {
+        sdgDebug() << __func__ << "scpi.command() returned false";
         return false;
+    }
 
     return getOutputState(channel) == enabled;
 }
@@ -188,6 +191,8 @@ ChannelState SDG2000X::getChannelState(int channel)
         }
     }
 
+    state.output = getOutputState(channel);
+
     return state;
 }
 
@@ -230,4 +235,9 @@ bool SDG2000X::setPhase(int channel, double degrees)
         .arg(QString::number(degrees, 'f', 1));
 
     return scpi.command(cmd);
+}
+
+bool SDG2000X::waitForOperationComplete()
+{
+    return scpi.query("*OPC?") == "1";
 }

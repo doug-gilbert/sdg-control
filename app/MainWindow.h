@@ -32,6 +32,8 @@ private slots:
     void disconnectClicked();
     void connectionLost();
     void sendClicked();
+    void fileConnect();
+    void fileDisconnect();
 
 private:
     bool immediateMode = true;

@@ -14,7 +14,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#ifdef DEBUG
+#ifdef SDG_DEBUG
 #warning "config.h file NOT found"
 #endif
 #endif
@@ -49,10 +49,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     immediateCheck = new QCheckBox("Immediate updates", central);
     immediateCheck->setChecked(true);
+    immediateCheck->setToolTip(
+        "When checked, changes are sent to the function generator "
+        "as soon as editing is complete.\n"
+        "When unchecked, changes are sent only when Send is pressed.");
 
     sendButton = new QPushButton("Send", central);
     sendButton->hide();
     sendButton->setEnabled(false);
+    sendButton->setToolTip(
+        "Send all pending changes to the connected function generator.");
 
     auto *modeLayout = new QHBoxLayout;
 
@@ -86,6 +92,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     refreshButton = new QPushButton("Refresh", central);
     refreshButton->setEnabled(false);
+    refreshButton->setToolTip(
+        "Read the current settings from the function generator.\n"
+        "Any unsent changes are discarded.");
 
     layout->addWidget(idEdit);
 
@@ -261,7 +270,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *fileMenu = menuBar()->addMenu("&File");
 
+    auto *connectAction = fileMenu->addAction("&Connect...");
+    auto *disconnectAction = fileMenu->addAction("&Disconnect");
     auto *quitAction = fileMenu->addAction("&Quit");
+
+    connect(connectAction,
+            &QAction::triggered,
+            this,
+            &MainWindow::fileConnect);
+
+    connect(disconnectAction,
+            &QAction::triggered,
+            this,
+            &MainWindow::fileDisconnect);
 
     connect(quitAction,
             &QAction::triggered,
@@ -322,24 +343,24 @@ void MainWindow::refreshClicked()
         return;
     }
 
-    bool ch1Output = generator.getOutputState(1);
-
     ch1Widget->setWaveform(ch1.waveform);
     ch1Widget->setFrequency(ch1.frequency);
     ch1Widget->setAmplitude(ch1.amplitude);
     ch1Widget->setOffset(ch1.offset);
-    ch1Widget->setOutput(ch1Output);
     ch1Widget->setPhase(ch1.phase);
     ch1Widget->setSymmetry(ch1.symmetry);
+    ch1Widget->setOutput(ch1.output);
 
     ch1Widget->setStatus(
-        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
+        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Sym %6 "
+                "Output %7")
             .arg(ch1.waveform)
             .arg(ch1.frequency)
             .arg(ch1.amplitude)
             .arg(ch1.offset)
             .arg(ch1.phase)
-            .arg(ch1Output ? "ON" : "OFF"));
+            .arg(ch1.symmetry)
+            .arg(ch1.output ? "ON" : "OFF"));
 
     auto ch2 = generator.getChannelState(2);
 
@@ -350,29 +371,26 @@ void MainWindow::refreshClicked()
         return;
     }
 
-    bool ch2Output = generator.getOutputState(2);
-
     ch2Widget->setWaveform(ch2.waveform);
     ch2Widget->setFrequency(ch2.frequency);
     ch2Widget->setAmplitude(ch2.amplitude);
     ch2Widget->setOffset(ch2.offset);
-    ch2Widget->setOutput(ch2Output);
     ch2Widget->setPhase(ch2.phase);
     ch2Widget->setSymmetry(ch2.symmetry);
+    ch2Widget->setOutput(ch2.output);
 
     ch2Widget->setStatus(
-        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Output %6")
+        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Sym %6%% "
+                "Output %7")
             .arg(ch2.waveform)
             .arg(ch2.frequency)
             .arg(ch2.amplitude)
             .arg(ch2.offset)
             .arg(ch2.phase)
-            .arg(ch2Output ? "ON" : "OFF"));
+            .arg(ch2.symmetry)
+            .arg(ch2.output ? "ON" : "OFF"));
 
-    ch1.output = ch1Output;
     pendingState[0] = ch1;
-
-    ch2.output = ch2Output;
     pendingState[1] = ch2;
 
     setDirty(false);
@@ -445,14 +463,16 @@ void MainWindow::sendClicked()
         {
             ok &= generator.setSymmetry(channel, state.symmetry);
         }
+        ok &= generator.waitForOperationComplete();
         ok &= generator.output(channel, state.output);
     }
 
     if (ok)
         setDirty(false);
-    else
+    else {
         sdgDebug() << __func__ << "setting of at least one field failed";
-    sendButton->setEnabled(true);
+        sendButton->setEnabled(true);
+    }
 }
 
 void MainWindow::connectionLost()
@@ -471,11 +491,12 @@ void MainWindow::connectionLost()
 // desktop startup notification/state issue. Deferred until packaging.
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    sdgDebug() << __func__;
+
     if (generator.isConnected())
     {
         generator.disconnect();
     }
-    // sdgDebug() << "closeEvent: accepting";
     event->accept();
 }
 
@@ -562,4 +583,14 @@ void MainWindow::setDirty(bool value)
 
     if (!immediateMode)
         sendButton->setEnabled(dirty);
+}
+
+void MainWindow::fileConnect()
+{
+    sdgDebug() << __func__;
+}
+
+void MainWindow::fileDisconnect()
+{
+    sdgDebug() << __func__;
 }

@@ -3,7 +3,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
-#ifdef DEBUG
+#ifdef SDG_DEBUG
 #warning "config.h file NOT found"
 #endif
 #endif

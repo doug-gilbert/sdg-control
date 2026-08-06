@@ -31,13 +31,13 @@ public:
     void setStatus(const QString &text);
 
 signals:
-    void outputChanged(int channel, bool enabled);
     void frequencyChanged(int channel, double value);
     void amplitudeChanged(int channel, double value);
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
     void phaseChanged(int channel, double phase);
     void symmetryChanged(int channel, double percent);
+    void outputChanged(int channel, bool enabled);
 
 private:
     void updateControlVisibility();
