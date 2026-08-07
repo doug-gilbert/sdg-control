@@ -1,7 +1,7 @@
 # sdg-control
 
 A Qt6 based graphical application for controlling Siglent SDG2000X series
-arbitrary waveform function generators using SCPI over TCP (ethernet).
+arbitrary waveform function generators using SCPI over TCP (Ethernet).
 
 Copyright (c) 2026 Douglas Gilbert
 
@@ -33,7 +33,12 @@ Current features include:
     - Amplitude
     - Offset
     - Phase
+    - Symmetry [RAMP only]
 - Refresh instrument state
+- Create two modes: Immediate or Send (non-immediate)
+    - immediate: transit field contents to SDG after edit on a field is complete
+    - send: Send button appears, only send (changed) fields when Send pressed
+- introduce some tool tips
 - Connection diagnostics with descriptive error messages
 - Lost connection detection and reporting
 - cmake/cpack can build 'deb' and/or 'rpm' packages on Linux
@@ -154,4 +159,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-03
+Last updated: 2026-08-06

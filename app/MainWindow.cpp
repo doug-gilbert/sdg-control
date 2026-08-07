@@ -450,21 +450,11 @@ void MainWindow::sendClicked()
         return;
 
     sendButton->setEnabled(false);
+
     for (int channel = 1; channel <= 2; channel++)
     {
         const auto &state = pendingState.at(channel - 1);
-
-        ok &= generator.setWaveform(channel, state.waveform);
-        ok &= generator.setFrequency(channel, state.frequency);
-        ok &= generator.setAmplitude(channel, state.amplitude);
-        ok &= generator.setOffset(channel, state.offset);
-        ok &= generator.setPhase(channel, state.phase);
-        if (state.waveform == "RAMP")
-        {
-            ok &= generator.setSymmetry(channel, state.symmetry);
-        }
-        ok &= generator.waitForOperationComplete();
-        ok &= generator.output(channel, state.output);
+        ok &= generator.applyChannelState(channel, state);
     }
 
     if (ok)

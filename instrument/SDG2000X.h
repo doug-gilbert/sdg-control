@@ -40,6 +40,8 @@ public:
 
     ChannelState getChannelState(int channel);
 
+    bool applyChannelState(int channel, const ChannelState& state);
+
     bool setFrequency(int channel, double hz);
 
     bool setWaveform(int channel, const QString& waveform);

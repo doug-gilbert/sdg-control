@@ -241,3 +241,24 @@ bool SDG2000X::waitForOperationComplete()
 {
     return scpi.query("*OPC?") == "1";
 }
+
+bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
+{
+    bool ok = true;
+
+    ok &= setWaveform(channel, state.waveform);
+    ok &= setFrequency(channel, state.frequency);
+    ok &= setAmplitude(channel, state.amplitude);
+    ok &= setOffset(channel, state.offset);
+    ok &= setPhase(channel, state.phase);
+
+    if (state.waveform == "RAMP")
+    {
+        ok &= setSymmetry(channel, state.symmetry);
+    }
+
+    ok &= waitForOperationComplete();
+    ok &= output(channel, state.output);
+
+    return ok;
+}
