@@ -270,16 +270,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *fileMenu = menuBar()->addMenu("&File");
 
-    auto *connectAction = fileMenu->addAction("&Load_settings");
-    auto *disconnectAction = fileMenu->addAction("&Save_settings");
+    auto *loadAction = fileMenu->addAction("&Load settings");
+    auto *saveAction = fileMenu->addAction("&Save settings");
     auto *quitAction = fileMenu->addAction("&Quit");
 
-    connect(connectAction,
+    connect(loadAction,
             &QAction::triggered,
             this,
             &MainWindow::loadSettings);
 
-    connect(disconnectAction,
+    connect(saveAction,
             &QAction::triggered,
             this,
             &MainWindow::saveSettings);
@@ -578,6 +578,31 @@ void MainWindow::setDirty(bool value)
 void MainWindow::loadSettings()
 {
     sdgDebug() << __func__;
+
+    QString fileName = QFileDialog::getOpenFileName(
+        this,
+        tr("Load Settings"),
+        QString(),
+        tr("Settings (*.json)")
+    );
+
+    if (fileName.isEmpty())
+        return;
+
+    std::array<ChannelState, 2> loadedState;
+    QString error;
+
+    if (!SettingsIO::load(fileName, loadedState, &error))
+    {
+        sdgDebug() << "Load failed:" << error;
+        return;
+    }
+
+    pendingState = loadedState;
+
+    updateWidgetsFromState();
+
+    setDirty(true);
 }
 
 void MainWindow::saveSettings()

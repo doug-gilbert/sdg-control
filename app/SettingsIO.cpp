@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,6 +45,29 @@ namespace
 
         return obj;
     }
+
+    bool jsonToChannel(const QJsonObject &obj, ChannelState &state)
+    {
+        if (!obj.contains(WaveformKey) ||
+            !obj.contains(FrequencyKey) ||
+            !obj.contains(AmplitudeKey) ||
+            !obj.contains(OffsetKey) ||
+            !obj.contains(PhaseKey) ||
+            !obj.contains(OutputKey))
+        {
+            return false;
+        }
+
+        state.waveform  = obj[WaveformKey].toString();
+        state.frequency = obj[FrequencyKey].toDouble();
+        state.amplitude = obj[AmplitudeKey].toDouble();
+        state.offset    = obj[OffsetKey].toDouble();
+        state.phase     = obj[PhaseKey].toDouble();
+        state.symmetry  = obj[SymmetryKey].toDouble();
+        state.output    = obj[OutputKey].toBool();
+
+        return true;
+    }
 }
 
 bool SettingsIO::save(const QString &filename,
@@ -76,11 +100,59 @@ bool SettingsIO::load(const QString &filename,
                       std::array<ChannelState, 2> &state,
                       QString *error)
 {
+    QFile file(filename);
+
     sdgDebug() << __func__;
 
-    // placeholder ...
-    Q_UNUSED(filename);
-    Q_UNUSED(state);
-    Q_UNUSED(error);
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        if (error)
+            *error = QString("Cannot open settings file: %1").arg(filename);
+        return false;
+    }
+
+    const QByteArray data = file.readAll();
+    file.close();
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError)
+    {
+        if (error)
+            *error = parseError.errorString();
+        return false;
+    }
+
+    if (!doc.isObject())
+    {
+        if (error)
+            *error = "Settings file root is not a JSON object";
+        return false;
+    }
+
+    QJsonObject root = doc.object();
+
+    // Now root["channel1"], root["channel2"], etc. are valid
+    ChannelState ch1;
+    ChannelState ch2;
+
+    if (!jsonToChannel(root[Channel1Key].toObject(), ch1))
+    {
+        if (error)
+            *error = "Invalid channel1 settings";
+        return false;
+    }
+
+    if (!jsonToChannel(root[Channel2Key].toObject(), ch2))
+    {
+        if (error)
+            *error = "Invalid channel2 settings";
+        return false;
+    }
+
+    state[0] = ch1;
+    state[1] = ch2;
+
     return true;
 }
