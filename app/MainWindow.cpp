@@ -270,19 +270,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *fileMenu = menuBar()->addMenu("&File");
 
-    auto *connectAction = fileMenu->addAction("&Connect...");
-    auto *disconnectAction = fileMenu->addAction("&Disconnect");
+    auto *connectAction = fileMenu->addAction("&Load_settings");
+    auto *disconnectAction = fileMenu->addAction("&Save_settings");
     auto *quitAction = fileMenu->addAction("&Quit");
 
     connect(connectAction,
             &QAction::triggered,
             this,
-            &MainWindow::fileConnect);
+            &MainWindow::loadSettings);
 
     connect(disconnectAction,
             &QAction::triggered,
             this,
-            &MainWindow::fileDisconnect);
+            &MainWindow::saveSettings);
 
     connect(quitAction,
             &QAction::triggered,
@@ -575,12 +575,31 @@ void MainWindow::setDirty(bool value)
         sendButton->setEnabled(dirty);
 }
 
-void MainWindow::fileConnect()
+void MainWindow::loadSettings()
 {
     sdgDebug() << __func__;
 }
 
-void MainWindow::fileDisconnect()
+void MainWindow::saveSettings()
 {
     sdgDebug() << __func__;
+}
+
+void MainWindow::updateWidgetsFromState()
+{
+    updateChannelWidget(1, pendingState.at(0));
+    updateChannelWidget(2, pendingState.at(1));
+}
+
+void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
+{
+    ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+
+    widget->setWaveform(state.waveform);
+    widget->setFrequency(state.frequency);
+    widget->setAmplitude(state.amplitude);
+    widget->setOffset(state.offset);
+    widget->setPhase(state.phase);
+    widget->setSymmetry(state.symmetry);
+    widget->setOutput(state.output);
 }

@@ -32,8 +32,8 @@ private slots:
     void disconnectClicked();
     void connectionLost();
     void sendClicked();
-    void fileConnect();
-    void fileDisconnect();
+    void loadSettings();
+    void saveSettings();
 
 private:
     bool immediateMode = true;
@@ -42,6 +42,9 @@ private:
     std::array<ChannelState, 2> pendingState;
 
     void setDirty(bool value);
+
+    void updateWidgetsFromState();
+    void updateChannelWidget(int channel, const ChannelState &state);
 
     void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
