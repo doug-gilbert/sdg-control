@@ -2,9 +2,11 @@
 
 #include <QMainWindow>
 #include <QSettings>
+#include <QFileDialog>
 
 #include <array>
 
+#include "SettingsIO.h"
 #include "SDG2000X.h"
 #include "ChannelWidget.h"
 

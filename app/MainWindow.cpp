@@ -583,6 +583,18 @@ void MainWindow::loadSettings()
 void MainWindow::saveSettings()
 {
     sdgDebug() << __func__;
+
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Save Settings"),
+        QString(),
+        tr("Settings (*.json)")
+    );
+
+    if (fileName.isEmpty())
+        return;
+
+    SettingsIO::save(fileName, pendingState);
 }
 
 void MainWindow::updateWidgetsFromState()
