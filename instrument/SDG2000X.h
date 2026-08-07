@@ -1,26 +1,13 @@
 #pragma once
 
 #include "ScpiConnection.h"
+#include "Instrument.h"
+#include "ChannelState.h"
 
 #include <QString>
 
 
-struct ChannelState
-{
-    QString waveform;
-
-    double frequency = 0;
-    double amplitude = 0;
-    double offset = 0;
-    double phase = 0;
-
-    double symmetry = 0;
-
-    bool output = false;
-};
-
-
-class SDG2000X : public QObject
+class SDG2000X : public QObject, public Instrument
 {
     Q_OBJECT
 
@@ -28,19 +15,20 @@ public:
 
     explicit SDG2000X(QObject *parent = nullptr);
 
-    ~SDG2000X();
+    ~SDG2000X() override;
 
-    bool connectTo(const QString& ip);
+    bool connectTo(const QString& ip) override;
 
-    void disconnect();
+    void disconnect() override;
 
-    bool isConnected() const;
+    bool isConnected() const override;
 
-    QString identification();
+    QString identification() override;
+
+    bool applyChannelState(int channel,
+                           const ChannelState& state) override;
 
     ChannelState getChannelState(int channel);
-
-    bool applyChannelState(int channel, const ChannelState& state);
 
     bool setFrequency(int channel, double hz);
 
