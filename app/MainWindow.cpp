@@ -492,79 +492,73 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
-    if (immediateMode)
-        generator.setWaveform(channel, waveform);
-    else
-    {
-        pendingState[channel].waveform = waveform;
+    pendingState[channel - 1].waveform = waveform;
+
+    if (immediateMode) 
+        generator.applyChannelState(channel, pendingState[channel - 1]);
+    else 
         setDirty(true);
-    }
+
 }
 
 void MainWindow::setFrequency(int channel, double value)
 {
+    pendingState[channel - 1].frequency = value;
+
     if (immediateMode)
-        generator.setFrequency(channel, value);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel].frequency = value;
         setDirty(true);
-    }
 }
 
 void MainWindow::setAmplitude(int channel, double value)
 {
+    pendingState[channel - 1].amplitude = value;
+
     if (immediateMode)
-        generator.setAmplitude(channel, value);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel - 1].amplitude = value;
         setDirty(true);
-    }
 }
 
 void MainWindow::setOffset(int channel, double value)
 {
+    pendingState[channel - 1].offset = value;
+
     if (immediateMode)
-        generator.setOffset(channel, value);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel - 1].offset = value;
         setDirty(true);
-    }
 }
 
 void MainWindow::setPhase(int channel, double value)
 {
+    pendingState[channel - 1].phase = value;
+
     if (immediateMode)
-        generator.setPhase(channel, value);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel - 1].phase = value;
         setDirty(true);
-    }
 }
 
 void MainWindow::setSymmetry(int channel, double value)
 {
+    pendingState[channel - 1].symmetry = value;
+
     if (immediateMode)
-        generator.setSymmetry(channel, value);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel - 1].symmetry = value;
         setDirty(true);
-    }
 }
 
 void MainWindow::setOutput(int channel, bool enabled)
 {
+    pendingState[channel - 1].output = enabled;
+
     if (immediateMode)
-        generator.output(channel, enabled);
+        generator.applyChannelState(channel, pendingState[channel - 1]);
     else
-    {
-        pendingState[channel - 1].output = enabled;
         setDirty(true);
-    }
 }
 
 void MainWindow::setDirty(bool value)

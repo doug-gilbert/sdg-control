@@ -25,10 +25,12 @@ public:
 
     QString identification() override;
 
+    QString getConnectionError() const override;
+
+    ChannelState getChannelState(int channel) override;
+
     bool applyChannelState(int channel,
                            const ChannelState& state) override;
-
-    ChannelState getChannelState(int channel);
 
     bool setFrequency(int channel, double hz);
 
@@ -51,8 +53,6 @@ public:
     bool waitForOperationComplete();
 
     QString getError();
-
-    QString getConnectionError() const;
 
 signals:
     void disconnected();

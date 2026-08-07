@@ -21,5 +21,9 @@ public:
 
     virtual bool applyChannelState(int channel,
                                    const ChannelState &state) = 0;
+
+    virtual ChannelState getChannelState(int channel) = 0;
+
+    virtual QString getConnectionError() const = 0;
 };
 
