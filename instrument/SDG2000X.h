@@ -2,7 +2,6 @@
 
 #include "ScpiConnection.h"
 #include "Instrument.h"
-#include "ChannelState.h"
 
 #include <QString>
 
