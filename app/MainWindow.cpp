@@ -377,6 +377,9 @@ void MainWindow::setInstrument(InstrumentType type)
     ch1Widget->setEnabled(false);
     ch2Widget->setEnabled(false);
 
+    pendingState = {};
+    setDirty(false);
+
     idEdit->setText("Not connected");
 }
 
@@ -646,7 +649,7 @@ void MainWindow::loadSettings()
         this,
         tr("Load Settings"),
         QString(),
-        tr("Settings (*.json)")
+        tr("JSON settings (*.json)")
     );
 
     if (fileName.isEmpty())
@@ -676,11 +679,14 @@ void MainWindow::saveSettings()
         this,
         tr("Save Settings"),
         QString(),
-        tr("Settings (*.json)")
+        tr("JSON settings (*.json)")
     );
 
     if (fileName.isEmpty())
         return;
+
+    if (!fileName.endsWith(".json", Qt::CaseInsensitive))
+        fileName += ".json";
 
     SettingsIO::save(fileName, pendingState);
 }
