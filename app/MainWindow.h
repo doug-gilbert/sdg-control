@@ -73,4 +73,6 @@ private:
     void setPhase(int channel, double value);
     void setSymmetry(int channel, double value);
     void setOutput(int channel, bool enabled);
+
+    QString displayIdentification(const QString &idn) const;
 };

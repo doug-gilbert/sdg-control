@@ -11,6 +11,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QComboBox>
+#include <QStringList>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -379,6 +380,16 @@ void MainWindow::setInstrument(InstrumentType type)
     idEdit->setText("Not connected");
 }
 
+QString MainWindow::displayIdentification(const QString &idn) const
+{
+    QStringList fields = idn.split(',');
+
+    if (fields.size() >= 4)
+        fields[2] = "<hidden serial>";
+
+    return fields.join(',');
+}
+
 void MainWindow::refreshClicked()
 {
     sdgDebug() << "Refresh clicked";
@@ -389,7 +400,7 @@ void MainWindow::refreshClicked()
         return;
     }
 
-    idEdit->setText(generator->identification());
+    idEdit->setText(displayIdentification(generator->identification()));
 
     auto ch1 = generator->getChannelState(1);
 
