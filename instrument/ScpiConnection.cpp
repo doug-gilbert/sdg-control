@@ -74,6 +74,9 @@ void ScpiConnection::disconnect()
 
 QString ScpiConnection::query(const QString& command)
 {
+    if (!isConnected())
+        return "WRITE ERROR";
+
     QByteArray cmd = command.toUtf8() + "\r\n";
 
     socket.write(cmd);
