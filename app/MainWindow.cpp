@@ -23,6 +23,7 @@
 
 #include "MainWindow.h"
 #include "SDG2000X.h"
+#include "InstrumentFactory.h"
 
 #include "debug.h"
 
@@ -31,7 +32,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    generator = new SDG2000X(this);
+    generator = createInstrument(this);
 
     setWindowTitle("SDG Control");
 

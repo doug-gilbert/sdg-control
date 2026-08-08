@@ -7,6 +7,8 @@ add_library(instrument
     SDG2000X.cpp
     SDG2000X.h
     Instrument.h
+    InstrumentFactory.cpp
+    InstrumentFactory.h
 )
 
 if ( SDG_DEBUG )
