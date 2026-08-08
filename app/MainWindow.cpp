@@ -32,7 +32,8 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    generator = createInstrument(this);
+    // generator = createInstrument(InstrumentType::SDG2000X, this);
+    generator = createInstrument(InstrumentType::Simulator, this);
 
     setWindowTitle("SDG Control");
 

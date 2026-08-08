@@ -1,5 +1,12 @@
+#pragma once
 
-class Instrument;
-class QObject;
+#include "Instrument.h"
 
-Instrument *createInstrument(QObject *parent);
+enum class InstrumentType
+{
+    SDG2000X,
+    Simulator
+};
+
+Instrument *createInstrument(InstrumentType type,
+                             QObject *parent = nullptr);

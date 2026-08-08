@@ -9,6 +9,8 @@ add_library(instrument
     Instrument.h
     InstrumentFactory.cpp
     InstrumentFactory.h
+    SimulatorInstrument.cpp
+    SimulatorInstrument.h
 )
 
 if ( SDG_DEBUG )
