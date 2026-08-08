@@ -10,6 +10,7 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QMessageBox>
+#include <QComboBox>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -22,7 +23,6 @@
 /* Include config.h _before_ any local includes in case they need it */
 
 #include "MainWindow.h"
-#include "SDG2000X.h"
 #include "InstrumentFactory.h"
 
 #include "debug.h"
@@ -39,6 +39,33 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *connectionLayout = new QHBoxLayout;
 
+    auto *instrumentLabel = new QLabel("Instrument:", central);
+    instrumentLabel->setToolTip(
+        "The Instrument is a Siglent SDG2000X series function generator");
+
+    instrumentCombo = new QComboBox(central);
+    instrumentCombo->addItem("Simulator");
+    instrumentCombo->addItem("Siglent SDG2000X");
+    instrumentCombo->setToolTip(
+        "The Simulator is a dummy backend so no real SDG2000X is needed");
+
+    connect(instrumentCombo,
+            &QComboBox::currentIndexChanged,
+            this,
+            [this](int index)
+            {
+                switch (index)
+                {
+                case 0:
+                    setInstrument(InstrumentType::Simulator);
+                    break;
+
+                case 1:
+                    setInstrument(InstrumentType::SDG2000X);
+                    break;
+                }
+            });
+
     auto *hostLabel = new QLabel("Host / IP:", central);
 
     QSettings settings("sdg-control", "sdg-control");
@@ -47,7 +74,11 @@ MainWindow::MainWindow(QWidget *parent)
         central);
 
     connectButton = new QPushButton("Connect", central);
+    connectButton->setToolTip(
+        "Try to connect to the given Host/IP or the simulator");
     disconnectButton = new QPushButton("Disconnect", central);
+    disconnectButton->setToolTip(
+        "Disconnect from either a Host/IP or the simulator");
     disconnectButton->setEnabled(false);
 
     immediateCheck = new QCheckBox("Immediate updates", central);
@@ -71,6 +102,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     layout->addLayout(modeLayout);
 
+    connectionLayout->addWidget(instrumentLabel);
+    connectionLayout->addWidget(instrumentCombo);
     connectionLayout->addWidget(hostLabel);
     connectionLayout->addWidget(ipEdit);
     connectionLayout->addWidget(connectButton);
@@ -446,6 +479,7 @@ void MainWindow::connectClicked()
     disconnectButton->setEnabled(true);
 
     refreshClicked();
+    instrumentCombo->setEnabled(false);
 }
 
 void MainWindow::disconnectClicked()
@@ -462,6 +496,7 @@ void MainWindow::disconnectClicked()
 
     // idEdit->clear();
     idEdit->setText("Disconnected");
+    instrumentCombo->setEnabled(true);
 }
 
 void MainWindow::sendClicked()
@@ -496,6 +531,7 @@ void MainWindow::connectionLost()
     disconnectButton->setEnabled(false);
 
     connectButton->setEnabled(true);
+    instrumentCombo->setEnabled(true);
 }
 
 // Investigated delayed busy cursor after exit under Ubuntu GNOME.

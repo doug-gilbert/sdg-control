@@ -14,6 +14,7 @@ class QLineEdit;
 class QPushButton;
 class QCloseEvent;
 class QCheckBox;
+class QComboBox;
 
 
 class MainWindow : public QMainWindow
@@ -50,6 +51,7 @@ private:
     QPushButton *connectButton;
     QPushButton *disconnectButton;
     QPushButton *refreshButton;
+    QComboBox *instrumentCombo;
 
     QLineEdit *idEdit;
 
