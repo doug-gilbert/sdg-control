@@ -7,7 +7,7 @@
 #include <array>
 
 #include "SettingsIO.h"
-#include "SDG2000X.h"
+#include "Instrument.h"
 #include "ChannelWidget.h"
 
 class QLineEdit;
@@ -69,5 +69,5 @@ private:
     ChannelWidget *ch1Widget;
     ChannelWidget *ch2Widget;
 
-    SDG2000X generator;
+    Instrument *generator;
 };

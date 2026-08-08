@@ -7,12 +7,11 @@
 #include <QString>
 
 
-class SDG2000X : public QObject, public Instrument
+class SDG2000X : public Instrument
 {
     Q_OBJECT
 
 public:
-
     explicit SDG2000X(QObject *parent = nullptr);
 
     ~SDG2000X() override;
@@ -53,9 +52,6 @@ public:
     bool waitForOperationComplete();
 
     QString getError();
-
-signals:
-    void disconnected();
 
 private:
 

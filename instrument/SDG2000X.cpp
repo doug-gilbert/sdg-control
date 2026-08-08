@@ -16,7 +16,7 @@
 
 
 SDG2000X::SDG2000X(QObject *parent)
-    : QObject(parent)
+    : Instrument(parent)
 {
     connect(&scpi,
             &ScpiConnection::disconnected,

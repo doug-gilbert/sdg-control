@@ -6,6 +6,7 @@ add_library(instrument
     ScpiConnection.h
     SDG2000X.cpp
     SDG2000X.h
+    Instrument.h
 )
 
 if ( SDG_DEBUG )

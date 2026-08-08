@@ -22,6 +22,8 @@
 /* Include config.h _before_ any local includes in case they need it */
 
 #include "MainWindow.h"
+#include "SDG2000X.h"
+
 #include "debug.h"
 
 
@@ -29,6 +31,8 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    generator = new SDG2000X(this);
+
     setWindowTitle("SDG Control");
 
     auto *central = new QWidget(this);
@@ -263,8 +267,8 @@ MainWindow::MainWindow(QWidget *parent)
             &MainWindow::sendClicked);
 
 
-    connect(&generator,
-            &SDG2000X::disconnected,
+    connect(generator,
+            &Instrument::disconnected,
             this,
             &MainWindow::connectionLost);
 
@@ -326,15 +330,15 @@ void MainWindow::refreshClicked()
 {
     sdgDebug() << "Refresh clicked";
 
-    if (!generator.isConnected())
+    if (!generator->isConnected())
     {
         idEdit->setText("Not connected");
         return;
     }
 
-    idEdit->setText(generator.identification());
+    idEdit->setText(generator->identification());
 
-    auto ch1 = generator.getChannelState(1);
+    auto ch1 = generator->getChannelState(1);
 
     if (ch1.waveform == "READ TIMEOUT" ||
         ch1.waveform == "WRITE ERROR")
@@ -362,7 +366,7 @@ void MainWindow::refreshClicked()
             .arg(ch1.symmetry)
             .arg(ch1.output ? "ON" : "OFF"));
 
-    auto ch2 = generator.getChannelState(2);
+    auto ch2 = generator->getChannelState(2);
 
     if (ch2.waveform == "READ TIMEOUT" ||
         ch2.waveform == "WRITE ERROR")
@@ -399,10 +403,10 @@ void MainWindow::refreshClicked()
 void MainWindow::connectClicked()
 {
     sdgDebug() << __func__ ;
-    if (!generator.connectTo(ipEdit->text()))
+    if (!generator->connectTo(ipEdit->text()))
     {
         idEdit->setText("Connection failed: " +
-                        generator.getConnectionError());
+                        generator->getConnectionError());
 
         ch1Widget->setEnabled(false);
         ch2Widget->setEnabled(false);
@@ -416,7 +420,7 @@ void MainWindow::connectClicked()
     QSettings settings("sdg-control", "sdg-control");
     settings.setValue("host", ipEdit->text());
 
-    idEdit->setText(generator.identification());
+    idEdit->setText(generator->identification());
 
     connectButton->setEnabled(false);
     disconnectButton->setEnabled(true);
@@ -427,7 +431,7 @@ void MainWindow::connectClicked()
 void MainWindow::disconnectClicked()
 {
     sdgDebug() << __func__ ;
-    generator.disconnect();
+    generator->disconnect();
 
     connectButton->setEnabled(true);
     disconnectButton->setEnabled(false);
@@ -446,7 +450,7 @@ void MainWindow::sendClicked()
 
     sdgDebug() << __func__;
 
-    if (!generator.isConnected())
+    if (!generator->isConnected())
         return;
 
     sendButton->setEnabled(false);
@@ -454,7 +458,7 @@ void MainWindow::sendClicked()
     for (int channel = 1; channel <= 2; channel++)
     {
         const auto &state = pendingState.at(channel - 1);
-        ok &= generator.applyChannelState(channel, state);
+        ok &= generator->applyChannelState(channel, state);
     }
 
     if (ok)
@@ -483,9 +487,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     sdgDebug() << __func__;
 
-    if (generator.isConnected())
+    if (generator->isConnected())
     {
-        generator.disconnect();
+        generator->disconnect();
     }
     event->accept();
 }
@@ -494,9 +498,9 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
 {
     pendingState[channel - 1].waveform = waveform;
 
-    if (immediateMode) 
-        generator.applyChannelState(channel, pendingState[channel - 1]);
-    else 
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
         setDirty(true);
 
 }
@@ -506,7 +510,7 @@ void MainWindow::setFrequency(int channel, double value)
     pendingState[channel - 1].frequency = value;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -516,7 +520,7 @@ void MainWindow::setAmplitude(int channel, double value)
     pendingState[channel - 1].amplitude = value;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -526,7 +530,7 @@ void MainWindow::setOffset(int channel, double value)
     pendingState[channel - 1].offset = value;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -536,7 +540,7 @@ void MainWindow::setPhase(int channel, double value)
     pendingState[channel - 1].phase = value;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -546,7 +550,7 @@ void MainWindow::setSymmetry(int channel, double value)
     pendingState[channel - 1].symmetry = value;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -556,7 +560,7 @@ void MainWindow::setOutput(int channel, bool enabled)
     pendingState[channel - 1].output = enabled;
 
     if (immediateMode)
-        generator.applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
