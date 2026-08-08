@@ -538,19 +538,20 @@ void MainWindow::sendClicked()
 
 void MainWindow::connectionLost()
 {
+    sdgDebug() << __func__;
 
     idEdit->setText("Connection lost");
 
-    // Update UI state only
     disconnectButton->setEnabled(false);
-
     connectButton->setEnabled(true);
+    refreshButton->setEnabled(false);
+
+    ch1Widget->setEnabled(false);
+    ch2Widget->setEnabled(false);
+
     instrumentCombo->setEnabled(true);
 }
 
-// Investigated delayed busy cursor after exit under Ubuntu GNOME.
-// Application exits cleanly. No remaining process or socket. Likely
-// desktop startup notification/state issue. Deferred until packaging.
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     sdgDebug() << __func__;
