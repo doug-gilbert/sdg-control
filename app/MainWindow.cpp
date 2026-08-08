@@ -32,9 +32,6 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    // generator = createInstrument(InstrumentType::SDG2000X, this);
-    generator = createInstrument(InstrumentType::Simulator, this);
-
     setWindowTitle("SDG Control");
 
     auto *central = new QWidget(this);
@@ -83,6 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     idEdit = new QLineEdit(central);
     idEdit->setReadOnly(true);
+    idEdit->setFocusPolicy(Qt::NoFocus);
     idEdit->setText("Not connected");
 
 #if 0
@@ -114,6 +112,8 @@ MainWindow::MainWindow(QWidget *parent)
     layout->addWidget(refreshButton);
 
     setCentralWidget(central);
+
+    setInstrument(InstrumentType::Simulator);
 
     connect(immediateCheck,
             &QCheckBox::toggled,
@@ -268,12 +268,6 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::sendClicked);
 
-
-    connect(generator,
-            &Instrument::disconnected,
-            this,
-            &MainWindow::connectionLost);
-
     auto *fileMenu = menuBar()->addMenu("&File");
 
     auto *loadAction = fileMenu->addAction("&Load settings");
@@ -317,15 +311,39 @@ MainWindow::MainWindow(QWidget *parent)
                                    text);
             });
 
-    ch1Widget->setEnabled(false);
-    ch2Widget->setEnabled(false);
-
     resize(800, 350);
 }
 
 MainWindow::~MainWindow()
 {
     sdgDebug() << "MainWindow destructor";
+}
+
+void MainWindow::setInstrument(InstrumentType type)
+{
+    if (generator)
+    {
+        if (generator->isConnected())
+            generator->disconnect();
+
+        delete generator;
+    }
+
+    generator = createInstrument(type, this);
+
+    connect(generator,
+            &Instrument::disconnected,
+            this,
+            &MainWindow::connectionLost);
+
+    connectButton->setEnabled(true);
+    disconnectButton->setEnabled(false);
+    refreshButton->setEnabled(false);
+
+    ch1Widget->setEnabled(false);
+    ch2Widget->setEnabled(false);
+
+    idEdit->setText("Not connected");
 }
 
 void MainWindow::refreshClicked()
@@ -455,8 +473,6 @@ void MainWindow::sendClicked()
     if (!generator->isConnected())
         return;
 
-    sendButton->setEnabled(false);
-
     for (int channel = 1; channel <= 2; channel++)
     {
         const auto &state = pendingState.at(channel - 1);
@@ -465,10 +481,10 @@ void MainWindow::sendClicked()
 
     if (ok)
         setDirty(false);
-    else {
-        sdgDebug() << __func__ << "setting of at least one field failed";
-        sendButton->setEnabled(true);
-    }
+    else
+        sdgDebug() << __func__
+                   << "setting of at least one field failed";
+    // sdgDebug() << "focusWidget:" << focusWidget();
 }
 
 void MainWindow::connectionLost()

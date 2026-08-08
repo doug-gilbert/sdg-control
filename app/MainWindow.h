@@ -7,7 +7,7 @@
 #include <array>
 
 #include "SettingsIO.h"
-#include "Instrument.h"
+#include "InstrumentFactory.h"
 #include "ChannelWidget.h"
 
 class QLineEdit;
@@ -43,19 +43,6 @@ private:
 
     std::array<ChannelState, 2> pendingState;
 
-    void setDirty(bool value);
-
-    void updateWidgetsFromState();
-    void updateChannelWidget(int channel, const ChannelState &state);
-
-    void setWaveform(int channel, const QString & waveform);
-    void setFrequency(int channel, double value);
-    void setAmplitude(int channel, double value);
-    void setOffset(int channel, double value);
-    void setPhase(int channel, double value);
-    void setSymmetry(int channel, double value);
-    void setOutput(int channel, bool enabled);
-
     QCheckBox *immediateCheck;
     QPushButton *sendButton;
 
@@ -69,5 +56,19 @@ private:
     ChannelWidget *ch1Widget;
     ChannelWidget *ch2Widget;
 
-    Instrument *generator;
+    Instrument *generator = nullptr;
+
+    void setInstrument(InstrumentType type);
+    void setDirty(bool value);
+
+    void updateWidgetsFromState();
+    void updateChannelWidget(int channel, const ChannelState &state);
+
+    void setWaveform(int channel, const QString & waveform);
+    void setFrequency(int channel, double value);
+    void setAmplitude(int channel, double value);
+    void setOffset(int channel, double value);
+    void setPhase(int channel, double value);
+    void setSymmetry(int channel, double value);
+    void setOutput(int channel, bool enabled);
 };

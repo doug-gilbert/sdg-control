@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "SDG2000X.h"
+#include "ChannelState.h"
 
 
 namespace SettingsIO
