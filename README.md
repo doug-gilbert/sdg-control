@@ -35,21 +35,27 @@ Current features include:
     - Phase
     - Symmetry [RAMP only]
 - Refresh instrument state
-- Create two modes: Immediate or Send (non-immediate)
-    - immediate: transit field contents to SDG after edit on a field is complete
-    - send: Send button appears, only send (changed) fields when Send pressed
-- introduce some tool tips
+- Provide two modes: Immediate or Send (non-immediate)
+    - Immediate: transmit field contents to SDG after each field edit is complete
+    - Send: Send button appears, only send fields when Send button pressed
+- Introduce some tooltips
 - Connection diagnostics with descriptive error messages
 - Lost connection detection and reporting
-- cmake/cpack can build 'deb' and/or 'rpm' packages on Linux
+- Cmake/cpack can build 'deb' and/or 'rpm' packages on Linux
+- Save settings to JSON (if requested) and load settings ability as well
+- Add a simulator so GUI can be exercised without a SDG2000X present
 
 ## Design philosophy
 
 The graphical user interface of this application does _not_ emulate the
 front panel of the Siglent SDG2000X series of function generators. Instead,
-it is built using native Qt6 widgets and layouts. **
+it is built using native Qt6 widgets and layouts.
 
-Desktop systems, laptops and pads provide considerably more screen space
+> **Note:** Recent SDG2000X firmware includes a webserver that presents a
+> virtual front panel. That might be ideal for remote control by mobile
+> phones, as they have screen sizes similar to this generator.
+
+Desktop systems, laptops and tablets provide considerably more screen space
 than the generator's front-panel display. This space allows related controls
 to be grouped together and additional information to be shown simultaneously.
 
@@ -62,10 +68,6 @@ panel placement differ between manufacturers and product families.
 By separating the user interface from the layout of any specific front
 panel, the application can more readily be extended to support additional
 instruments in the future.
-
-** Recent SDG2000X firmware includes a webserver that presents a virtual
-   front panel. That might be ideal for remote control by mobile phones
-   as they have screen sizes similar to this generator.
 
 ## Requirements
 
@@ -159,4 +161,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-06
+Last updated: 2026-08-08
