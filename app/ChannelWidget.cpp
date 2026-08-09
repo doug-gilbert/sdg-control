@@ -92,10 +92,10 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     rampSymmetrySpin->setKeyboardTracking(false);
 
     pulseWidthSpin = new QDoubleSpinBox(groupBox);
-    pulseWidthSpin->setRange(0.001, 1'000'000.0);
-    pulseWidthSpin->setDecimals(3);
-    pulseWidthSpin->setSingleStep(1.0);
-    pulseWidthSpin->setSuffix(" us");
+    pulseWidthSpin->setRange(0.000'000'001, 1.0);
+    pulseWidthSpin->setDecimals(9);
+    pulseWidthSpin->setSingleStep(0.000'001);
+    pulseWidthSpin->setSuffix(" s");
     pulseWidthSpin->setKeyboardTracking(false);
 
     pulseRiseSpin = new QDoubleSpinBox(groupBox);
@@ -112,6 +112,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseFallSpin->setSuffix(" ns");
     pulseFallSpin->setKeyboardTracking(false);
 
+    pulseDutySpin = new QDoubleSpinBox(groupBox);
+    pulseDutySpin->setRange(0.0, 100.0);
+    pulseDutySpin->setDecimals(3);
+    pulseDutySpin->setSuffix(" %");
+    pulseDutySpin->setReadOnly(true);
+    pulseDutySpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    pulseDutySpin->setFocusPolicy(Qt::NoFocus);
+
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
@@ -121,6 +129,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseWidthLabel = new QLabel("Pulse Width:", groupBox);
     pulseRiseLabel = new QLabel("Pulse Rise:", groupBox);
     pulseFallLabel = new QLabel("Pulse Fall:", groupBox);
+    pulseDutyLabel = new QLabel("Pulse Duty:", groupBox);
 
     updateControlVisibility();
 
@@ -133,6 +142,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(pulseWidthLabel, pulseWidthSpin);
     formLayout->addRow(pulseRiseLabel, pulseRiseSpin);
     formLayout->addRow(pulseFallLabel, pulseFallSpin);
+    formLayout->addRow(pulseDutyLabel, pulseDutySpin);
     formLayout->addRow(outputCheck);
 
     outerLayout->addWidget(groupBox);
@@ -151,6 +161,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             this,
             [this](double value)
             {
+                updatePulseDuty();
                 emit frequencyChanged(this->channel, value);
             });
 
@@ -191,9 +202,11 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             this,
             [this](double value)
             {
+                updatePulseDuty();
+
                 emit pulseWidthChanged(
                     this->channel,
-                    value / 1'000'000.0);
+                    value);
             });
 
     connect(pulseRiseSpin,
@@ -230,6 +243,7 @@ void ChannelWidget::setFrequency(double frequency)
     frequencySpin->blockSignals(true);
     frequencySpin->setValue(frequency);
     frequencySpin->blockSignals(false);
+    updatePulseDuty();
 }
 
 void ChannelWidget::setAmplitude(double amplitude)
@@ -263,8 +277,9 @@ void ChannelWidget::setRampSymmetry(double percent)
 void ChannelWidget::setPulseWidth(double value)
 {
     pulseWidthSpin->blockSignals(true);
-    pulseWidthSpin->setValue(value * 1'000'000.0);
+    pulseWidthSpin->setValue(value);
     pulseWidthSpin->blockSignals(false);
+    updatePulseDuty();
 }
 
 void ChannelWidget::setPulseRise(double value)
@@ -279,6 +294,28 @@ void ChannelWidget::setPulseFall(double value)
     pulseFallSpin->blockSignals(true);
     pulseFallSpin->setValue(value * 1'000'000'000.0);
     pulseFallSpin->blockSignals(false);
+}
+
+void ChannelWidget::updatePulseDuty()
+{
+    bool showDuty = (waveformCombo->currentText() == "PULSE");
+
+    if (!showDuty)
+        return;
+
+    if (frequencySpin->value() > 0.0)
+    {
+        double duty =
+            pulseWidthSpin->value() *
+            frequencySpin->value() *
+            100.0;
+
+        pulseDutySpin->setValue(duty);
+    }
+    else
+    {
+        pulseDutySpin->setValue(0.0);
+    }
 }
 
 
@@ -324,4 +361,7 @@ void ChannelWidget::updateControlVisibility()
 
     pulseFallLabel->setVisible(showPulse);
     pulseFallSpin->setVisible(showPulse);
+
+    pulseDutyLabel->setVisible(showPulse);
+    pulseDutySpin->setVisible(showPulse);
 }

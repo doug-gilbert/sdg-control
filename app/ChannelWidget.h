@@ -50,6 +50,7 @@ signals:
 
 private:
     void updateControlVisibility();
+    void updatePulseDuty();
 
     int channel;
 
@@ -69,7 +70,7 @@ private:
     QLabel *pulseWidthLabel;
     QLabel *pulseRiseLabel;
     QLabel *pulseFallLabel;
-
+    QLabel *pulseDutyLabel;
 
     QCheckBox *outputCheck;
 
@@ -82,4 +83,5 @@ private:
     QDoubleSpinBox *pulseWidthSpin;
     QDoubleSpinBox *pulseRiseSpin;
     QDoubleSpinBox *pulseFallSpin;
+    QDoubleSpinBox *pulseDutySpin;
 };

@@ -229,19 +229,16 @@ ChannelState SDG2000X::getChannelState(int channel)
         {
             value.remove("S");
             state.pulseWidth = value.toDouble();
-sdgDebug() << __func__ << "pulseWidth " << state.pulseWidth;
         }
         else if (key == "RISE")
         {
             value.remove("S");
             state.pulseRise = value.toDouble();
-sdgDebug() << __func__ << "pulseRise " << state.pulseRise;
         }
         else if (key == "FALL")
         {
             value.remove("S");
             state.pulseFall = value.toDouble();
-sdgDebug() << __func__ << "pulseFall " << state.pulseFall;
         }
     }
 
