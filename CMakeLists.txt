@@ -104,7 +104,7 @@ set(CMAKE_AUTOMOC ON)
 
 add_subdirectory(instrument)
 # Speed up build by leaving out test_scpi
-# add_subdirectory(test_scpi)
+add_subdirectory(test_scpi)
 add_subdirectory(app)
 
 

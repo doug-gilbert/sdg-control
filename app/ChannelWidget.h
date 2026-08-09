@@ -21,14 +21,19 @@ class ChannelWidget : public QWidget
 public:
     explicit ChannelWidget(int channel, QWidget *parent = nullptr);
 
+    void setStatus(const QString &text);  // only seen if SDG_DEVELOPER_UI=ON
+
     void setWaveform(const QString &waveform);
     void setFrequency(double value);
     void setAmplitude(double value);
     void setOffset(double value);
     void setPhase(double value);
-    void setSymmetry(double value);
+    void setRampSymmetry(double value);
+    void setPulseWidth(double value);
+    void setPulseRise(double value);
+    void setPulseFall(double value);
+
     void setOutput(bool enabled);
-    void setStatus(const QString &text);
 
 signals:
     void frequencyChanged(int channel, double value);
@@ -36,7 +41,11 @@ signals:
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
     void phaseChanged(int channel, double phase);
-    void symmetryChanged(int channel, double percent);
+    void rampSymmetryChanged(int channel, double percent);
+    void pulseWidthChanged(int channel, double value);
+    void pulseRiseChanged(int channel, double value);
+    void pulseFallChanged(int channel, double value);
+
     void outputChanged(int channel, bool enabled);
 
 private:
@@ -56,7 +65,11 @@ private:
     QLabel *amplitudeLabel;
     QLabel *offsetLabel;
     QLabel *phaseLabel;
-    QLabel *symmetryLabel;
+    QLabel *rampSymmetryLabel;
+    QLabel *pulseWidthLabel;
+    QLabel *pulseRiseLabel;
+    QLabel *pulseFallLabel;
+
 
     QCheckBox *outputCheck;
 
@@ -65,5 +78,8 @@ private:
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
     QDoubleSpinBox *phaseSpin;
-    QDoubleSpinBox *symmetrySpin;
+    QDoubleSpinBox *rampSymmetrySpin;
+    QDoubleSpinBox *pulseWidthSpin;
+    QDoubleSpinBox *pulseRiseSpin;
+    QDoubleSpinBox *pulseFallSpin;
 };

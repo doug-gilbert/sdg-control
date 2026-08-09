@@ -249,20 +249,50 @@ MainWindow::MainWindow(QWidget *parent)
             });
 
     connect(ch1Widget,
-            &ChannelWidget::symmetryChanged,
+            &ChannelWidget::rampSymmetryChanged,
             this,
             [this](int channel, double value)
             {
-                setSymmetry(channel, value);
+                setRampSymmetry(channel, value);
             });
 
     connect(ch2Widget,
-            &ChannelWidget::symmetryChanged,
+            &ChannelWidget::rampSymmetryChanged,
             this,
             [this](int channel, double value)
             {
-                setSymmetry(channel, value);
+                setRampSymmetry(channel, value);
             });
+
+        connect(ch1Widget,
+            &ChannelWidget::pulseWidthChanged,
+            this,
+            &MainWindow::setPulseWidth);
+
+    connect(ch1Widget,
+            &ChannelWidget::pulseRiseChanged,
+            this,
+            &MainWindow::setPulseRise);
+
+    connect(ch1Widget,
+            &ChannelWidget::pulseFallChanged,
+            this,
+            &MainWindow::setPulseFall);
+
+    connect(ch2Widget,
+            &ChannelWidget::pulseWidthChanged,
+            this,
+            &MainWindow::setPulseWidth);
+
+    connect(ch2Widget,
+            &ChannelWidget::pulseRiseChanged,
+            this,
+            &MainWindow::setPulseRise);
+
+    connect(ch2Widget,
+            &ChannelWidget::pulseFallChanged,
+            this,
+            &MainWindow::setPulseFall);
 
 
     connect(ch1Widget,
@@ -419,7 +449,11 @@ void MainWindow::refreshClicked()
     ch1Widget->setAmplitude(ch1.amplitude);
     ch1Widget->setOffset(ch1.offset);
     ch1Widget->setPhase(ch1.phase);
-    ch1Widget->setSymmetry(ch1.symmetry);
+    ch1Widget->setRampSymmetry(ch1.rampSymmetry);
+    ch1Widget->setPulseWidth(ch1.pulseWidth);
+    ch1Widget->setPulseRise(ch1.pulseRise);
+    ch1Widget->setPulseFall(ch1.pulseFall);
+
     ch1Widget->setOutput(ch1.output);
 
     ch1Widget->setStatus(
@@ -430,7 +464,7 @@ void MainWindow::refreshClicked()
             .arg(ch1.amplitude)
             .arg(ch1.offset)
             .arg(ch1.phase)
-            .arg(ch1.symmetry)
+            .arg(ch1.rampSymmetry)
             .arg(ch1.output ? "ON" : "OFF"));
 
     auto ch2 = generator->getChannelState(2);
@@ -447,7 +481,11 @@ void MainWindow::refreshClicked()
     ch2Widget->setAmplitude(ch2.amplitude);
     ch2Widget->setOffset(ch2.offset);
     ch2Widget->setPhase(ch2.phase);
-    ch2Widget->setSymmetry(ch2.symmetry);
+    ch2Widget->setRampSymmetry(ch2.rampSymmetry);
+    ch2Widget->setPulseWidth(ch2.pulseWidth);
+    ch2Widget->setPulseRise(ch2.pulseRise);
+    ch2Widget->setPulseFall(ch2.pulseFall);
+
     ch2Widget->setOutput(ch2.output);
 
     ch2Widget->setStatus(
@@ -458,7 +496,7 @@ void MainWindow::refreshClicked()
             .arg(ch2.amplitude)
             .arg(ch2.offset)
             .arg(ch2.phase)
-            .arg(ch2.symmetry)
+            .arg(ch2.rampSymmetry)
             .arg(ch2.output ? "ON" : "OFF"));
 
     pendingState[0] = ch1;
@@ -614,9 +652,9 @@ void MainWindow::setPhase(int channel, double value)
         setDirty(true);
 }
 
-void MainWindow::setSymmetry(int channel, double value)
+void MainWindow::setRampSymmetry(int channel, double value)
 {
-    pendingState[channel - 1].symmetry = value;
+    pendingState[channel - 1].rampSymmetry = value;
 
     if (immediateMode)
         generator->applyChannelState(channel, pendingState[channel - 1]);
@@ -707,6 +745,36 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setAmplitude(state.amplitude);
     widget->setOffset(state.offset);
     widget->setPhase(state.phase);
-    widget->setSymmetry(state.symmetry);
+    widget->setRampSymmetry(state.rampSymmetry);
     widget->setOutput(state.output);
+}
+
+void MainWindow::setPulseWidth(int channel, double value)
+{
+    pendingState[channel - 1].pulseWidth = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setPulseRise(int channel, double value)
+{
+    pendingState[channel - 1].pulseRise = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setPulseFall(int channel, double value)
+{
+    pendingState[channel - 1].pulseFall = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
 }

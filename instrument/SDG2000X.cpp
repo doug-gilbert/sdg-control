@@ -54,19 +54,6 @@ QString SDG2000X::channelPrefix(int channel)
     return QString("C%1").arg(channel);
 }
 
-bool SDG2000X::setFrequency(int channel, double hz)
-{
-    if (!scpi.isConnected())
-        return false;
-
-    QString cmd =
-        QString("%1:BSWV FRQ,%2")
-        .arg(channelPrefix(channel))
-        .arg(QString::number(hz, 'f', 6));
-
-    return scpi.command(cmd);
-}
-
 bool SDG2000X::setWaveform(int channel, const QString& waveform)
 {
     if (!scpi.isConnected())
@@ -78,6 +65,19 @@ bool SDG2000X::setWaveform(int channel, const QString& waveform)
         .arg(waveform);
 
     sdgDebug() << "Waveform:" << cmd;
+
+    return scpi.command(cmd);
+}
+
+bool SDG2000X::setFrequency(int channel, double hz)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV FRQ,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(hz, 'f', 6));
 
     return scpi.command(cmd);
 }
@@ -108,12 +108,49 @@ bool SDG2000X::setOffset(int channel, double volts)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setSymmetry(int channel, double percent)
+bool SDG2000X::setPhase(int channel, double degrees)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV PHSE,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(degrees, 'f', 1));
+
+    return scpi.command(cmd);
+}
+
+bool SDG2000X::setRampSymmetry(int channel, double percent)
 {
     return scpi.command(
         QString("%1:BSWV SYM,%2")
             .arg(channelPrefix(channel))
             .arg(percent, 0, 'f', 1));
+}
+
+bool SDG2000X::setPulseWidth(int channel, double seconds)
+{
+    return scpi.command(
+        QString("%1:BSWV WIDTH,%2")
+            .arg(channelPrefix(channel))
+            .arg(QString::number(seconds, 'g', 12)));
+}
+
+bool SDG2000X::setPulseRise(int channel, double seconds)
+{
+    return scpi.command(
+        QString("%1:BSWV RISE,%2")
+            .arg(channelPrefix(channel))
+            .arg(QString::number(seconds, 'g', 12)));
+}
+
+bool SDG2000X::setPulseFall(int channel, double seconds)
+{
+    return scpi.command(
+        QString("%1:BSWV FALL,%2")
+            .arg(channelPrefix(channel))
+            .arg(QString::number(seconds, 'g', 12)));
 }
 
 bool SDG2000X::output(int channel, bool enabled)
@@ -144,10 +181,9 @@ ChannelState SDG2000X::getChannelState(int channel)
 
     sdgDebug() << "BSWV raw response:" << response;
 
-    if (response == "WRITE ERROR") {
-        state.waveform = response;
-        return state;
-    } else if (response == "READ TIMEOUT") {
+    if (response == "WRITE ERROR" ||
+        response == "READ TIMEOUT")
+    {
         state.waveform = response;
         return state;
     }
@@ -187,7 +223,25 @@ ChannelState SDG2000X::getChannelState(int channel)
         }
         else if (key == "SYM")
         {
-            state.symmetry = value.toDouble();
+            state.rampSymmetry = value.toDouble();
+        }
+        else if (key == "WIDTH")
+        {
+            value.remove("S");
+            state.pulseWidth = value.toDouble();
+sdgDebug() << __func__ << "pulseWidth " << state.pulseWidth;
+        }
+        else if (key == "RISE")
+        {
+            value.remove("S");
+            state.pulseRise = value.toDouble();
+sdgDebug() << __func__ << "pulseRise " << state.pulseRise;
+        }
+        else if (key == "FALL")
+        {
+            value.remove("S");
+            state.pulseFall = value.toDouble();
+sdgDebug() << __func__ << "pulseFall " << state.pulseFall;
         }
     }
 
@@ -224,19 +278,6 @@ QString SDG2000X::getConnectionError() const
     return scpi.errorString();
 }
 
-bool SDG2000X::setPhase(int channel, double degrees)
-{
-    if (!scpi.isConnected())
-        return false;
-
-    QString cmd =
-        QString("%1:BSWV PHSE,%2")
-        .arg(channelPrefix(channel))
-        .arg(QString::number(degrees, 'f', 1));
-
-    return scpi.command(cmd);
-}
-
 bool SDG2000X::waitForOperationComplete()
 {
     return scpi.query("*OPC?") == "1";
@@ -254,9 +295,14 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
 
     if (state.waveform == "RAMP")
     {
-        ok &= setSymmetry(channel, state.symmetry);
+        ok &= setRampSymmetry(channel, state.rampSymmetry);
     }
-
+    else if (state.waveform == "PULSE")
+    {
+        ok &= setPulseWidth(channel, state.pulseWidth);
+        ok &= setPulseRise(channel, state.pulseRise);
+        ok &= setPulseFall(channel, state.pulseFall);
+    }
     ok &= waitForOperationComplete();
     ok &= output(channel, state.output);
 

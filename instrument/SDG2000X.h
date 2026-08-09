@@ -30,17 +30,15 @@ public:
     bool applyChannelState(int channel,
                            const ChannelState& state) override;
 
-    bool setFrequency(int channel, double hz);
-
     bool setWaveform(int channel, const QString& waveform);
-
+    bool setFrequency(int channel, double hz);
     bool setAmplitude(int channel, double volts);
-
     bool setOffset(int channel, double volts);
-
     bool setPhase(int channel, double degrees);
-
-    bool setSymmetry(int channel, double percent);
+    bool setRampSymmetry(int channel, double percent);
+    bool setPulseWidth(int channel, double seconds);
+    bool setPulseRise(int channel, double seconds);
+    bool setPulseFall(int channel, double seconds);
 
     bool output(int channel, bool enabled);
 

@@ -71,7 +71,11 @@ private:
     void setAmplitude(int channel, double value);
     void setOffset(int channel, double value);
     void setPhase(int channel, double value);
-    void setSymmetry(int channel, double value);
+    void setRampSymmetry(int channel, double value);
+    void setPulseWidth(int channel, double value);
+    void setPulseRise(int channel, double value);
+    void setPulseFall(int channel, double value);
+
     void setOutput(int channel, bool enabled);
 
     QString displayIdentification(const QString &idn) const;

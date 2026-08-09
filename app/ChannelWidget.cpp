@@ -84,20 +84,44 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     phaseSpin->setSuffix("°");
     phaseSpin->setKeyboardTracking(false);
 
-    symmetrySpin = new QDoubleSpinBox(groupBox);
-    symmetrySpin->setRange(0.0, 100.0);
-    symmetrySpin->setDecimals(1);
-    symmetrySpin->setSingleStep(1.0);
-    symmetrySpin->setSuffix(" %");
-    symmetrySpin->setKeyboardTracking(false);
+    rampSymmetrySpin = new QDoubleSpinBox(groupBox);
+    rampSymmetrySpin->setRange(0.0, 100.0);
+    rampSymmetrySpin->setDecimals(1);
+    rampSymmetrySpin->setSingleStep(1.0);
+    rampSymmetrySpin->setSuffix(" %");
+    rampSymmetrySpin->setKeyboardTracking(false);
+
+    pulseWidthSpin = new QDoubleSpinBox(groupBox);
+    pulseWidthSpin->setRange(0.001, 1'000'000.0);
+    pulseWidthSpin->setDecimals(3);
+    pulseWidthSpin->setSingleStep(1.0);
+    pulseWidthSpin->setSuffix(" us");
+    pulseWidthSpin->setKeyboardTracking(false);
+
+    pulseRiseSpin = new QDoubleSpinBox(groupBox);
+    pulseRiseSpin->setRange(0.001, 1'000'000.0);
+    pulseRiseSpin->setDecimals(3);
+    pulseRiseSpin->setSingleStep(0.1);
+    pulseRiseSpin->setSuffix(" ns");
+    pulseRiseSpin->setKeyboardTracking(false);
+
+    pulseFallSpin = new QDoubleSpinBox(groupBox);
+    pulseFallSpin->setRange(0.001, 1'000'000.0);
+    pulseFallSpin->setDecimals(3);
+    pulseFallSpin->setSingleStep(0.1);
+    pulseFallSpin->setSuffix(" ns");
+    pulseFallSpin->setKeyboardTracking(false);
 
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
     offsetLabel = new QLabel("Offset:", groupBox);
     phaseLabel = new QLabel("Phase:", groupBox);
-    symmetryLabel = new QLabel("Symmetry:", groupBox);
-    // Expect this call will hide Symmetry field if waveform != RAMP
+    rampSymmetryLabel = new QLabel("Ramp symmetry:", groupBox);
+    pulseWidthLabel = new QLabel("Pulse Width:", groupBox);
+    pulseRiseLabel = new QLabel("Pulse Rise:", groupBox);
+    pulseFallLabel = new QLabel("Pulse Fall:", groupBox);
+
     updateControlVisibility();
 
     formLayout->addRow(waveformLabel, waveformCombo);
@@ -105,7 +129,10 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(amplitudeLabel, amplitudeSpin);
     formLayout->addRow(offsetLabel, offsetSpin);
     formLayout->addRow(phaseLabel, phaseSpin);
-    formLayout->addRow(symmetryLabel, symmetrySpin);
+    formLayout->addRow(rampSymmetryLabel, rampSymmetrySpin);
+    formLayout->addRow(pulseWidthLabel, pulseWidthSpin);
+    formLayout->addRow(pulseRiseLabel, pulseRiseSpin);
+    formLayout->addRow(pulseFallLabel, pulseFallSpin);
     formLayout->addRow(outputCheck);
 
     outerLayout->addWidget(groupBox);
@@ -151,12 +178,42 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                 emit phaseChanged(this->channel, value);
             });
 
-    connect(symmetrySpin,
+    connect(rampSymmetrySpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
             {
-                emit symmetryChanged(this->channel, value);
+                emit rampSymmetryChanged(this->channel, value);
+            });
+
+    connect(pulseWidthSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit pulseWidthChanged(
+                    this->channel,
+                    value / 1'000'000.0);
+            });
+
+    connect(pulseRiseSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit pulseRiseChanged(
+                    this->channel,
+                    value / 1'000'000'000.0);
+            });
+
+    connect(pulseFallSpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit pulseFallChanged(
+                    this->channel,
+                    value / 1'000'000'000.0);
             });
 
     connect(outputCheck,
@@ -189,12 +246,41 @@ void ChannelWidget::setOffset(double offset)
     offsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setSymmetry(double percent)
+void ChannelWidget::setPhase(double value)
 {
-    symmetrySpin->blockSignals(true);
-    symmetrySpin->setValue(percent);
-    symmetrySpin->blockSignals(false);
+    phaseSpin->blockSignals(true);
+    phaseSpin->setValue(value);
+    phaseSpin->blockSignals(false);
 }
+
+void ChannelWidget::setRampSymmetry(double percent)
+{
+    rampSymmetrySpin->blockSignals(true);
+    rampSymmetrySpin->setValue(percent);
+    rampSymmetrySpin->blockSignals(false);
+}
+
+void ChannelWidget::setPulseWidth(double value)
+{
+    pulseWidthSpin->blockSignals(true);
+    pulseWidthSpin->setValue(value * 1'000'000.0);
+    pulseWidthSpin->blockSignals(false);
+}
+
+void ChannelWidget::setPulseRise(double value)
+{
+    pulseRiseSpin->blockSignals(true);
+    pulseRiseSpin->setValue(value * 1'000'000'000.0);
+    pulseRiseSpin->blockSignals(false);
+}
+
+void ChannelWidget::setPulseFall(double value)
+{
+    pulseFallSpin->blockSignals(true);
+    pulseFallSpin->setValue(value * 1'000'000'000.0);
+    pulseFallSpin->blockSignals(false);
+}
+
 
 void ChannelWidget::setOutput(bool enabled)
 {
@@ -220,18 +306,22 @@ void ChannelWidget::setWaveform(const QString &waveform)
     updateControlVisibility();
 }
 
-void ChannelWidget::setPhase(double value)
-{
-    phaseSpin->blockSignals(true);
-    phaseSpin->setValue(value);
-    phaseSpin->blockSignals(false);
-}
-
 void ChannelWidget::updateControlVisibility()
 {
-    bool showSymmetry =
-        (waveformCombo->currentText() == "RAMP");
+    const QString waveform = waveformCombo->currentText();
 
-    symmetryLabel->setVisible(showSymmetry);
-    symmetrySpin->setVisible(showSymmetry);
+    const bool showSymmetry = (waveform == "RAMP");
+    const bool showPulse = (waveform == "PULSE");
+
+    rampSymmetryLabel->setVisible(showSymmetry);
+    rampSymmetrySpin->setVisible(showSymmetry);
+
+    pulseWidthLabel->setVisible(showPulse);
+    pulseWidthSpin->setVisible(showPulse);
+
+    pulseRiseLabel->setVisible(showPulse);
+    pulseRiseSpin->setVisible(showPulse);
+
+    pulseFallLabel->setVisible(showPulse);
+    pulseFallSpin->setVisible(showPulse);
 }

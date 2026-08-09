@@ -28,7 +28,7 @@ namespace
     constexpr auto AmplitudeKey = "amplitude";
     constexpr auto OffsetKey    = "offset";
     constexpr auto PhaseKey     = "phase";
-    constexpr auto SymmetryKey  = "symmetry";
+    constexpr auto SymmetryKey  = "rampSymmetry";
     constexpr auto OutputKey    = "output";
 
     QJsonObject channelToJson(const ChannelState &state)
@@ -40,7 +40,7 @@ namespace
         obj[AmplitudeKey] = state.amplitude;
         obj[OffsetKey]    = state.offset;
         obj[PhaseKey]     = state.phase;
-        obj[SymmetryKey]  = state.symmetry;
+        obj[SymmetryKey]  = state.rampSymmetry;
         obj[OutputKey]    = state.output;
 
         return obj;
@@ -63,7 +63,7 @@ namespace
         state.amplitude = obj[AmplitudeKey].toDouble();
         state.offset    = obj[OffsetKey].toDouble();
         state.phase     = obj[PhaseKey].toDouble();
-        state.symmetry  = obj[SymmetryKey].toDouble();
+        state.rampSymmetry  = obj[SymmetryKey].toDouble();
         state.output    = obj[OutputKey].toBool();
 
         return true;

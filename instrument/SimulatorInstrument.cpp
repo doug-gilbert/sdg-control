@@ -12,19 +12,10 @@
 
 #include "SimulatorInstrument.h"
 
+
 SimulatorInstrument::SimulatorInstrument(QObject *parent)
     : Instrument(parent)
 {
-    for (auto &state : channelState)
-    {
-        state.waveform = "SINE";
-        state.frequency = 1000.0;
-        state.amplitude = 1.0;
-        state.offset = 0.0;
-        state.phase = 0.0;
-        state.symmetry = 50.0;
-        state.output = false;
-    }
 }
 
 bool SimulatorInstrument::connectTo(const QString &host)
