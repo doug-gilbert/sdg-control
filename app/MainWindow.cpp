@@ -29,7 +29,6 @@
 #include "debug.h"
 
 
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -423,9 +422,80 @@ QString MainWindow::displayIdentification(const QString &idn) const
     return fields.join(',');
 }
 
+#ifdef SDG_DEVELOPER_UI
+static void setChannelStatus(int my_chan, ChannelWidget & cwid,
+                             const ChannelState &ch)
+{
+#if 1      /* The Qt way versus the C way ... */
+    QString common =
+    QString("CH%1: %2  %3 Hz  %4 V  Offset %5 V  Phase %6°")
+        .arg(my_chan)
+        .arg(ch.waveform)
+        .arg(ch.frequency, 0, 'f', 1)
+        .arg(ch.amplitude, 0, 'f', 3)
+        .arg(ch.offset, 0, 'f', 2)
+        .arg(ch.phase, 0, 'f', 1);
+#else
+    char b[128];
+
+    snprintf(b, sizeof(b),
+             "CH%d: %s  %.1f Hz  %.3f V  Offset %.2f V  Phase %.1f°",
+             my_chan, ch.waveform.toUtf8().constData(), ch.frequency,
+             ch.amplitude, ch.offset, ch.phase);
+    QString common(b);
+#endif
+
+    if (ch.waveform == "RAMP")
+        cwid.setStatus( QString("%1  Sym %2  Output %3")
+            .arg(common)
+            .arg(ch.rampSymmetry)
+            .arg(ch.output ? "ON" : "OFF"));
+    else if (ch.waveform == "PULSE")
+        cwid.setStatus( QString("%1  Width %2  Rise %3  Fall %4  Output %5")
+            .arg(common)
+            .arg(ch.pulseWidth)
+            .arg(ch.pulseRise)
+            .arg(ch.pulseFall)
+            .arg(ch.output ? "ON" : "OFF"));
+    else
+        cwid.setStatus( QString("%1  Output %3")
+            .arg(common)
+            .arg(ch.output ? "ON" : "OFF"));
+}
+#endif
+
+static void setChannelFields(int my_chan, ChannelWidget & cwid,
+                             const ChannelState & ch)
+{
+    cwid.setWaveform(ch.waveform);
+    cwid.setFrequency(ch.frequency);
+    cwid.setAmplitude(ch.amplitude);
+    cwid.setOffset(ch.offset);
+    cwid.setPhase(ch.phase);
+    cwid.setRampSymmetry(ch.rampSymmetry);
+    cwid.setPulseWidth(ch.pulseWidth);
+    cwid.setPulseRise(ch.pulseRise);
+    cwid.setPulseFall(ch.pulseFall);
+
+    cwid.setOutput(ch.output);
+
+#ifdef SDG_DEVELOPER_UI
+    setChannelStatus(my_chan, cwid, ch);
+#else
+    Q_UNUSED(my_chan);
+#endif
+}
+
+static inline bool haveIOError(const ChannelState & ch)
+{
+    return (ch.waveform == "READ TIMEOUT" || ch.waveform == "WRITE ERROR");
+}
+
 void MainWindow::refreshClicked()
 {
     sdgDebug() << "Refresh clicked";
+
+    constexpr const char *ioErrorMsg = "WRITE or READ error";
 
     if (!generator->isConnected())
     {
@@ -437,67 +507,21 @@ void MainWindow::refreshClicked()
 
     auto ch1 = generator->getChannelState(1);
 
-    if (ch1.waveform == "READ TIMEOUT" ||
-        ch1.waveform == "WRITE ERROR")
+    if (haveIOError(ch1))
     {
-        sdgDebug() << __func__ << ":ch1: WRITE or READ error";
+        sdgDebug() << __func__ << ":ch1: " << ioErrMsg;
         return;
     }
-
-    ch1Widget->setWaveform(ch1.waveform);
-    ch1Widget->setFrequency(ch1.frequency);
-    ch1Widget->setAmplitude(ch1.amplitude);
-    ch1Widget->setOffset(ch1.offset);
-    ch1Widget->setPhase(ch1.phase);
-    ch1Widget->setRampSymmetry(ch1.rampSymmetry);
-    ch1Widget->setPulseWidth(ch1.pulseWidth);
-    ch1Widget->setPulseRise(ch1.pulseRise);
-    ch1Widget->setPulseFall(ch1.pulseFall);
-
-    ch1Widget->setOutput(ch1.output);
-
-    ch1Widget->setStatus(
-        QString("CH1: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Sym %6 "
-                "Output %7")
-            .arg(ch1.waveform)
-            .arg(ch1.frequency)
-            .arg(ch1.amplitude)
-            .arg(ch1.offset)
-            .arg(ch1.phase)
-            .arg(ch1.rampSymmetry)
-            .arg(ch1.output ? "ON" : "OFF"));
+    setChannelFields(1, *ch1Widget, ch1);
 
     auto ch2 = generator->getChannelState(2);
 
-    if (ch2.waveform == "READ TIMEOUT" ||
-        ch2.waveform == "WRITE ERROR")
+    if (haveIOError(ch2))
     {
-        sdgDebug() << __func__ << ":ch2: WRITE or READ error";
+        sdgDebug() << __func__ << ":ch2: " << ioErrMsg;
         return;
     }
-
-    ch2Widget->setWaveform(ch2.waveform);
-    ch2Widget->setFrequency(ch2.frequency);
-    ch2Widget->setAmplitude(ch2.amplitude);
-    ch2Widget->setOffset(ch2.offset);
-    ch2Widget->setPhase(ch2.phase);
-    ch2Widget->setRampSymmetry(ch2.rampSymmetry);
-    ch2Widget->setPulseWidth(ch2.pulseWidth);
-    ch2Widget->setPulseRise(ch2.pulseRise);
-    ch2Widget->setPulseFall(ch2.pulseFall);
-
-    ch2Widget->setOutput(ch2.output);
-
-    ch2Widget->setStatus(
-        QString("CH2: %1  %2 Hz  %3 V  Offset %4 V  Phase %5° Sym %6%% "
-                "Output %7")
-            .arg(ch2.waveform)
-            .arg(ch2.frequency)
-            .arg(ch2.amplitude)
-            .arg(ch2.offset)
-            .arg(ch2.phase)
-            .arg(ch2.rampSymmetry)
-            .arg(ch2.output ? "ON" : "OFF"));
+    setChannelFields(2, *ch2Widget, ch2);
 
     pendingState[0] = ch1;
     pendingState[1] = ch2;

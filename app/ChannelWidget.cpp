@@ -17,6 +17,7 @@
 #include "debug.h"
 #include "ChannelWidget.h"
 
+
 ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     : QWidget(parent),
       channel(my_channel)
@@ -34,6 +35,10 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         QString("CH%1: --").arg(channel),
         groupBox);
 
+    statusLabel->setWordWrap(true);
+    statusLabel->setSizePolicy(
+        QSizePolicy::Expanding,
+        QSizePolicy::MinimumExpanding);
     statusLabel->setTextInteractionFlags(
         Qt::TextSelectableByMouse |
         Qt::TextSelectableByKeyboard);
@@ -298,26 +303,22 @@ void ChannelWidget::setPulseFall(double value)
 
 void ChannelWidget::updatePulseDuty()
 {
-    bool showDuty = (waveformCombo->currentText() == "PULSE");
-
-    if (!showDuty)
+    if (waveformCombo->currentText() != "PULSE")
         return;
 
-    if (frequencySpin->value() > 0.0)
-    {
-        double duty =
-            pulseWidthSpin->value() *
-            frequencySpin->value() *
-            100.0;
+    const double frequency = frequencySpin->value();
 
-        pulseDutySpin->setValue(duty);
-    }
-    else
+    if (frequency <= 0.0)
     {
         pulseDutySpin->setValue(0.0);
+        return;
     }
-}
 
+    const double duty =
+        frequency * pulseWidthSpin->value() * 100.0;
+
+    pulseDutySpin->setValue(duty);
+}
 
 void ChannelWidget::setOutput(bool enabled)
 {
