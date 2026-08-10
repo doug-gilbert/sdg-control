@@ -71,8 +71,10 @@ private:
     QLabel *pulseRiseLabel;
     QLabel *pulseFallLabel;
     QLabel *pulseDutyLabel;
-
-    QCheckBox *outputCheck;
+    QLabel *noiseStdevLabel;
+    QLabel *noiseMeanLabel;
+    QLabel *noiseBandwidthLabel;
+    QLabel *noiseBandsetLabel;
 
     QComboBox *waveformCombo;
     QDoubleSpinBox *frequencySpin;
@@ -84,4 +86,11 @@ private:
     QDoubleSpinBox *pulseRiseSpin;
     QDoubleSpinBox *pulseFallSpin;
     QDoubleSpinBox *pulseDutySpin;
+    QCheckBox *noiseBandsetCheck;
+
+    QDoubleSpinBox *noiseStdevSpin;
+    QDoubleSpinBox *noiseMeanSpin;
+    QDoubleSpinBox *noiseBandwidthSpin;
+
+    QCheckBox *outputCheck;
 };

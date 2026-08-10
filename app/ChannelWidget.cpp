@@ -125,6 +125,31 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseDutySpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
     pulseDutySpin->setFocusPolicy(Qt::NoFocus);
 
+    noiseStdevSpin = new QDoubleSpinBox(groupBox);
+    noiseStdevSpin->setRange(0.002, 10.0);
+    noiseStdevSpin->setDecimals(3);
+    noiseStdevSpin->setSingleStep(0.001);
+    noiseStdevSpin->setSuffix(" V");
+    noiseStdevSpin->setKeyboardTracking(false);
+
+    noiseMeanSpin = new QDoubleSpinBox(groupBox);
+    noiseMeanSpin->setRange(-10.0, 10.0);
+    noiseMeanSpin->setDecimals(3);
+    noiseMeanSpin->setSingleStep(0.001);
+    noiseMeanSpin->setSuffix(" V");
+    noiseMeanSpin->setKeyboardTracking(false);
+
+    noiseBandwidthSpin = new QDoubleSpinBox(groupBox);
+    noiseBandwidthSpin->setRange(0.001, 120'000'000.0);
+    noiseBandwidthSpin->setDecimals(3);
+    noiseBandwidthSpin->setSingleStep(1.0);
+    noiseBandwidthSpin->setSuffix(" Hz");
+    noiseBandwidthSpin->setKeyboardTracking(false);
+
+    noiseBandsetCheck = new QCheckBox(groupBox);
+    noiseBandsetCheck->setText("On");
+
+    // Create widgets and labels
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
@@ -135,9 +160,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseRiseLabel = new QLabel("Pulse Rise:", groupBox);
     pulseFallLabel = new QLabel("Pulse Fall:", groupBox);
     pulseDutyLabel = new QLabel("Pulse Duty:", groupBox);
+    noiseStdevLabel = new QLabel("Noise Stdev:", groupBox);
+    noiseMeanLabel = new QLabel("Noise Mean:", groupBox);
+    noiseBandwidthLabel = new QLabel("Bandwidth:", groupBox);
+    noiseBandsetLabel = new QLabel("Bandset:", groupBox);
 
     updateControlVisibility();
 
+    // Add labels and related fields to form (which is in groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencySpin);
     formLayout->addRow(amplitudeLabel, amplitudeSpin);
@@ -148,9 +178,17 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(pulseRiseLabel, pulseRiseSpin);
     formLayout->addRow(pulseFallLabel, pulseFallSpin);
     formLayout->addRow(pulseDutyLabel, pulseDutySpin);
+    formLayout->addRow(noiseBandsetLabel, noiseBandsetCheck);
+    formLayout->addRow(noiseStdevLabel, noiseStdevSpin);
+    formLayout->addRow(noiseMeanLabel, noiseMeanSpin);
+    formLayout->addRow(noiseBandwidthLabel, noiseBandwidthSpin);
+
     formLayout->addRow(outputCheck);
 
+    // Important step
     outerLayout->addWidget(groupBox);
+
+    // updateControlVisibility() call is _after_ the connect() calls
 
     connect(waveformCombo,
             &QComboBox::currentTextChanged,
@@ -234,6 +272,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                     value / 1'000'000'000.0);
             });
 
+    connect(noiseBandsetCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool)
+            {
+                updateControlVisibility();
+            });
+
     connect(outputCheck,
             &QCheckBox::toggled,
             this,
@@ -241,6 +287,9 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             {
                 emit outputChanged(this->channel, enabled);
             });
+
+    // This sets initial visibilty (whether or not fields are shown)
+    updateControlVisibility();
 }
 
 void ChannelWidget::setFrequency(double frequency)
@@ -350,6 +399,7 @@ void ChannelWidget::updateControlVisibility()
 
     const bool showSymmetry = (waveform == "RAMP");
     const bool showPulse = (waveform == "PULSE");
+    const bool showNoise = (waveform == "NOISE");
 
     rampSymmetryLabel->setVisible(showSymmetry);
     rampSymmetrySpin->setVisible(showSymmetry);
@@ -365,4 +415,19 @@ void ChannelWidget::updateControlVisibility()
 
     pulseDutyLabel->setVisible(showPulse);
     pulseDutySpin->setVisible(showPulse);
+
+    const bool showNoiseBandwidth =
+        showNoise && noiseBandsetCheck->isChecked();
+
+    noiseBandsetLabel->setVisible(showNoise);
+    noiseBandsetCheck->setVisible(showNoise);
+
+    noiseStdevLabel->setVisible(showNoise);
+    noiseStdevSpin->setVisible(showNoise);
+
+    noiseMeanLabel->setVisible(showNoise);
+    noiseMeanSpin->setVisible(showNoise);
+
+    noiseBandwidthLabel->setVisible(showNoiseBandwidth);
+    noiseBandwidthSpin->setVisible(showNoiseBandwidth);
 }

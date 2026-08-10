@@ -96,7 +96,14 @@ check_function_exists(getopt_long HAVE_GETOPT_LONG)
 
 configure_file( ${CMAKE_SOURCE_DIR}/config.h.in.cmake ${CMAKE_BINARY_DIR}/config.h )
 
-add_compile_definitions ( _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64 HAVE_CONFIG_H )
+
+if (MSVC)
+    add_compile_definitions ( HAVE_CONFIG_H )
+    add_compile_options(/Zc:__cplusplus)
+    add_compile_options(/permissive-)
+else ()
+    add_compile_definitions ( _LARGEFILE64_SOURCE _FILE_OFFSET_BITS=64 HAVE_CONFIG_H )
+endif ()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
 
