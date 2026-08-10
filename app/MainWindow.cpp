@@ -509,7 +509,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch1))
     {
-        sdgDebug() << __func__ << ":ch1: " << ioErrMsg;
+        sdgDebug() << __func__ << ":ch1: " << ioErrorMsg;
         return;
     }
     setChannelFields(1, *ch1Widget, ch1);
@@ -518,7 +518,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch2))
     {
-        sdgDebug() << __func__ << ":ch2: " << ioErrMsg;
+        sdgDebug() << __func__ << ":ch2: " << ioErrorMsg;
         return;
     }
     setChannelFields(2, *ch2Widget, ch2);

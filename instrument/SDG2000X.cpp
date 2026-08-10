@@ -153,6 +153,40 @@ bool SDG2000X::setPulseFall(int channel, double seconds)
             .arg(QString::number(seconds, 'g', 12)));
 }
 
+bool SDG2000X::setNoiseBandset(int channel, bool enabled)
+{
+    return scpi.command(
+        QString("%1:BSWV BANDSTATE,%2")
+            .arg(channelPrefix(channel))
+            .arg(enabled ? "ON" : "OFF"));
+}
+
+bool SDG2000X::setNoiseStdev(int channel, double volts)
+{
+    return scpi.command(
+        QString("%1:BSWV STDEV,%2")
+            .arg(channelPrefix(channel))
+            .arg(volts, 0, 'g', 12));
+}
+
+bool SDG2000X::setNoiseMean(int channel, double volts)
+{
+    return scpi.command(
+        QString("%1:BSWV MEAN,%2")
+            .arg(channelPrefix(channel))
+            .arg(volts, 0, 'g', 12));
+}
+
+bool SDG2000X::setNoiseBandwidth(int channel, double freq)
+{
+    return scpi.command(
+        QString("%1:BSWV BANDWIDTH,%2")
+            .arg(channelPrefix(channel))
+            .arg(freq, 0, 'g', 12));
+}
+
+
+
 bool SDG2000X::output(int channel, bool enabled)
 {
     if (!scpi.isConnected())
@@ -240,6 +274,25 @@ ChannelState SDG2000X::getChannelState(int channel)
             value.remove("S");
             state.pulseFall = value.toDouble();
         }
+        else if (key == "BANDSTATE")
+        {
+            state.noiseBandset = (value == "ON");
+        }
+        else if (key == "STDEV")
+        {
+            value.remove("V");
+            state.noiseStdev = value.toDouble();
+        }
+        else if (key == "MEAN")
+        {
+            value.remove("V");
+            state.noiseMean = value.toDouble();
+        }
+        else if (key == "BANDWIDTH")
+        {
+            value.remove("HZ");
+            state.noiseBandwidth = value.toDouble();
+        }
     }
 
     state.output = getOutputState(channel);
@@ -299,6 +352,15 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
         ok &= setPulseWidth(channel, state.pulseWidth);
         ok &= setPulseRise(channel, state.pulseRise);
         ok &= setPulseFall(channel, state.pulseFall);
+    }
+    else if (state.waveform == "NOISE")
+    {
+        ok &= setNoiseBandset(channel, state.noiseBandset);
+        ok &= setNoiseStdev(channel, state.noiseStdev);
+        ok &= setNoiseMean(channel, state.noiseMean);
+
+        if (state.noiseBandset)
+            ok &= setNoiseBandwidth(channel, state.noiseBandwidth);
     }
     ok &= waitForOperationComplete();
     ok &= output(channel, state.output);

@@ -39,6 +39,10 @@ public:
     bool setPulseWidth(int channel, double seconds);
     bool setPulseRise(int channel, double seconds);
     bool setPulseFall(int channel, double seconds);
+    bool setNoiseBandset(int channel, bool enabled);
+    bool setNoiseStdev(int channel, double stdev);
+    bool setNoiseMean(int channel, double mean);
+    bool setNoiseBandwidth(int channel, double freq);
 
     bool output(int channel, bool enabled);
 

@@ -17,5 +17,10 @@ struct ChannelState
     double pulseRise  = 0.000'000'008'4;
     double pulseFall  = 0.000'000'008'4;
 
+    bool noiseBandset = false;
+    double noiseStdev = 0.002;
+    double noiseMean = 0.0;
+    double noiseBandwidth = 1'000'000.0;
+
     bool output = false;
 };
