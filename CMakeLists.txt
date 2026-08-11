@@ -16,6 +16,7 @@ string(TIMESTAMP BUILD_TIME "%Y%m%d %H:%M:%S")
 
 option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
 option(SDG_DEVELOPER_UI "Extra fields to aid development" OFF)
+option(SDG_BUILD_TEST "Build sdg_test CLI in test_scpi directory" OFF)
 
 if (SDG_DEBUG)
     MESSAGE( STATUS ">> SDG_DEBUG set, messages to console" )
@@ -55,6 +56,9 @@ elseif (WIN32)
     message(STATUS ">> Windows build")
     set(OS_WIN32 1)
     set(CONTAINS_WIN32 1)
+    if (MSVC)
+        message(STATUS ">> MSVC compiler detected (Visual Studio)")
+    endif ()
 elseif (ANDROID)
     message(STATUS ">> Android build")
     set(OS_ANDROID 1)
@@ -110,8 +114,9 @@ find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
 set(CMAKE_AUTOMOC ON)
 
 add_subdirectory(instrument)
-# Speed up build by leaving out test_scpi
-add_subdirectory(test_scpi)
+if (SDG_BUILD_TEST)
+    add_subdirectory(test_scpi)
+endif ()
 add_subdirectory(app)
 
 

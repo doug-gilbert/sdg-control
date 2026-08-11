@@ -338,17 +338,22 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     bool ok = true;
 
     ok &= setWaveform(channel, state.waveform);
-    ok &= setFrequency(channel, state.frequency);
-    ok &= setAmplitude(channel, state.amplitude);
-    ok &= setOffset(channel, state.offset);
-    ok &= setPhase(channel, state.phase);
 
     if (state.waveform == "RAMP")
     {
+        ok &= setFrequency(channel, state.frequency);
+        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setOffset(channel, state.offset);
+        ok &= setPhase(channel, state.phase);
         ok &= setRampSymmetry(channel, state.rampSymmetry);
     }
     else if (state.waveform == "PULSE")
     {
+        ok &= setFrequency(channel, state.frequency);
+        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setOffset(channel, state.offset);
+        ok &= setPhase(channel, state.phase);
+
         ok &= setPulseWidth(channel, state.pulseWidth);
         ok &= setPulseRise(channel, state.pulseRise);
         ok &= setPulseFall(channel, state.pulseFall);
@@ -362,6 +367,15 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
         if (state.noiseBandset)
             ok &= setNoiseBandwidth(channel, state.noiseBandwidth);
     }
+    else
+    {
+        // SINE, SQUARE, ARB, etc.
+        ok &= setFrequency(channel, state.frequency);
+        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setOffset(channel, state.offset);
+        ok &= setPhase(channel, state.phase);
+    }
+
     ok &= waitForOperationComplete();
     ok &= output(channel, state.output);
 

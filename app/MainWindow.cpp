@@ -167,149 +167,113 @@ MainWindow::MainWindow(QWidget *parent)
                 }
             });
 
-    connect(ch1Widget,
-            &ChannelWidget::waveformChanged,
-            this,
-            [this](int channel, const QString &waveform)
-            {
-                setWaveform(channel, waveform);
-            });
+    // Define a Lambda function to ease the tedium of doing a connect for
+    // each channel
+    auto connectChannelWidgets =
+        [this](auto signal, auto setter)
+        {
+            connect(ch1Widget, signal, this, setter);
+            connect(ch2Widget, signal, this, setter);
+        };
 
-    connect(ch2Widget,
-            &ChannelWidget::waveformChanged,
-            this,
-            [this](int channel, const QString &waveform)
-            {
-                setWaveform(channel, waveform);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::waveformChanged,
+        [this](int channel, const QString &waveform)
+        {
+            setWaveform(channel, waveform);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::frequencyChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setFrequency(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::frequencyChanged,
+        [this](int channel, double value)
+        {
+            setFrequency(channel, value);
+        });
 
-    connect(ch2Widget,
-            &ChannelWidget::frequencyChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setFrequency(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::amplitudeChanged,
+        [this](int channel, double value)
+        {
+            setAmplitude(channel, value);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::amplitudeChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setAmplitude(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::offsetChanged,
+        [this](int channel, double value)
+        {
+            setOffset(channel, value);
+        });
 
-    connect(ch2Widget,
-            &ChannelWidget::amplitudeChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setAmplitude(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::phaseChanged,
+        [this](int channel, double value)
+        {
+            setPhase(channel, value);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::offsetChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setOffset(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::rampSymmetryChanged,
+        [this](int channel, double value)
+        {
+            setRampSymmetry(channel, value);
+        });
 
-    connect(ch2Widget,
-            &ChannelWidget::offsetChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setOffset(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::pulseWidthChanged,
+        [this](int channel, double value)
+        {
+            setPulseWidth(channel, value);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::phaseChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setPhase(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::pulseRiseChanged,
+        [this](int channel, double value)
+        {
+            setPulseRise(channel, value);
+        });
 
-    connect(ch2Widget,
-            &ChannelWidget::phaseChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setPhase(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::pulseFallChanged,
+        [this](int channel, double value)
+        {
+            setPulseFall(channel, value);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::rampSymmetryChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setRampSymmetry(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::noiseBandsetChanged,
+        [this](int channel, bool enabled)
+        {
+            setNoiseBandset(channel, enabled);
+        });
 
-    connect(ch2Widget,
-            &ChannelWidget::rampSymmetryChanged,
-            this,
-            [this](int channel, double value)
-            {
-                setRampSymmetry(channel, value);
-            });
+    connectChannelWidgets(
+        &ChannelWidget::noiseStdevChanged,
+        [this](int channel, double value)
+        {
+            setNoiseStdev(channel, value);
+        });
 
-        connect(ch1Widget,
-            &ChannelWidget::pulseWidthChanged,
-            this,
-            &MainWindow::setPulseWidth);
+    connectChannelWidgets(
+        &ChannelWidget::noiseMeanChanged,
+        [this](int channel, double value)
+        {
+            setNoiseMean(channel, value);
+        });
 
-    connect(ch1Widget,
-            &ChannelWidget::pulseRiseChanged,
-            this,
-            &MainWindow::setPulseRise);
-
-    connect(ch1Widget,
-            &ChannelWidget::pulseFallChanged,
-            this,
-            &MainWindow::setPulseFall);
-
-    connect(ch2Widget,
-            &ChannelWidget::pulseWidthChanged,
-            this,
-            &MainWindow::setPulseWidth);
-
-    connect(ch2Widget,
-            &ChannelWidget::pulseRiseChanged,
-            this,
-            &MainWindow::setPulseRise);
-
-    connect(ch2Widget,
-            &ChannelWidget::pulseFallChanged,
-            this,
-            &MainWindow::setPulseFall);
+    connectChannelWidgets(
+        &ChannelWidget::noiseBandwidthChanged,
+        [this](int channel, double value)
+        {
+            setNoiseBandwidth(channel, value);
+        });
 
 
-    connect(ch1Widget,
-            &ChannelWidget::outputChanged,
-            this,
-            [this](int channel, bool enabled)
-            {
-                setOutput(channel, enabled);
-            });
-
-    connect(ch2Widget,
-            &ChannelWidget::outputChanged,
-            this,
-            [this](int channel, bool enabled)
-            {
-                setOutput(channel, enabled);
-            });
-
+    connectChannelWidgets(
+        &ChannelWidget::outputChanged,
+        [this](int channel, bool enabled)
+        {
+            setOutput(channel, enabled);
+        });
 
     connect(connectButton,
             &QPushButton::clicked,
@@ -457,8 +421,13 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
             .arg(ch.pulseRise)
             .arg(ch.pulseFall)
             .arg(ch.output ? "ON" : "OFF"));
+    else if (my_chan == 1 && ch.waveform == "SINE")
+        cwid.setStatus( QString("%1  Output %2  %3")
+            .arg(common)
+            .arg(ch.output ? "ON" : "OFF")
+            .arg(BUILD_TIME));
     else
-        cwid.setStatus( QString("%1  Output %3")
+        cwid.setStatus( QString("%1  Output %2")
             .arg(common)
             .arg(ch.output ? "ON" : "OFF"));
 }
@@ -476,6 +445,10 @@ static void setChannelFields(int my_chan, ChannelWidget & cwid,
     cwid.setPulseWidth(ch.pulseWidth);
     cwid.setPulseRise(ch.pulseRise);
     cwid.setPulseFall(ch.pulseFall);
+    cwid.setNoiseBandset(ch.noiseBandset);
+    cwid.setNoiseStdev(ch.noiseStdev);
+    cwid.setNoiseMean(ch.noiseMean);
+    cwid.setNoiseBandwidth(ch.noiseBandwidth);
 
     cwid.setOutput(ch.output);
 
@@ -686,6 +659,76 @@ void MainWindow::setRampSymmetry(int channel, double value)
         setDirty(true);
 }
 
+void MainWindow::setPulseWidth(int channel, double value)
+{
+    pendingState[channel - 1].pulseWidth = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setPulseRise(int channel, double value)
+{
+    pendingState[channel - 1].pulseRise = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setPulseFall(int channel, double value)
+{
+    pendingState[channel - 1].pulseFall = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setNoiseBandset(int channel, bool enabled)
+{
+    pendingState[channel - 1].noiseBandset = enabled;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setNoiseStdev(int channel, double value)
+{
+    pendingState[channel - 1].noiseStdev = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setNoiseMean(int channel, double value)
+{
+    pendingState[channel - 1].noiseMean = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setNoiseBandwidth(int channel, double value)
+{
+    pendingState[channel - 1].noiseBandwidth = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
 void MainWindow::setOutput(int channel, bool enabled)
 {
     pendingState[channel - 1].output = enabled;
@@ -770,35 +813,13 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setOffset(state.offset);
     widget->setPhase(state.phase);
     widget->setRampSymmetry(state.rampSymmetry);
+    widget->setPulseWidth(state.pulseWidth);
+    widget->setPulseRise(state.pulseRise);
+    widget->setPulseFall(state.pulseFall);
+    widget->setNoiseBandset(state.noiseBandset);
+    widget->setNoiseStdev(state.noiseStdev);
+    widget->setNoiseMean(state.noiseMean);
+    widget->setNoiseBandwidth(state.noiseBandwidth);
+
     widget->setOutput(state.output);
-}
-
-void MainWindow::setPulseWidth(int channel, double value)
-{
-    pendingState[channel - 1].pulseWidth = value;
-
-    if (immediateMode)
-        generator->applyChannelState(channel, pendingState[channel - 1]);
-    else
-        setDirty(true);
-}
-
-void MainWindow::setPulseRise(int channel, double value)
-{
-    pendingState[channel - 1].pulseRise = value;
-
-    if (immediateMode)
-        generator->applyChannelState(channel, pendingState[channel - 1]);
-    else
-        setDirty(true);
-}
-
-void MainWindow::setPulseFall(int channel, double value)
-{
-    pendingState[channel - 1].pulseFall = value;
-
-    if (immediateMode)
-        generator->applyChannelState(channel, pendingState[channel - 1]);
-    else
-        setDirty(true);
 }

@@ -75,6 +75,10 @@ private:
     void setPulseWidth(int channel, double value);
     void setPulseRise(int channel, double value);
     void setPulseFall(int channel, double value);
+    void setNoiseBandset(int channel, bool enabled);
+    void setNoiseStdev(int channel, double value);
+    void setNoiseMean(int channel, double value);
+    void setNoiseBandwidth(int channel, double value);
 
     void setOutput(int channel, bool enabled);
 

@@ -32,6 +32,10 @@ public:
     void setPulseWidth(double value);
     void setPulseRise(double value);
     void setPulseFall(double value);
+    void setNoiseBandset(bool enabled);
+    void setNoiseStdev(double value);
+    void setNoiseMean(double value);
+    void setNoiseBandwidth(double value);
 
     void setOutput(bool enabled);
 
@@ -45,6 +49,10 @@ signals:
     void pulseWidthChanged(int channel, double value);
     void pulseRiseChanged(int channel, double value);
     void pulseFallChanged(int channel, double value);
+    void noiseBandsetChanged(int channel, bool enabled);
+    void noiseStdevChanged(int channel, double value);
+    void noiseMeanChanged(int channel, double value);
+    void noiseBandwidthChanged(int channel, double value);
 
     void outputChanged(int channel, bool enabled);
 

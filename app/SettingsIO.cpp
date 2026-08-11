@@ -23,25 +23,41 @@ namespace
     constexpr auto Channel1Key      = "channel1";
     constexpr auto Channel2Key      = "channel2";
 
-    constexpr auto WaveformKey  = "waveform";
-    constexpr auto FrequencyKey = "frequency";
-    constexpr auto AmplitudeKey = "amplitude";
-    constexpr auto OffsetKey    = "offset";
-    constexpr auto PhaseKey     = "phase";
-    constexpr auto SymmetryKey  = "rampSymmetry";
+    constexpr auto WaveformKey      = "waveform";
+    constexpr auto FrequencyKey     = "frequency";
+    constexpr auto AmplitudeKey     = "amplitude";
+    constexpr auto OffsetKey        = "offset";
+    constexpr auto PhaseKey         = "phase";
+    constexpr auto SymmetryKey      = "rampSymmetry";
+    constexpr auto PulseWidthKey    = "pulseWidth";
+    constexpr auto PulseRiseKey     = "pulseRise";
+    constexpr auto PulseFallKey     = "pulseFall";
+    constexpr auto NoiseBandsetKey  = "noiseBandset";
+    constexpr auto NoiseStdevKey    = "noiseStdev";
+    constexpr auto NoiseMeanKey     = "noiseMean";
+    constexpr auto NoiseBandwidthKey = "noiseBandwidth";
+
     constexpr auto OutputKey    = "output";
 
     QJsonObject channelToJson(const ChannelState &state)
     {
         QJsonObject obj;
 
-        obj[WaveformKey]  = state.waveform;
-        obj[FrequencyKey] = state.frequency;
-        obj[AmplitudeKey] = state.amplitude;
-        obj[OffsetKey]    = state.offset;
-        obj[PhaseKey]     = state.phase;
-        obj[SymmetryKey]  = state.rampSymmetry;
-        obj[OutputKey]    = state.output;
+        obj[WaveformKey]       = state.waveform;
+        obj[FrequencyKey]      = state.frequency;
+        obj[AmplitudeKey]      = state.amplitude;
+        obj[OffsetKey]         = state.offset;
+        obj[PhaseKey]          = state.phase;
+        obj[SymmetryKey]       = state.rampSymmetry;
+        obj[PulseWidthKey]     = state.pulseWidth;
+        obj[PulseRiseKey]      = state.pulseRise;
+        obj[PulseFallKey]      = state.pulseFall;
+        obj[NoiseBandsetKey]   = state.noiseBandset;
+        obj[NoiseStdevKey]     = state.noiseStdev;
+        obj[NoiseMeanKey]      = state.noiseMean;
+        obj[NoiseBandwidthKey] = state.noiseBandwidth;
+
+        obj[OutputKey]         = state.output;
 
         return obj;
     }
@@ -49,22 +65,38 @@ namespace
     bool jsonToChannel(const QJsonObject &obj, ChannelState &state)
     {
         if (!obj.contains(WaveformKey) ||
-            !obj.contains(FrequencyKey) ||
-            !obj.contains(AmplitudeKey) ||
-            !obj.contains(OffsetKey) ||
-            !obj.contains(PhaseKey) ||
             !obj.contains(OutputKey))
         {
             return false;
         }
 
         state.waveform  = obj[WaveformKey].toString();
-        state.frequency = obj[FrequencyKey].toDouble();
-        state.amplitude = obj[AmplitudeKey].toDouble();
-        state.offset    = obj[OffsetKey].toDouble();
-        state.phase     = obj[PhaseKey].toDouble();
-        state.rampSymmetry  = obj[SymmetryKey].toDouble();
         state.output    = obj[OutputKey].toBool();
+
+        if (obj.contains(FrequencyKey))
+            state.frequency = obj[FrequencyKey].toDouble();
+        if (obj.contains(AmplitudeKey))
+            state.amplitude = obj[AmplitudeKey].toDouble();
+        if (obj.contains(OffsetKey))
+            state.offset = obj[OffsetKey].toDouble();
+        if (obj.contains(PhaseKey))
+            state.phase = obj[PhaseKey].toDouble();
+        if (obj.contains(SymmetryKey))
+            state.rampSymmetry = obj[SymmetryKey].toDouble();
+        if (obj.contains(PulseWidthKey))
+            state.pulseWidth = obj[PulseWidthKey].toDouble();
+        if (obj.contains(PulseRiseKey))
+            state.pulseRise = obj[PulseRiseKey].toDouble();
+        if (obj.contains(PulseFallKey))
+            state.pulseFall = obj[PulseFallKey].toDouble();
+        if (obj.contains(NoiseBandsetKey))
+            state.noiseBandset = obj[NoiseBandsetKey].toBool();
+        if (obj.contains(NoiseStdevKey))
+            state.noiseStdev = obj[NoiseStdevKey].toDouble();
+        if (obj.contains(NoiseMeanKey))
+            state.noiseMean = obj[NoiseMeanKey].toDouble();
+        if (obj.contains(NoiseBandwidthKey))
+            state.noiseBandwidth = obj[NoiseBandwidthKey].toDouble();
 
         return true;
     }

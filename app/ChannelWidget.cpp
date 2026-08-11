@@ -38,7 +38,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     statusLabel->setWordWrap(true);
     statusLabel->setSizePolicy(
         QSizePolicy::Expanding,
-        QSizePolicy::MinimumExpanding);
+        QSizePolicy::Preferred);
     statusLabel->setTextInteractionFlags(
         Qt::TextSelectableByMouse |
         Qt::TextSelectableByKeyboard);
@@ -58,6 +58,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "RAMP",
         "PULSE",
         "NOISE",
+        "DC",  // Supported by the SDG, but DC-specific UI not implemented yet
         "ARB"
     });
 
@@ -275,10 +276,36 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     connect(noiseBandsetCheck,
             &QCheckBox::toggled,
             this,
-            [this](bool)
+            [this](bool enabled)
             {
                 updateControlVisibility();
+                emit noiseBandsetChanged(channel, enabled);
             });
+
+    connect(noiseStdevSpin,
+            &QDoubleSpinBox::valueChanged,
+            this,
+            [this](double value)
+            {
+                emit noiseStdevChanged(channel, value);
+            });
+
+    connect(noiseMeanSpin,
+            &QDoubleSpinBox::valueChanged,
+            this,
+            [this](double value)
+            {
+                emit noiseMeanChanged(channel, value);
+            });
+
+    connect(noiseBandwidthSpin,
+            &QDoubleSpinBox::valueChanged,
+            this,
+            [this](double value)
+            {
+                emit noiseBandwidthChanged(channel, value);
+            });
+
 
     connect(outputCheck,
             &QCheckBox::toggled,
@@ -369,6 +396,36 @@ void ChannelWidget::updatePulseDuty()
     pulseDutySpin->setValue(duty);
 }
 
+void ChannelWidget::setNoiseBandset(bool enabled)
+{
+    noiseBandsetCheck->blockSignals(true);
+    noiseBandsetCheck->setChecked(enabled);
+    noiseBandsetCheck->blockSignals(false);
+
+    updateControlVisibility();
+}
+
+void ChannelWidget::setNoiseStdev(double value)
+{
+    noiseStdevSpin->blockSignals(true);
+    noiseStdevSpin->setValue(value);
+    noiseStdevSpin->blockSignals(false);
+}
+
+void ChannelWidget::setNoiseMean(double value)
+{
+    noiseMeanSpin->blockSignals(true);
+    noiseMeanSpin->setValue(value);
+    noiseMeanSpin->blockSignals(false);
+}
+
+void ChannelWidget::setNoiseBandwidth(double value)
+{
+    noiseBandwidthSpin->blockSignals(true);
+    noiseBandwidthSpin->setValue(value);
+    noiseBandwidthSpin->blockSignals(false);
+}
+
 void ChannelWidget::setOutput(bool enabled)
 {
     outputCheck->blockSignals(true);
@@ -400,6 +457,19 @@ void ChannelWidget::updateControlVisibility()
     const bool showSymmetry = (waveform == "RAMP");
     const bool showPulse = (waveform == "PULSE");
     const bool showNoise = (waveform == "NOISE");
+    const bool showStandardControls = !showNoise;
+
+    frequencyLabel->setVisible(showStandardControls);
+    frequencySpin->setVisible(showStandardControls);
+
+    amplitudeLabel->setVisible(showStandardControls);
+    amplitudeSpin->setVisible(showStandardControls);
+
+    offsetLabel->setVisible(showStandardControls);
+    offsetSpin->setVisible(showStandardControls);
+
+    phaseLabel->setVisible(showStandardControls);
+    phaseSpin->setVisible(showStandardControls);
 
     rampSymmetryLabel->setVisible(showSymmetry);
     rampSymmetrySpin->setVisible(showSymmetry);
