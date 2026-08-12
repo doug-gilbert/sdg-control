@@ -5,6 +5,9 @@
 #include <QComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QToolButton>
+#include <QResizeEvent>
+#include <QPushButton>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -18,17 +21,61 @@
 #include "ChannelWidget.h"
 
 
+// Helper class ChannelGroupBox hidden in this source file
+class ChannelGroupBox : public QGroupBox
+{
+public:
+    using QGroupBox::QGroupBox;
+
+    QToolButton *closeButton = nullptr;
+
+protected:
+    void resizeEvent(QResizeEvent *event) override
+    {
+        QGroupBox::resizeEvent(event);
+
+        if (closeButton)
+        {
+            closeButton->adjustSize();
+
+            closeButton->move(
+                width() - closeButton->width() - 4,
+                1);
+        }
+    }
+};
+
+
 ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     : QWidget(parent),
       channel(my_channel)
 {
     auto *outerLayout = new QVBoxLayout(this);
 
-    groupBox = new QGroupBox(
+    auto *headerLayout = new QHBoxLayout;
+
+    auto *titleLabel = new QLabel(
         QString("Channel %1").arg(channel),
         this);
 
+    QFont font = titleLabel->font();
+    font.setBold(true);
+    titleLabel->setFont(font);
+
+    closeButton = new QPushButton("X", this);
+    closeButton->setFixedSize(28, 28);
+    closeButton->setToolTip("Hide channel");
+
+    headerLayout->addWidget(titleLabel);
+    headerLayout->addStretch();
+    headerLayout->addWidget(closeButton);
+
+    outerLayout->addLayout(headerLayout);
+
+    groupBox = new QGroupBox(this);
     formLayout = new QFormLayout(groupBox);
+
+    outerLayout->addWidget(groupBox);
 
 #ifdef SDG_DEVELOPER_UI
     statusLabel = new QLabel(
@@ -315,6 +362,15 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                 emit outputChanged(this->channel, enabled);
             });
 
+    connect(closeButton,
+            &QPushButton::clicked,
+            this,
+            [this]()
+            {
+                sdgDebug() << "Close clicked for channel" << channel;
+                emit hideRequested(channel);
+            });
+
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
 }
@@ -500,4 +556,9 @@ void ChannelWidget::updateControlVisibility()
 
     noiseBandwidthLabel->setVisible(showNoiseBandwidth);
     noiseBandwidthSpin->setVisible(showNoiseBandwidth);
+}
+
+void ChannelWidget::setControlsEnabled(bool enabled)
+{
+    groupBox->setEnabled(enabled);
 }

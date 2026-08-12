@@ -13,6 +13,7 @@ class QDoubleSpinBox;
 class QComboBox;
 class QGroupBox;
 class QFormLayout;
+class QPushButton;
 
 class ChannelWidget : public QWidget
 {
@@ -39,6 +40,8 @@ public:
 
     void setOutput(bool enabled);
 
+    void setControlsEnabled(bool enabled);
+
 signals:
     void frequencyChanged(int channel, double value);
     void amplitudeChanged(int channel, double value);
@@ -55,6 +58,8 @@ signals:
     void noiseBandwidthChanged(int channel, double value);
 
     void outputChanged(int channel, bool enabled);
+
+    void hideRequested(int channel);
 
 private:
     void updateControlVisibility();
@@ -101,4 +106,6 @@ private:
     QDoubleSpinBox *noiseBandwidthSpin;
 
     QCheckBox *outputCheck;
+
+    QPushButton *closeButton = nullptr;
 };

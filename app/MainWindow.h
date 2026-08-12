@@ -15,6 +15,7 @@ class QPushButton;
 class QCloseEvent;
 class QCheckBox;
 class QComboBox;
+class QAction;
 
 
 class MainWindow : public QMainWindow
@@ -55,6 +56,9 @@ private:
 
     QLineEdit *idEdit;
 
+    QAction *showChannel1Action;
+    QAction *showChannel2Action;
+
     ChannelWidget *ch1Widget;
     ChannelWidget *ch2Widget;
 
@@ -81,6 +85,8 @@ private:
     void setNoiseBandwidth(int channel, double value);
 
     void setOutput(int channel, bool enabled);
+
+    void updateEditMenu();
 
     QString displayIdentification(const QString &idn) const;
 };

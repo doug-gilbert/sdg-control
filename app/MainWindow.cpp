@@ -316,6 +316,48 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &QWidget::close);
 
+    QMenu *editMenu = menuBar()->addMenu("&Edit");
+
+    showChannel1Action = editMenu->addAction("Show Channel 1");
+
+    showChannel2Action = editMenu->addAction("Show Channel 2");
+
+    connect(ch1Widget,
+            &ChannelWidget::hideRequested,
+            this,
+            [this](int)
+            {
+                ch1Widget->hide();
+                updateEditMenu();
+            });
+
+    connect(ch2Widget,
+            &ChannelWidget::hideRequested,
+            this,
+            [this](int)
+            {
+                ch2Widget->hide();
+                updateEditMenu();
+            });
+
+    connect(showChannel1Action,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                ch1Widget->show();
+                updateEditMenu();
+            });
+
+    connect(showChannel2Action,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                ch2Widget->show();
+                updateEditMenu();
+            });
+
     auto *helpMenu = menuBar()->addMenu("&Help");
 
     auto *aboutAction = helpMenu->addAction("&About SDG Control");
@@ -337,6 +379,8 @@ MainWindow::MainWindow(QWidget *parent)
                                    "About SDG Control",
                                    text);
             });
+
+    updateEditMenu();
 
     resize(800, 350);
 }
@@ -367,8 +411,8 @@ void MainWindow::setInstrument(InstrumentType type)
     disconnectButton->setEnabled(false);
     refreshButton->setEnabled(false);
 
-    ch1Widget->setEnabled(false);
-    ch2Widget->setEnabled(false);
+    ch1Widget->setControlsEnabled(false);
+    ch2Widget->setControlsEnabled(false);
 
     pendingState = {};
     setDirty(false);
@@ -510,13 +554,13 @@ void MainWindow::connectClicked()
         idEdit->setText("Connection failed: " +
                         generator->getConnectionError());
 
-        ch1Widget->setEnabled(false);
-        ch2Widget->setEnabled(false);
+        ch1Widget->setControlsEnabled(false);
+        ch2Widget->setControlsEnabled(false);
 
         return;
     }
-    ch1Widget->setEnabled(true);
-    ch2Widget->setEnabled(true);
+    ch1Widget->setControlsEnabled(true);
+    ch2Widget->setControlsEnabled(true);
     refreshButton->setEnabled(true);
 
     QSettings settings("sdg-control", "sdg-control");
@@ -540,8 +584,8 @@ void MainWindow::disconnectClicked()
     disconnectButton->setEnabled(false);
     refreshButton->setEnabled(false);
 
-    ch1Widget->setEnabled(false);
-    ch2Widget->setEnabled(false);
+    ch1Widget->setControlsEnabled(false);
+    ch2Widget->setControlsEnabled(false);
 
     // idEdit->clear();
     idEdit->setText("Disconnected");
@@ -581,8 +625,8 @@ void MainWindow::connectionLost()
     connectButton->setEnabled(true);
     refreshButton->setEnabled(false);
 
-    ch1Widget->setEnabled(false);
-    ch2Widget->setEnabled(false);
+    ch1Widget->setControlsEnabled(false);
+    ch2Widget->setControlsEnabled(false);
 
     instrumentCombo->setEnabled(true);
 }
@@ -822,4 +866,10 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setNoiseBandwidth(state.noiseBandwidth);
 
     widget->setOutput(state.output);
+}
+
+void MainWindow::updateEditMenu()
+{
+    showChannel1Action->setEnabled(!ch1Widget->isVisible());
+    showChannel2Action->setEnabled(!ch2Widget->isVisible());
 }
