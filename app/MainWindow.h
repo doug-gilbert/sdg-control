@@ -83,6 +83,8 @@ private:
     void setNoiseStdev(int channel, double value);
     void setNoiseMean(int channel, double value);
     void setNoiseBandwidth(int channel, double value);
+    void setDcOffset(int channel, double value);
+    void setDcPrecisionHigh(int channel, bool enabled);
 
     void setOutput(int channel, bool enabled);
 

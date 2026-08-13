@@ -62,7 +62,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     font.setBold(true);
     titleLabel->setFont(font);
 
-    closeButton = new QPushButton("X", this);
+    closeButton = new QPushButton("x", this);
     closeButton->setFixedSize(28, 28);
     closeButton->setToolTip("Hide channel");
 
@@ -197,6 +197,16 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     noiseBandsetCheck = new QCheckBox(groupBox);
     noiseBandsetCheck->setText("On");
 
+    dcOffsetSpin = new QDoubleSpinBox(groupBox);
+    dcOffsetSpin->setRange(-10.000'0, 10.000'0);
+    dcOffsetSpin->setDecimals(4);
+    dcOffsetSpin->setSingleStep(1.0);
+    dcOffsetSpin->setSuffix(" V");
+    dcOffsetSpin->setKeyboardTracking(false);
+
+    dcPrecisionHighCheck = new QCheckBox(groupBox);
+    dcPrecisionHighCheck->setText("High");
+
     // Create widgets and labels
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
@@ -212,6 +222,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     noiseMeanLabel = new QLabel("Noise Mean:", groupBox);
     noiseBandwidthLabel = new QLabel("Bandwidth:", groupBox);
     noiseBandsetLabel = new QLabel("Bandset:", groupBox);
+    dcOffsetLabel = new QLabel("DC Offset:", groupBox);
+    dcPrecisionHighLabel = new QLabel("DC Precision:", groupBox);
 
     updateControlVisibility();
 
@@ -230,6 +242,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(noiseStdevLabel, noiseStdevSpin);
     formLayout->addRow(noiseMeanLabel, noiseMeanSpin);
     formLayout->addRow(noiseBandwidthLabel, noiseBandwidthSpin);
+    formLayout->addRow(dcOffsetLabel, dcOffsetSpin);
+    formLayout->addRow(dcPrecisionHighLabel, dcPrecisionHighCheck);
 
     formLayout->addRow(outputCheck);
 
@@ -351,6 +365,22 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             [this](double value)
             {
                 emit noiseBandwidthChanged(channel, value);
+            });
+
+    connect(dcOffsetSpin,
+            &QDoubleSpinBox::valueChanged,
+            this,
+            [this](double value)
+            {
+                emit dcOffsetChanged(channel, value);
+            });
+
+    connect(dcPrecisionHighCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool enabled)
+            {
+                emit dcPrecisionHighChanged(channel, enabled);
             });
 
 
@@ -482,6 +512,20 @@ void ChannelWidget::setNoiseBandwidth(double value)
     noiseBandwidthSpin->blockSignals(false);
 }
 
+void ChannelWidget::setDcOffset(double value)
+{
+    dcOffsetSpin->blockSignals(true);
+    dcOffsetSpin->setValue(value);
+    dcOffsetSpin->blockSignals(false);
+}
+
+void ChannelWidget::setDcPrecisionHigh(bool enabled)
+{
+    dcPrecisionHighCheck->blockSignals(true);
+    dcPrecisionHighCheck->setChecked(enabled);
+    dcPrecisionHighCheck->blockSignals(false);
+}
+
 void ChannelWidget::setOutput(bool enabled)
 {
     outputCheck->blockSignals(true);
@@ -513,7 +557,8 @@ void ChannelWidget::updateControlVisibility()
     const bool showSymmetry = (waveform == "RAMP");
     const bool showPulse = (waveform == "PULSE");
     const bool showNoise = (waveform == "NOISE");
-    const bool showStandardControls = !showNoise;
+    const bool showDC = (waveform == "DC");
+    const bool showStandardControls = !showNoise && !showDC;
 
     frequencyLabel->setVisible(showStandardControls);
     frequencySpin->setVisible(showStandardControls);
@@ -556,6 +601,12 @@ void ChannelWidget::updateControlVisibility()
 
     noiseBandwidthLabel->setVisible(showNoiseBandwidth);
     noiseBandwidthSpin->setVisible(showNoiseBandwidth);
+
+    dcOffsetLabel->setVisible(showDC);
+    dcOffsetSpin->setVisible(showDC);
+
+    dcPrecisionHighLabel->setVisible(showDC);
+    dcPrecisionHighCheck->setVisible(showDC);
 }
 
 void ChannelWidget::setControlsEnabled(bool enabled)

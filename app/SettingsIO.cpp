@@ -36,6 +36,8 @@ namespace
     constexpr auto NoiseStdevKey    = "noiseStdev";
     constexpr auto NoiseMeanKey     = "noiseMean";
     constexpr auto NoiseBandwidthKey = "noiseBandwidth";
+    constexpr auto DcOffsetKey      = "dcOffset";
+    constexpr auto DcPrecisionHighKey = "dcPrecisionHigh";
 
     constexpr auto OutputKey    = "output";
 
@@ -56,6 +58,8 @@ namespace
         obj[NoiseStdevKey]     = state.noiseStdev;
         obj[NoiseMeanKey]      = state.noiseMean;
         obj[NoiseBandwidthKey] = state.noiseBandwidth;
+        obj[DcOffsetKey]       = state.dcOffset;
+        obj[DcPrecisionHighKey] = state.dcPrecisionHigh;
 
         obj[OutputKey]         = state.output;
 
@@ -78,7 +82,12 @@ namespace
         if (obj.contains(AmplitudeKey))
             state.amplitude = obj[AmplitudeKey].toDouble();
         if (obj.contains(OffsetKey))
-            state.offset = obj[OffsetKey].toDouble();
+        {
+            if (state.waveform == "DC")
+                state.dcOffset = obj[DcOffsetKey].toDouble();
+            else
+                state.offset = obj[OffsetKey].toDouble();
+        }
         if (obj.contains(PhaseKey))
             state.phase = obj[PhaseKey].toDouble();
         if (obj.contains(SymmetryKey))

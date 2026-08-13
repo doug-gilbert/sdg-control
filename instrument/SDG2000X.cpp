@@ -185,6 +185,27 @@ bool SDG2000X::setNoiseBandwidth(int channel, double freq)
             .arg(freq, 0, 'g', 12));
 }
 
+bool SDG2000X::setDcOffset(int channel, double value)
+{
+    return scpi.command(
+        QString("%1:BSWV OFST,%2")
+            .arg(channelPrefix(channel))
+            .arg(value, 0, 'g', 12));
+}
+
+bool SDG2000X::setDcPrecisionHigh(int channel, bool enabled)
+{
+#if 0           // not defined in Prog. manual, not returned by SDG ??
+    return scpi.command(
+        QString("%1:BSWV PRECISION,%2")
+            .arg(channelPrefix(channel))
+            .arg(enabled ? "HIGH" : "LOW"));
+#else
+    Q_UNUSED(channel);
+    Q_UNUSED(enabled);
+    return true;
+#endif
+}
 
 
 bool SDG2000X::output(int channel, bool enabled)
@@ -209,7 +230,7 @@ bool SDG2000X::output(int channel, bool enabled)
 ChannelState SDG2000X::getChannelState(int channel)
 {
     ChannelState state;
-
+    QString wvtp;
     QString response =
         scpi.query(channelPrefix(channel) + ":BSWV?");
 
@@ -235,6 +256,7 @@ ChannelState SDG2000X::getChannelState(int channel)
         if (key == "WVTP")
         {
             state.waveform = value;
+            wvtp = value;
         }
         else if (key == "FRQ")
         {
@@ -249,7 +271,10 @@ ChannelState SDG2000X::getChannelState(int channel)
         else if (key == "OFST")
         {
             value.remove("V");
-            state.offset = value.toDouble();
+            if (wvtp == "DC")
+                state.dcOffset = value.toDouble();
+            else
+                state.offset = value.toDouble();
         }
         else if (key == "PHSE")
         {
@@ -366,6 +391,11 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
 
         if (state.noiseBandset)
             ok &= setNoiseBandwidth(channel, state.noiseBandwidth);
+    }
+    else if (state.waveform == "DC")
+    {
+        ok &= setDcOffset(channel, state.dcOffset);
+        ok &= setDcPrecisionHigh(channel, state.dcPrecisionHigh);
     }
     else
     {

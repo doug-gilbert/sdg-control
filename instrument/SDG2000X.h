@@ -43,6 +43,8 @@ public:
     bool setNoiseStdev(int channel, double stdev);
     bool setNoiseMean(int channel, double mean);
     bool setNoiseBandwidth(int channel, double freq);
+    bool setDcOffset(int channel, double value);
+    bool setDcPrecisionHigh(int channel, bool enabled);
 
     bool output(int channel, bool enabled);
 

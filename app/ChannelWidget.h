@@ -37,6 +37,8 @@ public:
     void setNoiseStdev(double value);
     void setNoiseMean(double value);
     void setNoiseBandwidth(double value);
+    void setDcOffset(double value);
+    void setDcPrecisionHigh(bool enabled);
 
     void setOutput(bool enabled);
 
@@ -56,6 +58,8 @@ signals:
     void noiseStdevChanged(int channel, double value);
     void noiseMeanChanged(int channel, double value);
     void noiseBandwidthChanged(int channel, double value);
+    void dcOffsetChanged(int channel, double value);
+    void dcPrecisionHighChanged(int channel, bool enabled);
 
     void outputChanged(int channel, bool enabled);
 
@@ -88,6 +92,8 @@ private:
     QLabel *noiseMeanLabel;
     QLabel *noiseBandwidthLabel;
     QLabel *noiseBandsetLabel;
+    QLabel *dcOffsetLabel;
+    QLabel *dcPrecisionHighLabel;
 
     QComboBox *waveformCombo;
     QDoubleSpinBox *frequencySpin;
@@ -104,6 +110,9 @@ private:
     QDoubleSpinBox *noiseStdevSpin;
     QDoubleSpinBox *noiseMeanSpin;
     QDoubleSpinBox *noiseBandwidthSpin;
+
+    QDoubleSpinBox *dcOffsetSpin;
+    QCheckBox *dcPrecisionHighCheck;
 
     QCheckBox *outputCheck;
 
