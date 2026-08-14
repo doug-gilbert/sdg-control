@@ -109,7 +109,8 @@
  *                    state.offset = value.toDouble();
  *            }
  *  10) add new field to app/SettingsIO.cpp so new field appears in
- *      the XML output.
+ *      the JSON output.
+ *  11) add new field to MainWindow::updateChannelWidget()
  *
  */
 
@@ -656,6 +657,8 @@ void MainWindow::refreshClicked()
     setDirty(false);
 }
 
+// Connect replaces the existing pending settings with the state read from
+// the SDG (or simulator). In effect, Connect performs a Refresh.
 void MainWindow::connectClicked()
 {
     sdgDebug() << __func__ ;
@@ -977,6 +980,7 @@ void MainWindow::updateWidgetsFromState()
     updateChannelWidget(2, pendingState.at(1));
 }
 
+// This method is only invoked during Load Settings (from JSON) file
 void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 {
     ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
@@ -994,6 +998,8 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setNoiseStdev(state.noiseStdev);
     widget->setNoiseMean(state.noiseMean);
     widget->setNoiseBandwidth(state.noiseBandwidth);
+    widget->setDcOffset(state.dcOffset);
+    widget->setDcPrecisionHigh(state.dcPrecisionHigh);
 
     widget->setOutput(state.output);
 }

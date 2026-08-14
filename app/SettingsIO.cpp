@@ -81,11 +81,17 @@ namespace
             state.frequency = obj[FrequencyKey].toDouble();
         if (obj.contains(AmplitudeKey))
             state.amplitude = obj[AmplitudeKey].toDouble();
-        if (obj.contains(OffsetKey))
+        if (state.waveform == "DC")
         {
-            if (state.waveform == "DC")
+            if (obj.contains(DcOffsetKey))
                 state.dcOffset = obj[DcOffsetKey].toDouble();
-            else
+
+            if (obj.contains(DcPrecisionHighKey))
+                state.dcPrecisionHigh = obj[DcPrecisionHighKey].toBool();
+        }
+        else
+        {
+            if (obj.contains(OffsetKey))
                 state.offset = obj[OffsetKey].toDouble();
         }
         if (obj.contains(PhaseKey))
