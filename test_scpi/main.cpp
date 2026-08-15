@@ -2,6 +2,14 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#ifdef SDG_DEBUG
+#warning "config.h file NOT found"
+#endif
+#endif
+
 #include "SDG2000X.h"
 
 
@@ -31,7 +39,8 @@ int main(int argc, char *argv[])
     qDebug() << "CH1:";
     qDebug() << "Waveform:" << ch1.waveform;
     qDebug() << "Frequency:" << ch1.frequency;
-    qDebug() << "Amplitude:" << ch1.amplitude;
+    qDebug() << "Amplitude:" <<
+                 ch1.amplitude.instrumentValues().vpp.value_or(0.0);
 
 
     generator.setWaveform(2, "SINE");
@@ -51,7 +60,8 @@ qDebug() << "CH2 immediate:"
     qDebug() << "CH2:";
     qDebug() << "Waveform:" << ch2.waveform;
     qDebug() << "Frequency:" << ch2.frequency;
-    qDebug() << "Amplitude:" << ch2.amplitude;
+    qDebug() << "Amplitude:" <<
+                 ch2.amplitude.instrumentValues().vpp.value_or(0.0);
     qDebug() << "Offset:" << ch2.offset;
     qDebug() << "Output:" << generator.getOutputState(2);
 

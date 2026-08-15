@@ -26,6 +26,7 @@ namespace
     constexpr auto WaveformKey      = "waveform";
     constexpr auto FrequencyKey     = "frequency";
     constexpr auto AmplitudeKey     = "amplitude";
+    constexpr auto AmplitudeRepresentationKey = "amplitudeRepresentation";
     constexpr auto OffsetKey        = "offset";
     constexpr auto PhaseKey         = "phase";
     constexpr auto SymmetryKey      = "rampSymmetry";
@@ -44,10 +45,16 @@ namespace
     QJsonObject channelToJson(const ChannelState &state)
     {
         QJsonObject obj;
+        const auto representation = state.amplitude.userRepresentation();
+
 
         obj[WaveformKey]       = state.waveform;
         obj[FrequencyKey]      = state.frequency;
-        obj[AmplitudeKey]      = state.amplitude;
+        obj[AmplitudeKey]      = state.amplitude.userValue();
+        obj[AmplitudeRepresentationKey] =
+            representation == SdgAmplitude::Representation::Vpp  ? "Vpp" :
+            representation == SdgAmplitude::Representation::Vrms ? "Vrms" :
+                                                                   "dBm";
         obj[OffsetKey]         = state.offset;
         obj[PhaseKey]          = state.phase;
         obj[SymmetryKey]       = state.rampSymmetry;
@@ -80,7 +87,24 @@ namespace
         if (obj.contains(FrequencyKey))
             state.frequency = obj[FrequencyKey].toDouble();
         if (obj.contains(AmplitudeKey))
-            state.amplitude = obj[AmplitudeKey].toDouble();
+        {
+            const double value = obj[AmplitudeKey].toDouble();
+
+            SdgAmplitude::Representation representation =
+                SdgAmplitude::Representation::Vpp;
+
+            if (obj.contains(AmplitudeRepresentationKey))
+            {
+                const QString r = obj[AmplitudeRepresentationKey].toString();
+
+                if (r == "Vrms")
+                    representation = SdgAmplitude::Representation::Vrms;
+                else if (r == "dBm")
+                    representation = SdgAmplitude::Representation::dBm;
+            }
+
+            state.amplitude.setUserValue(value, representation);
+        }
         if (state.waveform == "DC")
         {
             if (obj.contains(DcOffsetKey))

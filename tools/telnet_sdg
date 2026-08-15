@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Convenience script for sending SCPI commands and viewing responses
+# on the Siglent SDG2000X series of function generators. Assumes
+# SDG2000X has TCP port 5025 accessible for SCPI traffic.
+# This script should work on Unix based Operating Systems.
+
+if [ $# -ne 1 ] ; then
+    echo "Usage: telnet_sdg <IP_address_or_hostname>"
+    exit 1
+fi
+
+set -x
+
+telnet "$1" 5025

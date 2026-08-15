@@ -32,7 +32,10 @@ public:
 
     bool setWaveform(int channel, const QString& waveform);
     bool setFrequency(int channel, double hz);
-    bool setAmplitude(int channel, double volts);
+    bool setAmplitude(int channel, double volts);     // sets Vpp
+    bool setAmplitudeVrms(int channel, double volts);
+    bool setAmplitudedBm(int channel, double dbm);
+    bool setUserAmplitude(int channel, const SdgAmplitude &amplitude);
     bool setOffset(int channel, double volts);
     bool setPhase(int channel, double degrees);
     bool setRampSymmetry(int channel, double percent);

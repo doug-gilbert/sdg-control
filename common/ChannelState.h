@@ -2,12 +2,14 @@
 
 #include <QString>
 
+#include "SdgAmplitude.h"
+
 struct ChannelState
 {
     QString waveform = "SINE";
 
     double frequency = 1'000.0;
-    double amplitude = 1.0;
+    SdgAmplitude amplitude;
     double offset = 0.0;
     double phase = 0.0;
 

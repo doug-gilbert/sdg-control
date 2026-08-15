@@ -95,6 +95,50 @@ bool SDG2000X::setAmplitude(int channel, double volts)
     return scpi.command(cmd);
 }
 
+bool SDG2000X::setAmplitudeVrms(int channel, double volts)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV AMPVRMS,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(volts, 'f', 6));
+
+    return scpi.command(cmd);
+}
+
+bool SDG2000X::setAmplitudedBm(int channel, double dbm)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV AMPDBM,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(dbm, 'f', 6));
+
+    return scpi.command(cmd);
+}
+
+bool SDG2000X::setUserAmplitude(
+    int channel, const SdgAmplitude &amplitude)
+{
+    switch (amplitude.userRepresentation())
+    {
+    case SdgAmplitude::Representation::Vpp:
+        return setAmplitude(channel, amplitude.userValue());
+
+    case SdgAmplitude::Representation::Vrms:
+        return setAmplitudeVrms(channel, amplitude.userValue());
+
+    case SdgAmplitude::Representation::dBm:
+        return setAmplitudedBm(channel, amplitude.userValue());
+    }
+
+    return false;
+}
+
 bool SDG2000X::setOffset(int channel, double volts)
 {
     if (!scpi.isConnected())
@@ -266,7 +310,17 @@ ChannelState SDG2000X::getChannelState(int channel)
         else if (key == "AMP")
         {
             value.remove("V");
-            state.amplitude = value.toDouble();
+            state.amplitude.setInstrumentVpp(value.toDouble());
+        }
+        else if (key == "AMPVRMS")
+        {
+            value.remove("Vrms");
+            state.amplitude.setInstrumentVrms(value.toDouble());
+        }
+        else if (key == "AMPDBM")
+        {
+            value.remove("dBm");
+            state.amplitude.setInstrumentdBm(value.toDouble());
         }
         else if (key == "OFST")
         {
@@ -367,7 +421,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     if (state.waveform == "RAMP")
     {
         ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setUserAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
         ok &= setRampSymmetry(channel, state.rampSymmetry);
@@ -375,7 +429,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     else if (state.waveform == "PULSE")
     {
         ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setUserAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
 
@@ -401,7 +455,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     {
         // SINE, SQUARE, ARB, etc.
         ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
+        ok &= setUserAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
     }

@@ -533,24 +533,22 @@ QString MainWindow::displayIdentification(const QString &idn) const
 static void setChannelStatus(int my_chan, ChannelWidget & cwid,
                              const ChannelState &ch)
 {
-#if 1      /* The Qt way versus the C way ... */
+    auto ampInstru = ch.amplitude.instrumentValues();
+    const QString missing = "---";
+
     QString common =
-    QString("CH%1: %2  %3 Hz  %4 V  Offset %5 V  Phase %6°")
+    QString("CH%1: %2  %3 Hz  %4,%5,%6 Vpp,Vrms,dBm  Offset %7 V  Phase %8°")
         .arg(my_chan)
         .arg(ch.waveform)
         .arg(ch.frequency, 0, 'f', 1)
-        .arg(ch.amplitude, 0, 'f', 3)
+        .arg(ampInstru.vpp
+                 ? QString::number(*ampInstru.vpp, 'f', 3) : missing)
+        .arg(ampInstru.vrms
+                 ? QString::number(*ampInstru.vrms, 'f', 3) : missing)
+        .arg(ampInstru.dBm
+                 ? QString::number(*ampInstru.dBm, 'f', 1) : missing)
         .arg(ch.offset, 0, 'f', 2)
         .arg(ch.phase, 0, 'f', 1);
-#else
-    char b[128];
-
-    snprintf(b, sizeof(b),
-             "CH%d: %s  %.1f Hz  %.3f V  Offset %.2f V  Phase %.1f°",
-             my_chan, ch.waveform.toUtf8().constData(), ch.frequency,
-             ch.amplitude, ch.offset, ch.phase);
-    QString common(b);
-#endif
 
     if (ch.waveform == "RAMP")
         cwid.setStatus( QString("%1  Sym %2  Output %3")
@@ -584,9 +582,11 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
+    auto vpp = ch.amplitude.instrumentValues().vpp;
+
     cwid.setWaveform(ch.waveform);
     cwid.setFrequency(ch.frequency);
-    cwid.setAmplitude(ch.amplitude);
+    cwid.setAmplitude(vpp.value_or(0.0));
     cwid.setOffset(ch.offset);
     cwid.setPhase(ch.phase);
     cwid.setRampSymmetry(ch.rampSymmetry);
@@ -776,9 +776,11 @@ void MainWindow::setFrequency(int channel, double value)
         setDirty(true);
 }
 
+// Currently setting Vpp
 void MainWindow::setAmplitude(int channel, double value)
 {
-    pendingState[channel - 1].amplitude = value;
+    pendingState[channel - 1].amplitude.setUserValue(
+            value, SdgAmplitude::Representation::Vpp);
 
     if (immediateMode)
         generator->applyChannelState(channel, pendingState[channel - 1]);
@@ -987,7 +989,8 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 
     widget->setWaveform(state.waveform);
     widget->setFrequency(state.frequency);
-    widget->setAmplitude(state.amplitude);
+    widget->setAmplitude(
+           state.amplitude.instrumentValues().vpp.value_or(0.0));
     widget->setOffset(state.offset);
     widget->setPhase(state.phase);
     widget->setRampSymmetry(state.rampSymmetry);
