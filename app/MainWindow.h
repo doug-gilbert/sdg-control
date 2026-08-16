@@ -96,7 +96,6 @@ private:
     void setOutput(int channel, bool enabled);
 
     void createMenuBar();
-    void updateViewMenu();
 
     QString displayIdentification(const QString &idn) const;
 };

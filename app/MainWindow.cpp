@@ -15,6 +15,8 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QFrame>
+#include <QStatusBar>
+#include <QToolTip>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -412,8 +414,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     createMenuBar();
 
-    updateViewMenu();
-
     resize(800, 350);
 }
 
@@ -457,7 +457,19 @@ void MainWindow::createMenuBar()
     auto *viewMenu = menuBar()->addMenu("&View");
 
     showChannel1Action = viewMenu->addAction("Show Channel 1");
+    showChannel1Action->setCheckable(true);
+    showChannel1Action->setChecked(ch1Widget->isVisible());
+    showChannel1Action->setToolTip(
+        "Remove Channel 1 from this UI leaving more\n"
+        "screen 'real estate' for Channel 2");
+
     showChannel2Action = viewMenu->addAction("Show Channel 2");
+    showChannel2Action->setCheckable(true);
+    showChannel2Action->setChecked(ch2Widget->isVisible());
+    showChannel2Action->setToolTip(
+        "Remove Channel 2 from this UI leaving more\n"
+        "screen 'real estate' for Channel 1");
+
     frontPanelAction = viewMenu->addAction("Show front panel");
     frontPanelAction->setCheckable(true);
     frontPanelAction->setEnabled(false);
@@ -468,7 +480,7 @@ void MainWindow::createMenuBar()
             [this](int)
             {
                 ch1Widget->hide();
-                updateViewMenu();
+                showChannel1Action->setChecked(false);
             });
 
     connect(ch2Widget,
@@ -477,25 +489,23 @@ void MainWindow::createMenuBar()
             [this](int)
             {
                 ch2Widget->hide();
-                updateViewMenu();
+                showChannel2Action->setChecked(false);
             });
 
     connect(showChannel1Action,
-            &QAction::triggered,
+            &QAction::toggled,
             this,
-            [this]()
+            [this](bool checked)
             {
-                ch1Widget->show();
-                updateViewMenu();
+                ch1Widget->setVisible(checked);
             });
 
     connect(showChannel2Action,
-            &QAction::triggered,
+            &QAction::toggled,
             this,
-            [this]()
+            [this](bool checked)
             {
-                ch2Widget->show();
-                updateViewMenu();
+                ch2Widget->setVisible(checked);
             });
 
     connect(frontPanelAction,
@@ -517,6 +527,24 @@ void MainWindow::createMenuBar()
                 {
                     if (frontPanelWindow)
                         frontPanelWindow->hide();
+                }
+            });
+
+    // This connect() is to display the 'Show Channel 1/2' toolTips
+    connect(viewMenu,
+            &QMenu::hovered,
+            this,
+            [](QAction *action)
+            {
+                if (action && !action->toolTip().isEmpty())
+                {
+                    QToolTip::showText(
+                        QCursor::pos(),
+                        action->toolTip());
+                }
+                else
+                {
+                    QToolTip::hideText();
                 }
             });
 
@@ -1070,12 +1098,6 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setDcPrecisionHigh(state.dcPrecisionHigh);
 
     widget->setOutput(state.output);
-}
-
-void MainWindow::updateViewMenu()
-{
-    showChannel1Action->setEnabled(!ch1Widget->isVisible());
-    showChannel2Action->setEnabled(!ch2Widget->isVisible());
 }
 
 void MainWindow::createFrontPanelWindow()
