@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QByteArray>
 
 #include "ChannelState.h"
 
@@ -33,7 +34,15 @@ public:
     virtual bool applyChannelState(int channel,
                                    const ChannelState &state) = 0;
 
+    virtual bool hasFrontPanel() const { return false; }
+
+    virtual QByteArray getFrontPanelImage() { return {}; }
+
+    virtual bool toggleChannelFocus() { return false; }
+
+    virtual bool waitForOperationComplete(int timeout_ms)
+         {  Q_UNUSED(timeout_ms) ; return true; }
+
 signals:
     void disconnected();
 };
-

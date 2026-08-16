@@ -29,6 +29,12 @@ SDG2000X::~SDG2000X()
     sdgDebug() << "SDG2000X destructor";
 }
 
+// Yes the SDG2000X has a front panel, the simulator doesnt
+bool SDG2000X::hasFrontPanel() const
+{
+    return true;
+}
+
 bool SDG2000X::connectTo(const QString& ip)
 {
     return scpi.connectTo(ip);
@@ -407,9 +413,9 @@ QString SDG2000X::getConnectionError() const
     return scpi.errorString();
 }
 
-bool SDG2000X::waitForOperationComplete()
+bool SDG2000X::waitForOperationComplete(int timeout_ms)
 {
-    return scpi.query("*OPC?") == "1";
+    return scpi.waitForOperationComplete(timeout_ms);
 }
 
 bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
@@ -460,8 +466,25 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
         ok &= setPhase(channel, state.phase);
     }
 
-    ok &= waitForOperationComplete();
+    // Wait up to 5 seconds, could be connection lost
+    ok &= waitForOperationComplete(5000);
     ok &= output(channel, state.output);
 
     return ok;
+}
+
+QByteArray SDG2000X::getFrontPanelImage()
+{
+    if (!scpi.isConnected())
+        return {};
+
+    return scpi.queryBinary("SCDP");
+}
+
+bool SDG2000X::toggleChannelFocus()
+{
+    if (!scpi.isConnected())
+        return false;
+
+    return scpi.command("VKEY VALUE,KB_CHANNEL,STATE,1");
 }

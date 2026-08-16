@@ -72,7 +72,7 @@ void ScpiConnection::disconnect()
     socket.abort();
 }
 
-QString ScpiConnection::query(const QString& command)
+QString ScpiConnection::query(const QString& command, int timeout)
 {
     if (!isConnected())
         return "WRITE ERROR";
@@ -88,7 +88,7 @@ QString ScpiConnection::query(const QString& command)
         return "WRITE ERROR";
     }
 
-    if (!socket.waitForReadyRead(3000))
+    if (!socket.waitForReadyRead(timeout))
     {
         socket.abort();
         emit disconnected();
@@ -101,7 +101,6 @@ QString ScpiConnection::query(const QString& command)
     {
         reply += socket.readAll();
 
-        // Allow the instrument time to finish the response
         socket.waitForReadyRead(100);
     }
 
@@ -144,4 +143,58 @@ bool ScpiConnection::isConnected() const
 QString ScpiConnection::errorString() const
 {
     return socket.errorString();
+}
+
+QByteArray ScpiConnection::queryBinary(const QString& command)
+{
+    if (!isConnected())
+        return {};
+
+    sdgDebug() << "TX binary query:" << command;
+
+    QByteArray cmd = command.toUtf8() + "\r\n";
+
+    socket.write(cmd);
+
+    if (!socket.waitForBytesWritten(1000))
+    {
+        socket.abort();
+        emit disconnected();
+        return {};
+    }
+
+    if (!socket.waitForReadyRead(3000))
+    {
+        socket.abort();
+        emit disconnected();
+        return {};
+    }
+
+    QByteArray reply;
+
+    while (true)
+    {
+        reply += socket.readAll();
+
+        if (!socket.waitForReadyRead(100))
+            break;
+    }
+
+    sdgDebug() << "RX binary bytes:" << reply.size();
+
+    return reply;
+}
+
+bool ScpiConnection::waitForOperationComplete(int timeout_ms)
+{
+    if (!isConnected())
+        return false;
+
+    sdgDebug() << "Waiting for operation complete";
+
+    QString response = query("*OPC?", timeout_ms);
+
+    sdgDebug() << "OPC response:" << response;
+
+    return response.trimmed() == "1";
 }

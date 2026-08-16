@@ -24,6 +24,7 @@
 /* Include config.h _before_ any local includes in case they need it */
 
 #include "MainWindow.h"
+#include "FrontPanelWindow.h"
 #include "InstrumentFactory.h"
 
 #include "debug.h"
@@ -457,6 +458,34 @@ MainWindow::MainWindow(QWidget *parent)
                 updateEditMenu();
             });
 
+    auto *viewMenu = menuBar()->addMenu("&View");
+
+    frontPanelAction = viewMenu->addAction("Show front panel");
+    frontPanelAction->setCheckable(true);
+    frontPanelAction->setEnabled(false);
+
+    connect(frontPanelAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                if (checked)
+                {
+                    if (!frontPanelWindow)
+                        createFrontPanelWindow();
+
+                    frontPanelWindow->show();
+                    frontPanelWindow->raise();
+                    frontPanelWindow->activateWindow();
+                    frontPanelWindow->updateScreen();
+                }
+                else
+                {
+                    if (frontPanelWindow)
+                        frontPanelWindow->hide();
+                }
+            });
+
     auto *helpMenu = menuBar()->addMenu("&Help");
 
     auto *aboutAction = helpMenu->addAction("&About SDG Control");
@@ -486,7 +515,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    sdgDebug() << "MainWindow destructor";
+    sdgDebug() << "start of MainWindow destructor";
+    delete frontPanelWindow;
+    delete generator;
 }
 
 void MainWindow::setInstrument(InstrumentType type)
@@ -686,6 +717,7 @@ void MainWindow::connectClicked()
 
     refreshClicked();
     instrumentCombo->setEnabled(false);
+    updateFrontPanelAction();
 }
 
 void MainWindow::disconnectClicked()
@@ -703,6 +735,7 @@ void MainWindow::disconnectClicked()
     // idEdit->clear();
     idEdit->setText("Disconnected");
     instrumentCombo->setEnabled(true);
+    updateFrontPanelAction();
 }
 
 void MainWindow::sendClicked()
@@ -742,6 +775,7 @@ void MainWindow::connectionLost()
     ch2Widget->setControlsEnabled(false);
 
     instrumentCombo->setEnabled(true);
+    updateFrontPanelAction();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -1011,4 +1045,33 @@ void MainWindow::updateEditMenu()
 {
     showChannel1Action->setEnabled(!ch1Widget->isVisible());
     showChannel2Action->setEnabled(!ch2Widget->isVisible());
+}
+
+void MainWindow::createFrontPanelWindow()
+{
+    if (frontPanelWindow)
+        return;
+
+    frontPanelWindow = new FrontPanelWindow(generator);
+
+    connect(frontPanelWindow,
+            &QObject::destroyed,
+            this,
+            [this]()
+            {
+                frontPanelWindow = nullptr;
+            });
+}
+
+void MainWindow::updateFrontPanelAction()
+{
+    const bool available =
+        generator &&
+        generator->hasFrontPanel() &&
+        generator->isConnected();
+
+    frontPanelAction->setEnabled(available);
+
+    if (!available && frontPanelAction->isChecked())
+        frontPanelAction->setChecked(false);
 }

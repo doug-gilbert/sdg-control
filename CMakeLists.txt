@@ -15,7 +15,7 @@ find_package ( PkgConfig )
 string(TIMESTAMP BUILD_TIME "%Y%m%d %H:%M:%S")
 
 option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
-option(SDG_DEVELOPER_UI "Extra fields to aid development" OFF)
+option(SDG_DEVELOPER_UI "Extra GUI fields to aid development" OFF)
 option(SDG_BUILD_TEST "Build sdg_test CLI in test_scpi directory" OFF)
 
 if (SDG_DEBUG)

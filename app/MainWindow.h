@@ -17,6 +17,8 @@ class QCheckBox;
 class QComboBox;
 class QAction;
 
+class FrontPanelWindow;
+
 
 class MainWindow : public QMainWindow
 {
@@ -43,6 +45,9 @@ private:
     bool immediateMode = true;
     bool dirty = false;
 
+    FrontPanelWindow *frontPanelWindow = nullptr;
+    QAction *frontPanelAction = nullptr;
+
     std::array<ChannelState, 2> pendingState;
 
     QCheckBox *immediateCheck;
@@ -63,6 +68,9 @@ private:
     ChannelWidget *ch2Widget;
 
     Instrument *generator = nullptr;
+
+    void createFrontPanelWindow();
+    void updateFrontPanelAction();
 
     void setInstrument(InstrumentType type);
     void setDirty(bool value);

@@ -2,6 +2,7 @@
 
 #include <QTcpSocket>
 #include <QString>
+#include <QByteArray>
 
 class ScpiConnection : public QObject
 {
@@ -16,9 +17,12 @@ public:
 
     void disconnect();
 
-    QString query(const QString& command);
+    QString query(const QString& command, int timeout = 3000);
+    QByteArray queryBinary(const QString& command);
 
     bool command(const QString& command);
+
+    bool waitForOperationComplete(int timeout_ms = 10000);
 
     bool isConnected() const;
 

@@ -44,6 +44,8 @@ Current features include:
 - Cmake/cpack can build 'deb' and/or 'rpm' packages on Linux
 - Save settings to JSON (if requested) and load settings ability as well
 - Add a simulator so GUI can be exercised without a SDG2000X present
+- Fetch and render Front Panel of SDG2000X in separate window with buttons
+  to update (re-fetch) and toggle channels (between CH1 and CH2)
 
 ## Design philosophy
 
@@ -108,6 +110,11 @@ app/sdg-control
 The second last line above builds a 'deb' and/or a 'rpm' package. The last
 line executes the app that has just been built.
 
+Cmake options in this project (default shown after '='):
+   SDG_BUILD_TEST:BOOL=OFF     # Build sdg_test CLI in test_scpi directory
+   SDG_DEBUG:BOOL=OFF          # Enable SDG SCPI debug output
+   SDG_DEVELOPER_UI:BOOL=OFF   # Extra GUI fields to aid development
+
 Note that both cmake build examples above do an "out-of-tree" build. All
 build artifacts, including the executable and any packages generated, are
 placed under the build sub-directory leaving the rest of the sdg-control
@@ -161,4 +168,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-08
+Last updated: 2026-08-15

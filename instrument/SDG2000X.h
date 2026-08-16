@@ -51,11 +51,17 @@ public:
 
     bool output(int channel, bool enabled);
 
+    // Use Siglent SCDP command and virtual CH1/CH2 button press
+    QByteArray getFrontPanelImage();
+    bool toggleChannelFocus();
+
+    bool hasFrontPanel() const override;
+
     bool clearErrors();
 
     bool getOutputState(int channel);
 
-    bool waitForOperationComplete();
+    bool waitForOperationComplete(int timeout_ms);
 
     QString getError();
 

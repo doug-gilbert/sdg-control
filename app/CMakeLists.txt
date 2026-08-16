@@ -2,6 +2,8 @@ add_executable(sdg-control
     main.cpp
     MainWindow.cpp
     MainWindow.h
+    FrontPanelWindow.cpp
+    FrontPanelWindow.h
     ChannelWidget.cpp
     ChannelWidget.h
     SettingsIO.cpp
