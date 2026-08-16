@@ -488,3 +488,16 @@ bool SDG2000X::toggleChannelFocus()
 
     return scpi.command("VKEY VALUE,KB_CHANNEL,STATE,1");
 }
+
+bool SDG2000X::reset()
+{
+    if (!scpi.isConnected())
+        return false;
+
+    sdgDebug() << "about to issue RESET";
+
+    if (!scpi.command("*RST"))
+        return false;
+
+    return waitForOperationComplete(5000);
+}

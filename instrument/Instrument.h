@@ -43,6 +43,8 @@ public:
     virtual bool waitForOperationComplete(int timeout_ms)
          {  Q_UNUSED(timeout_ms) ; return true; }
 
+    virtual bool reset() { return true; }
+
 signals:
     void disconnected();
 };

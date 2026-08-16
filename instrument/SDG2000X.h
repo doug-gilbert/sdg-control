@@ -30,6 +30,9 @@ public:
     bool applyChannelState(int channel,
                            const ChannelState& state) override;
 
+    // reset and set default values on the unit
+    bool reset() override;
+
     bool setWaveform(int channel, const QString& waveform);
     bool setFrequency(int channel, double hz);
     bool setAmplitude(int channel, double volts);     // sets Vpp

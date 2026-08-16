@@ -58,6 +58,8 @@ private:
 
     QLineEdit *idEdit;
 
+    QAction *resetAction;
+
     QAction *showChannel1Action;
     QAction *showChannel2Action;
 
@@ -93,7 +95,8 @@ private:
 
     void setOutput(int channel, bool enabled);
 
-    void updateEditMenu();
+    void createMenuBar();
+    void updateViewMenu();
 
     QString displayIdentification(const QString &idn) const;
 };

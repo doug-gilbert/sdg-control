@@ -410,6 +410,15 @@ MainWindow::MainWindow(QWidget *parent)
             this,
             &MainWindow::sendClicked);
 
+    createMenuBar();
+
+    updateViewMenu();
+
+    resize(800, 350);
+}
+
+void MainWindow::createMenuBar()
+{
     auto *fileMenu = menuBar()->addMenu("&File");
 
     auto *loadAction = fileMenu->addAction("&Load settings");
@@ -433,9 +442,25 @@ MainWindow::MainWindow(QWidget *parent)
 
     QMenu *editMenu = menuBar()->addMenu("&Edit");
 
-    showChannel1Action = editMenu->addAction("Show Channel 1");
+    resetAction = editMenu->addAction("Reset and set defaults");
 
-    showChannel2Action = editMenu->addAction("Show Channel 2");
+    connect(resetAction,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                sdgDebug() << "Reset requested";
+                if (generator && generator->reset())
+                    refreshClicked();
+            });
+
+    auto *viewMenu = menuBar()->addMenu("&View");
+
+    showChannel1Action = viewMenu->addAction("Show Channel 1");
+    showChannel2Action = viewMenu->addAction("Show Channel 2");
+    frontPanelAction = viewMenu->addAction("Show front panel");
+    frontPanelAction->setCheckable(true);
+    frontPanelAction->setEnabled(false);
 
     connect(ch1Widget,
             &ChannelWidget::hideRequested,
@@ -443,7 +468,7 @@ MainWindow::MainWindow(QWidget *parent)
             [this](int)
             {
                 ch1Widget->hide();
-                updateEditMenu();
+                updateViewMenu();
             });
 
     connect(ch2Widget,
@@ -452,7 +477,7 @@ MainWindow::MainWindow(QWidget *parent)
             [this](int)
             {
                 ch2Widget->hide();
-                updateEditMenu();
+                updateViewMenu();
             });
 
     connect(showChannel1Action,
@@ -461,7 +486,7 @@ MainWindow::MainWindow(QWidget *parent)
             [this]()
             {
                 ch1Widget->show();
-                updateEditMenu();
+                updateViewMenu();
             });
 
     connect(showChannel2Action,
@@ -470,14 +495,8 @@ MainWindow::MainWindow(QWidget *parent)
             [this]()
             {
                 ch2Widget->show();
-                updateEditMenu();
+                updateViewMenu();
             });
-
-    auto *viewMenu = menuBar()->addMenu("&View");
-
-    frontPanelAction = viewMenu->addAction("Show front panel");
-    frontPanelAction->setCheckable(true);
-    frontPanelAction->setEnabled(false);
 
     connect(frontPanelAction,
             &QAction::toggled,
@@ -522,10 +541,6 @@ MainWindow::MainWindow(QWidget *parent)
                                    "About SDG Control",
                                    text);
             });
-
-    updateEditMenu();
-
-    resize(800, 350);
 }
 
 MainWindow::~MainWindow()
@@ -1057,7 +1072,7 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setOutput(state.output);
 }
 
-void MainWindow::updateEditMenu()
+void MainWindow::updateViewMenu()
 {
     showChannel1Action->setEnabled(!ch1Widget->isVisible());
     showChannel2Action->setEnabled(!ch2Widget->isVisible());
