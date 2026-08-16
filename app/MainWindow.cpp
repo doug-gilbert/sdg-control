@@ -12,6 +12,9 @@
 #include <QMessageBox>
 #include <QComboBox>
 #include <QStringList>
+#include <QSettings>
+#include <QFileDialog>
+#include <QFrame>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -26,6 +29,8 @@
 #include "MainWindow.h"
 #include "FrontPanelWindow.h"
 #include "InstrumentFactory.h"
+#include "SettingsIO.h"
+#include "ChannelWidget.h"
 
 #include "debug.h"
 
@@ -230,7 +235,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     layout->addWidget(refreshButton);
 
-    setCentralWidget(central);
+    auto *frame = new QFrame(this);
+
+    frame->setFrameShape(QFrame::Box);
+    frame->setFrameShadow(QFrame::Plain);
+    frame->setLineWidth(2);
+
+    auto *frameLayout = new QVBoxLayout(frame);
+    frameLayout->setContentsMargins(4, 4, 4, 4);
+    frameLayout->addWidget(central);
+
+    setCentralWidget(frame);
 
     setInstrument(InstrumentType::Simulator);
 
@@ -775,6 +790,7 @@ void MainWindow::connectionLost()
     ch2Widget->setControlsEnabled(false);
 
     instrumentCombo->setEnabled(true);
+
     updateFrontPanelAction();
 }
 
@@ -1055,6 +1071,15 @@ void MainWindow::createFrontPanelWindow()
     frontPanelWindow = new FrontPanelWindow(generator);
 
     connect(frontPanelWindow,
+            &FrontPanelWindow::windowClosed,
+            this,
+            [this]()
+            {
+                frontPanelAction->setChecked(false);
+                updateFrontPanelAction();
+            });
+
+    connect(frontPanelWindow,
             &QObject::destroyed,
             this,
             [this]()
@@ -1065,13 +1090,17 @@ void MainWindow::createFrontPanelWindow()
 
 void MainWindow::updateFrontPanelAction()
 {
-    const bool available =
+    const bool connected =
         generator &&
         generator->hasFrontPanel() &&
         generator->isConnected();
 
-    frontPanelAction->setEnabled(available);
+    const bool canHide =
+        frontPanelWindow &&
+        frontPanelAction->isChecked();
 
-    if (!available && frontPanelAction->isChecked())
-        frontPanelAction->setChecked(false);
+    frontPanelAction->setEnabled(connected || canHide);
+
+    if (frontPanelWindow)
+        frontPanelWindow->setInstrumentConnected(connected);
 }

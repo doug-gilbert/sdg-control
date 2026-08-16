@@ -11,6 +11,8 @@
 #endif
 #endif
 
+#include <getopt.h>
+
 #include "SDG2000X.h"
 #include "debug.h"
 
@@ -38,6 +40,7 @@ int main(int argc, char *argv[])
         file.write(bmp);
         file.close();
     }
+exit(0);
 
     sdgDebug() << "Toggling front-panel channel";
     generator.toggleChannelFocus();

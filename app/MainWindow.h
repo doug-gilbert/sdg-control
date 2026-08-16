@@ -1,14 +1,10 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QSettings>
-#include <QFileDialog>
 
 #include <array>
 
-#include "SettingsIO.h"
 #include "InstrumentFactory.h"
-#include "ChannelWidget.h"
 
 class QLineEdit;
 class QPushButton;
@@ -17,6 +13,7 @@ class QCheckBox;
 class QComboBox;
 class QAction;
 
+class ChannelWidget;
 class FrontPanelWindow;
 
 

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QByteArray>
 
+
 class ScpiConnection : public QObject
 {
     Q_OBJECT

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <QString>
+
 #include "ScpiConnection.h"
 #include "Instrument.h"
-
-#include <QString>
 
 
 class SDG2000X : public Instrument
@@ -51,7 +51,7 @@ public:
 
     bool output(int channel, bool enabled);
 
-    // Use Siglent SCDP command and virtual CH1/CH2 button press
+    // Siglent front-panel screen capture and virtual CH1/CH2 button press
     QByteArray getFrontPanelImage();
     bool toggleChannelFocus();
 

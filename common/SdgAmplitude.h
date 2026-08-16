@@ -3,6 +3,7 @@
 
 #include <optional>
 
+
 class SdgAmplitude
 {
 public:

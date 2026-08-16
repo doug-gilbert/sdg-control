@@ -22,7 +22,7 @@ class ChannelWidget : public QWidget
 public:
     explicit ChannelWidget(int channel, QWidget *parent = nullptr);
 
-    void setStatus(const QString &text);  // only seen if SDG_DEVELOPER_UI=ON
+    void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
     void setWaveform(const QString &waveform);
     void setFrequency(double value);

@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QCloseEvent>
+#include <QFrame>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -38,10 +39,21 @@ FrontPanelWindow::FrontPanelWindow(Instrument *a_instrument, QWidget *parent)
     buttonLayout->addWidget(updateButton);
     buttonLayout->addWidget(toggleButton);
 
+    auto *frame = new QFrame(this);
+    frame->setFrameShape(QFrame::Box);
+    frame->setFrameShadow(QFrame::Plain);
+    frame->setLineWidth(1);
+
+    auto *frameLayout = new QVBoxLayout(frame);
+    frameLayout->setContentsMargins(4, 4, 4, 4);
+    frameLayout->addWidget(screenLabel);
+    frameLayout->addLayout(buttonLayout);
+
     auto *layout = new QVBoxLayout(this);
-    layout->addWidget(screenLabel);
-    layout->addLayout(buttonLayout);
+    layout->setContentsMargins(2, 2, 2, 2);
+    layout->addWidget(frame);
     layout->setSizeConstraint(QLayout::SetMinimumSize);
+
     adjustSize();
 
     connect(updateButton,
@@ -92,5 +104,12 @@ void FrontPanelWindow::updateScreen()
 void FrontPanelWindow::closeEvent(QCloseEvent *event)
 {
     hide();
+    emit windowClosed();
     event->ignore();
+}
+
+void FrontPanelWindow::setInstrumentConnected(bool connected)
+{
+    updateButton->setEnabled(connected);
+    toggleButton->setEnabled(connected);
 }

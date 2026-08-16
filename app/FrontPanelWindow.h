@@ -18,11 +18,14 @@ public:
     explicit FrontPanelWindow(Instrument *a_instrument,
                               QWidget *parent = nullptr);
 
+public:
+    void setInstrumentConnected(bool connected);
+
 public slots:
     void updateScreen();
-#if 0
-    void toggleChannel();
-#endif
+
+signals:
+    void windowClosed();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
