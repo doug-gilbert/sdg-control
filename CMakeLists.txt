@@ -19,7 +19,7 @@ option(SDG_DEVELOPER_UI "Extra GUI fields to aid development" OFF)
 option(SDG_BUILD_TEST "Build sdg_test CLI in test_scpi directory" OFF)
 
 if (SDG_DEBUG)
-    MESSAGE( STATUS ">> SDG_DEBUG set, messages to console" )
+    MESSAGE( STATUS ">> SDG_DEBUG set, messages sent to console" )
 endif ()
 if (SDG_DEVELOPER_UI)
     MESSAGE( STATUS ">> SDG_DEVELOPER_UI set, extra fields to aid development" )
@@ -95,8 +95,81 @@ else()
     message(STATUS "Unknown platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
+if ( NEED_GETOPT_LONG OR NEED_GETOPT_H )
+    MESSAGE( STATUS ">> Couldn't find getopt/getopt_long, use local version" )
+    set (getopt_if_needed ${CMAKE_SOURCE_DIR}/common/getopt_long.c)
+else ( )
+    set (getopt_if_needed "")
+endif ( )
+
 CHECK_INCLUDE_FILE( "getopt.h" HAVE_GETOPT_H )    # non-standard but common
 check_function_exists(getopt_long HAVE_GETOPT_LONG)
+
+set(NEED_GETOPT_H 1)
+if ( HAVE_GETOPT_H )
+    set(NEED_GETOPT_H 0)
+endif ( HAVE_GETOPT_H )
+
+set(NEED_GETOPT_LONG 1)
+if ( HAVE_GETOPT_LONG )
+    set(NEED_GETOPT_LONG 0)
+endif ( HAVE_GETOPT_LONG )
+
+set(COMP_GCC 0)
+set(COMP_CLANG 0)
+set(COMP_MSVC 0)
+set(COMP_UNKNOWN 0)
+
+message(STATUS "CMAKE_C_COMPILER     = ${CMAKE_C_COMPILER}")
+message(STATUS "CMAKE_C_COMPILER_ID  = ${CMAKE_C_COMPILER_ID}")
+message(STATUS "CMAKE_C_COMPILER_VERSION = ${CMAKE_C_COMPILER_VERSION}")
+
+# How to read environment variable CC ?  CC here is '-DCC=/usr/bin/clang'
+
+if ( $ENV{CC} MATCHES "gcc" )
+    MESSAGE( STATUS ">> GCC compiler selected [ev]" )
+    set(COMP_GCC 1)
+elseif ( $ENV{CC} MATCHES "clang" )
+    MESSAGE( STATUS ">> CLANG compiler selected [ev]" )
+    set(COMP_CLANG 1)
+elseif ( CMAKE_C_COMPILER_ID MATCHES "GNU" )
+    MESSAGE( STATUS ">> GCC compiler detected" )
+    set(COMP_GCC 1)
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    MESSAGE( STATUS ">> CLANG compiler detected" )
+    set(COMP_CLANG 1)
+elseif ( MSVC )
+    MESSAGE( STATUS ">> MSVC compiler detected" )
+    set(COMP_MSVC 1)
+else ()
+    MESSAGE( STATUS ">> did NOT detect compiler" )
+    set(COMP_UNKNOWN 1)
+endif ()
+
+function ( set_compile_options util_name )
+    if ( SDG_DEBUG )
+        target_compile_definitions(${util_name} PRIVATE DEBUG)
+        if ( COMP_GCC )
+            target_compile_options(${util_name} PRIVATE
+                -Wextra -Wmisleading-indentation -Wduplicated-cond -Wlogical-op
+                -Wnull-dereference -Wshadow -Wunused -Wsizeof-array-argument
+                -Wduplicated-branches -Wparentheses)
+        elseif ( COMP_CLANG )
+            target_compile_options(${util_name} PRIVATE
+                -Wextra -Wshadow
+                -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wundef
+                -Wimplicit-fallthrough -Woverloaded-virtual -Wnon-virtual-dtor
+                -Wcast-align -Wcast-qual -Wunused
+                -Wunreachable-code)
+                # -Wpedantic -Wconversion -Wsign-conversion -Wold-style-cast
+                # -Weverything # generates way too much nitpicking
+        elseif ( COMP_MSVC )
+            # MESSAGE( STATUS ">> MSVC compiler detected" )
+        else ()
+            # MESSAGE( STATUS ">> did NOT detect compiler" )
+        endif ()
+    endif ( SDG_DEBUG )
+endfunction ( set_compile_options )
 
 configure_file( ${CMAKE_SOURCE_DIR}/config.h.in.cmake ${CMAKE_BINARY_DIR}/config.h )
 

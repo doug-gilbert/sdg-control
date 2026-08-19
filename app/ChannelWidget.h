@@ -29,6 +29,7 @@ public:
     void setAmplitude(double value);
     void setOffset(double value);
     void setPhase(double value);
+    void setDuty(double value);
     void setRampSymmetry(double value);
     void setPulseWidth(double value);
     void setPulseRise(double value);
@@ -50,6 +51,7 @@ signals:
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
     void phaseChanged(int channel, double phase);
+    void dutyChanged(int channel, double phase);
     void rampSymmetryChanged(int channel, double percent);
     void pulseWidthChanged(int channel, double value);
     void pulseRiseChanged(int channel, double value);
@@ -83,6 +85,7 @@ private:
     QLabel *amplitudeLabel;
     QLabel *offsetLabel;
     QLabel *phaseLabel;
+    QLabel *dutyLabel;
     QLabel *rampSymmetryLabel;
     QLabel *pulseWidthLabel;
     QLabel *pulseRiseLabel;
@@ -100,6 +103,7 @@ private:
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;
     QDoubleSpinBox *phaseSpin;
+    QDoubleSpinBox *dutySpin;
     QDoubleSpinBox *rampSymmetrySpin;
     QDoubleSpinBox *pulseWidthSpin;
     QDoubleSpinBox *pulseRiseSpin;

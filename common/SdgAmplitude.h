@@ -16,7 +16,7 @@ public:
 
     struct InstrumentValues
     {
-        std::optional<double> vpp;
+        std::optional<double> vpp = 1.0;   // don't want an Amplitude of 0 V
         std::optional<double> vrms;
         std::optional<double> dBm;
     };

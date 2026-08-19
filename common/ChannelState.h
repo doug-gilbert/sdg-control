@@ -13,6 +13,8 @@ struct ChannelState
     double offset = 0.0;
     double phase = 0.0;
 
+    double duty = 50.0;       // percentage, 0..100
+
     double rampSymmetry = 50.0;
 
     double pulseWidth = 0.000'200;

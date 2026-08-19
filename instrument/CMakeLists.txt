@@ -13,13 +13,7 @@ add_library(instrument
     SimulatorInstrument.h
 )
 
-if ( SDG_DEBUG )
-    target_compile_definitions(instrument PRIVATE SDG_DEBUG)
-    target_compile_options(instrument PRIVATE
-        -Wextra -Wmisleading-indentation -Wduplicated-cond -Wlogical-op
-        -Wnull-dereference -Wshadow -Wunused -Wsizeof-array-argument
-        -Wduplicated-branches -Wparentheses)
-endif ()
+set_compile_options(instrument)     # function defined in parent
 
 target_include_directories(instrument PRIVATE ${CMAKE_BINARY_DIR})
 target_include_directories(instrument PUBLIC ${PROJECT_SOURCE_DIR}/common)

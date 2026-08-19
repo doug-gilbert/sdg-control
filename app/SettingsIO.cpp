@@ -29,6 +29,7 @@ namespace
     constexpr auto AmplitudeRepresentationKey = "amplitudeRepresentation";
     constexpr auto OffsetKey        = "offset";
     constexpr auto PhaseKey         = "phase";
+    constexpr auto DutyKey          = "duty";
     constexpr auto SymmetryKey      = "rampSymmetry";
     constexpr auto PulseWidthKey    = "pulseWidth";
     constexpr auto PulseRiseKey     = "pulseRise";
@@ -57,6 +58,7 @@ namespace
                                                                    "dBm";
         obj[OffsetKey]         = state.offset;
         obj[PhaseKey]          = state.phase;
+        obj[DutyKey]           = state.duty;
         obj[SymmetryKey]       = state.rampSymmetry;
         obj[PulseWidthKey]     = state.pulseWidth;
         obj[PulseRiseKey]      = state.pulseRise;
@@ -120,6 +122,8 @@ namespace
         }
         if (obj.contains(PhaseKey))
             state.phase = obj[PhaseKey].toDouble();
+        if (obj.contains(DutyKey))
+            state.duty = obj[DutyKey].toDouble();
         if (obj.contains(SymmetryKey))
             state.rampSymmetry = obj[SymmetryKey].toDouble();
         if (obj.contains(PulseWidthKey))

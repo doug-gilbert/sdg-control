@@ -257,7 +257,6 @@ bool SDG2000X::setDcPrecisionHigh(int channel, bool enabled)
 #endif
 }
 
-
 bool SDG2000X::output(int channel, bool enabled)
 {
     if (!scpi.isConnected())
@@ -275,6 +274,63 @@ bool SDG2000X::output(int channel, bool enabled)
     }
 
     return getOutputState(channel) == enabled;
+}
+
+bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
+                             bool polNormal)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:OUTP %2,LOAD,%3,PLRT,%4")
+        .arg(channelPrefix(channel))
+        .arg(enabled ? "ON" : "OFF")
+        .arg(load50 ? "50" : "HZ")
+        .arg(polNormal ? "NOR" : "INVT");
+
+    if (!scpi.command(cmd))
+    {
+        sdgDebug() << __func__ << "scpi.command() returned false";
+        return false;
+    }
+
+    return getOutputState(channel) == enabled;
+}
+
+bool SDG2000X::outputBoth(bool enabled)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("OUT_BOTHCH %1")
+        .arg(enabled ? "ON" : "OFF");
+
+    if (!scpi.command(cmd))
+    {
+        sdgDebug() << __func__ << "scpi.command() returned false";
+        return false;
+    }
+    return true;
+}
+
+bool SDG2000X::invert(int channel, bool enabled)
+{
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:INVT %2")
+        .arg(channelPrefix(channel))
+        .arg(enabled ? "ON" : "OFF");
+
+    if (!scpi.command(cmd))
+    {
+        sdgDebug() << __func__ << "scpi.command() returned false";
+        return false;
+    }
+    return true;
 }
 
 ChannelState SDG2000X::getChannelState(int channel)
@@ -340,6 +396,10 @@ ChannelState SDG2000X::getChannelState(int channel)
         {
             state.phase = value.toDouble();
         }
+        else if (key == "DUTY")
+        {
+            state.duty = value.toDouble();
+        }
         else if (key == "SYM")
         {
             state.rampSymmetry = value.toDouble();
@@ -377,6 +437,9 @@ ChannelState SDG2000X::getChannelState(int channel)
         {
             value.remove("HZ");
             state.noiseBandwidth = value.toDouble();
+        }
+        else if (key == "DUTY") {
+            state.duty = value.toDouble();
         }
     }
 
@@ -464,6 +527,8 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
         ok &= setUserAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
+        if (state.waveform == "SQUARE")
+            ok &= setDuty(channel, state.duty);
     }
 
     // Wait up to 5 seconds, could be connection lost
@@ -500,4 +565,21 @@ bool SDG2000X::reset()
         return false;
 
     return waitForOperationComplete(5000);
+}
+
+bool SDG2000X::setDuty(int channel, double percent)
+{
+    if (percent < 0.0 || percent > 100.0) {
+        sdgDebug() << __func__ << "bad percentage:" << percent;
+        return false;
+    }
+    if (!scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV DUTY,%2")
+        .arg(channelPrefix(channel))
+        .arg(percent, 0, 'f', 3);
+
+    return scpi.command(cmd);
 }

@@ -137,6 +137,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     phaseSpin->setSuffix("°");
     phaseSpin->setKeyboardTracking(false);
 
+    dutySpin = new QDoubleSpinBox(groupBox);
+    dutySpin->setRange(0.0, 100.0);
+    dutySpin->setDecimals(1);
+    dutySpin->setSingleStep(1.0);
+    dutySpin->setSuffix("%");
+    dutySpin->setKeyboardTracking(false);
+
     rampSymmetrySpin = new QDoubleSpinBox(groupBox);
     rampSymmetrySpin->setRange(0.0, 100.0);
     rampSymmetrySpin->setDecimals(1);
@@ -213,6 +220,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
     offsetLabel = new QLabel("Offset:", groupBox);
     phaseLabel = new QLabel("Phase:", groupBox);
+    dutyLabel = new QLabel("Duty:", groupBox);
     rampSymmetryLabel = new QLabel("Ramp symmetry:", groupBox);
     pulseWidthLabel = new QLabel("Pulse Width:", groupBox);
     pulseRiseLabel = new QLabel("Pulse Rise:", groupBox);
@@ -233,6 +241,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(amplitudeLabel, amplitudeSpin);
     formLayout->addRow(offsetLabel, offsetSpin);
     formLayout->addRow(phaseLabel, phaseSpin);
+    formLayout->addRow(dutyLabel, dutySpin);
     formLayout->addRow(rampSymmetryLabel, rampSymmetrySpin);
     formLayout->addRow(pulseWidthLabel, pulseWidthSpin);
     formLayout->addRow(pulseRiseLabel, pulseRiseSpin);
@@ -292,6 +301,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             [this](double value)
             {
                 emit phaseChanged(this->channel, value);
+            });
+
+    connect(dutySpin,
+            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,
+            [this](double value)
+            {
+                emit dutyChanged(this->channel, value);
             });
 
     connect(rampSymmetrySpin,
@@ -434,6 +451,13 @@ void ChannelWidget::setPhase(double value)
     phaseSpin->blockSignals(false);
 }
 
+void ChannelWidget::setDuty(double value)
+{
+    dutySpin->blockSignals(true);
+    dutySpin->setValue(value);
+    dutySpin->blockSignals(false);
+}
+
 void ChannelWidget::setRampSymmetry(double percent)
 {
     rampSymmetrySpin->blockSignals(true);
@@ -554,6 +578,7 @@ void ChannelWidget::updateControlVisibility()
 {
     const QString waveform = waveformCombo->currentText();
 
+    const bool showSquare = (waveform == "SQUARE");
     const bool showSymmetry = (waveform == "RAMP");
     const bool showPulse = (waveform == "PULSE");
     const bool showNoise = (waveform == "NOISE");
@@ -571,6 +596,9 @@ void ChannelWidget::updateControlVisibility()
 
     phaseLabel->setVisible(showStandardControls);
     phaseSpin->setVisible(showStandardControls);
+
+    dutyLabel->setVisible(showSquare);
+    dutySpin->setVisible(showSquare);
 
     rampSymmetryLabel->setVisible(showSymmetry);
     rampSymmetrySpin->setVisible(showSymmetry);

@@ -57,7 +57,7 @@
  *          }    // The blockSignals() are needed
  *  3)  in app/ChannelWidget.cpp ctor add:
  *          dcOffsetSpin = new QDoubleSpinBox(groupBox);
- *      follower by initial setters (see code for other Spinboxes)a, then add
+ *      followed by initial setters (see code for other Spinboxes), then add
  *          dcOffsetLabel = new QLabel("DC Offset:", groupBox);
  *      then expand ChannelWidget::updateControlVisibility()
  *          const bool showDC = (waveform == "DC");
@@ -177,9 +177,9 @@ MainWindow::MainWindow(QWidget *parent)
     immediateCheck = new QCheckBox("Immediate updates", central);
     immediateCheck->setChecked(true);
     immediateCheck->setToolTip(
-        "When checked, changes are sent to the function generator "
-        "as soon as editing is complete.\n"
-        "When unchecked, changes are sent only when Send is pressed.");
+        "When Checked: changes are sent to the function generator\n"
+        "when editing of each field is complete.\n"
+        "When Unchecked: changes are sent when Send button is pressed.");
 
     sendButton = new QPushButton("Send", central);
     sendButton->hide();
@@ -312,6 +312,13 @@ MainWindow::MainWindow(QWidget *parent)
         [this](int channel, double value)
         {
             setPhase(channel, value);
+        });
+
+    connectChannelWidgets(
+        &ChannelWidget::dutyChanged,
+        [this](int channel, double value)
+        {
+            setDuty(channel, value);
         });
 
     connectChannelWidgets(
@@ -458,14 +465,17 @@ void MainWindow::createMenuBar()
 
     showChannel1Action = viewMenu->addAction("Show Channel 1");
     showChannel1Action->setCheckable(true);
-    showChannel1Action->setChecked(ch1Widget->isVisible());
+    // Assume at startup, both Channels are visible
+    showChannel1Action->setChecked(true);
+    // At this point the widgets have not yet been shown, so isVisible()
+    // cannot be used to initialize these actions.
     showChannel1Action->setToolTip(
         "Remove Channel 1 from this UI leaving more\n"
         "screen 'real estate' for Channel 2");
 
     showChannel2Action = viewMenu->addAction("Show Channel 2");
     showChannel2Action->setCheckable(true);
-    showChannel2Action->setChecked(ch2Widget->isVisible());
+    showChannel2Action->setChecked(true);
     showChannel2Action->setToolTip(
         "Remove Channel 2 from this UI leaving more\n"
         "screen 'real estate' for Channel 1");
@@ -473,6 +483,8 @@ void MainWindow::createMenuBar()
     frontPanelAction = viewMenu->addAction("Show front panel");
     frontPanelAction->setCheckable(true);
     frontPanelAction->setEnabled(false);
+    frontPanelAction->setToolTip(
+        "Fetch SDG2000X's screen as a bmp and render it");
 
     connect(ch1Widget,
             &ChannelWidget::hideRequested,
@@ -656,6 +668,11 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
             .arg(ch.pulseRise)
             .arg(ch.pulseFall)
             .arg(ch.output ? "ON" : "OFF"));
+    else if (ch.waveform == "SQUARE")
+        cwid.setStatus( QString("%1  Duty %2 Output %3")
+            .arg(common)
+            .arg(ch.duty)
+            .arg(ch.output ? "ON" : "OFF"));
     else if (my_chan == 1 && ch.waveform == "SINE")
         cwid.setStatus( QString("%1  Output %2  %3")
             .arg(common)
@@ -678,6 +695,7 @@ static void setChannelFields(int my_chan, ChannelWidget & cwid,
     cwid.setAmplitude(vpp.value_or(0.0));
     cwid.setOffset(ch.offset);
     cwid.setPhase(ch.phase);
+    cwid.setDuty(ch.duty);
     cwid.setRampSymmetry(ch.rampSymmetry);
     cwid.setPulseWidth(ch.pulseWidth);
     cwid.setPulseRise(ch.pulseRise);
@@ -901,6 +919,16 @@ void MainWindow::setPhase(int channel, double value)
         setDirty(true);
 }
 
+void MainWindow::setDuty(int channel, double value)
+{
+    pendingState[channel - 1].duty = value;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
 void MainWindow::setRampSymmetry(int channel, double value)
 {
     pendingState[channel - 1].rampSymmetry = value;
@@ -1086,6 +1114,7 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
            state.amplitude.instrumentValues().vpp.value_or(0.0));
     widget->setOffset(state.offset);
     widget->setPhase(state.phase);
+    widget->setDuty(state.duty);
     widget->setRampSymmetry(state.rampSymmetry);
     widget->setPulseWidth(state.pulseWidth);
     widget->setPulseRise(state.pulseRise);

@@ -82,6 +82,7 @@ private:
     void setAmplitude(int channel, double value);
     void setOffset(int channel, double value);
     void setPhase(int channel, double value);
+    void setDuty(int channel, double value);
     void setRampSymmetry(int channel, double value);
     void setPulseWidth(int channel, double value);
     void setPulseRise(int channel, double value);

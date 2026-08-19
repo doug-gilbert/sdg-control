@@ -111,9 +111,11 @@ The second last line above builds a 'deb' and/or a 'rpm' package. The last
 line executes the app that has just been built.
 
 Cmake options in this project (default shown after '='):
+```sh
    SDG_BUILD_TEST:BOOL=OFF     # Build sdg_test CLI in test_scpi directory
    SDG_DEBUG:BOOL=OFF          # Enable SDG SCPI debug output
    SDG_DEVELOPER_UI:BOOL=OFF   # Extra GUI fields to aid development
+```
 
 Note that both cmake build examples above do an "out-of-tree" build. All
 build artifacts, including the executable and any packages generated, are
@@ -168,4 +170,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-15
+Last updated: 2026-08-18

@@ -12,6 +12,9 @@
 
 #include "MainWindow.h"
 
+#include "my_getopt.h"
+
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
