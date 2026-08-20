@@ -112,9 +112,9 @@ line executes the app that has just been built.
 
 Cmake options in this project (default shown after '='):
 ```sh
-   SDG_BUILD_TEST:BOOL=OFF     # Build sdg_test CLI in test_scpi directory
-   SDG_DEBUG:BOOL=OFF          # Enable SDG SCPI debug output
-   SDG_DEVELOPER_UI:BOOL=OFF   # Extra GUI fields to aid development
+   SDG_BUILD_TEST:BOOL=OFF   # Build sdg_test CLI in test_instrument directory
+   SDG_DEBUG:BOOL=OFF        # Enable SDG SCPI debug output
+   SDG_DEVELOPER_UI:BOOL=OFF # Extra GUI fields to aid development
 ```
 
 Note that both cmake build examples above do an "out-of-tree" build. All
@@ -132,11 +132,9 @@ is useful before a new build.
 ## Test utility
 
 The repository also contains a small command-line test program
-(`test_scpi`) that can be used to verify SCPI communication with an
-instrument independently of the GUI. That test program is not built
-by default, to build it uncomment the following line in the top level
-CMakeLists.txt file:
-    # add_subdirectory(test_scpi)
+(`test_instrument`) that can be used to verify functionality independently
+of the GUI. That test program is not built by default, to build it use
+the cmake option: SDG_BUILD_TEST=ON .
 
 ## License
 
@@ -170,4 +168,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-18
+Last updated: 2026-08-20

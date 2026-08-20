@@ -128,7 +128,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "Vpp",
         "mVpp",
         "Vrms",
-        "mVrms"
+        "mVrms",
+        "dBm"
     });
     amplitudeUnitCombo->setSizeAdjustPolicy(
         QComboBox::AdjustToContents);
@@ -310,6 +311,18 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                 emit amplitudeChanged(this->channel, value);
             });
 
+    connect(amplitudeUnitCombo,
+            &QComboBox::currentTextChanged,
+            this,
+            [this](const QString &)
+            {
+                updateAmplitudeControls();
+
+                emit amplitudeRepresentationChanged(
+                    this->channel,
+                    amplitudeRepresentation());
+            });
+
     connect(offsetSpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
@@ -464,12 +477,90 @@ void ChannelWidget::setFrequencyState(double frequency)
 void ChannelWidget::setAmplitudeState(const SdgAmplitude &amplitude)
 {
     amplitudeSpin->blockSignals(true);
+    amplitudeUnitCombo->blockSignals(true);
 
-    if (amplitude.instrumentValues().vpp)
-        amplitudeSpin->setValue(
-            *amplitude.instrumentValues().vpp);
+    amplitudeSpin->setValue(amplitude.userValue());
 
+    switch (amplitude.userRepresentation())
+    {
+    case SdgAmplitude::Representation::Vpp:
+        amplitudeUnitCombo->setCurrentText("Vpp");
+        break;
+
+    case SdgAmplitude::Representation::mVpp:
+        amplitudeUnitCombo->setCurrentText("mVpp");
+        break;
+
+    case SdgAmplitude::Representation::Vrms:
+        amplitudeUnitCombo->setCurrentText("Vrms");
+        break;
+
+    case SdgAmplitude::Representation::mVrms:
+        amplitudeUnitCombo->setCurrentText("mVrms");
+        break;
+
+    case SdgAmplitude::Representation::dBm:
+        amplitudeUnitCombo->setCurrentText("dBm");
+        break;
+    }
+
+    amplitudeUnitCombo->blockSignals(false);
     amplitudeSpin->blockSignals(false);
+}
+
+SdgAmplitude::Representation ChannelWidget::amplitudeRepresentation() const
+{
+    const QString representation = amplitudeUnitCombo->currentText();
+
+    if (representation == "mVpp")
+        return SdgAmplitude::Representation::mVpp;
+
+    if (representation == "Vrms")
+        return SdgAmplitude::Representation::Vrms;
+
+    if (representation == "mVrms")
+        return SdgAmplitude::Representation::mVrms;
+
+    if (representation == "dBm")
+        return SdgAmplitude::Representation::dBm;
+
+    return SdgAmplitude::Representation::Vpp;
+}
+
+void ChannelWidget::updateAmplitudeControls()
+{
+    switch (amplitudeRepresentation())
+    {
+    case SdgAmplitude::Representation::Vpp:
+        amplitudeSpin->setRange(0.0, 20.0);
+        amplitudeSpin->setDecimals(3);
+        amplitudeSpin->setSingleStep(0.1);
+        break;
+
+    case SdgAmplitude::Representation::mVpp:
+        amplitudeSpin->setRange(0.0, 20000.0);
+        amplitudeSpin->setDecimals(1);
+        amplitudeSpin->setSingleStep(10.0);
+        break;
+
+    case SdgAmplitude::Representation::Vrms:
+        amplitudeSpin->setRange(0.0, 10.0);
+        amplitudeSpin->setDecimals(3);
+        amplitudeSpin->setSingleStep(0.1);
+        break;
+
+    case SdgAmplitude::Representation::mVrms:
+        amplitudeSpin->setRange(0.0, 10000.0);
+        amplitudeSpin->setDecimals(1);
+        amplitudeSpin->setSingleStep(10.0);
+        break;
+
+    case SdgAmplitude::Representation::dBm:
+        amplitudeSpin->setRange(-100.0, 30.0);
+        amplitudeSpin->setDecimals(3);
+        amplitudeSpin->setSingleStep(0.1);
+        break;
+    }
 }
 
 void ChannelWidget::setOffsetState(double offset)
@@ -585,10 +676,10 @@ void ChannelWidget::setDcPrecisionHighState(bool enabled)
     dcPrecisionHighCheck->blockSignals(false);
 }
 
-void ChannelWidget::setOutputState(bool enabled)
+void ChannelWidget::setOutputState(const OutputState &output)
 {
     outputCheck->blockSignals(true);
-    outputCheck->setChecked(enabled);
+    outputCheck->setChecked(output.enabled);
     outputCheck->blockSignals(false);
 }
 

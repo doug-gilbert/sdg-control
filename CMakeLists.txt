@@ -16,7 +16,7 @@ string(TIMESTAMP BUILD_TIME "%Y%m%d %H:%M:%S")
 
 option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
 option(SDG_DEVELOPER_UI "Extra GUI fields to aid development" OFF)
-option(SDG_BUILD_TEST "Build sdg_test CLI in test_scpi directory" OFF)
+option(SDG_BUILD_TEST "Build sdg_test CLI in test_instrument directory" OFF)
 
 if (SDG_DEBUG)
     MESSAGE( STATUS ">> SDG_DEBUG set, messages sent to console" )
@@ -186,7 +186,7 @@ set(CMAKE_AUTOMOC ON)
 
 add_subdirectory(instrument)
 if (SDG_BUILD_TEST)
-    add_subdirectory(test_scpi)
+    add_subdirectory(test_instrument)
 endif ()
 add_subdirectory(app)
 

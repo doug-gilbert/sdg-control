@@ -2,6 +2,7 @@
 #pragma once
 
 #include <optional>
+#include <QDebug>
 
 
 class SdgAmplitude
@@ -10,7 +11,9 @@ public:
     enum class Representation
     {
         Vpp,
+        mVpp,
         Vrms,
+        mVrms,
         dBm
     };
 
@@ -63,3 +66,46 @@ private:
     double m_userValue = 1.0;
     Representation m_userRepresentation = Representation::Vpp;
 };
+
+inline QDebug operator<<(QDebug debug, const SdgAmplitude &amplitude)
+{
+    const auto &iv = amplitude.instrumentValues();
+
+    debug.noquote()
+        << "SdgAmplitude{"
+        << "userValue=" << amplitude.userValue()
+        << ", userRepresentation=";
+
+    switch (amplitude.userRepresentation())
+    {
+    case SdgAmplitude::Representation::Vpp:
+        debug << "Vpp";
+        break;
+
+    case SdgAmplitude::Representation::Vrms:
+        debug << "Vrms";
+        break;
+
+    case SdgAmplitude::Representation::dBm:
+        debug << "dBm";
+        break;
+
+    case SdgAmplitude::Representation::mVpp:
+        debug << "mVpp";
+        break;
+
+    case SdgAmplitude::Representation::mVrms:
+        debug << "mVrms";
+        break;
+    }
+
+    debug << ", instrumentVpp="
+          << (iv.vpp ? QString::number(*iv.vpp) : "<none>")
+          << ", instrumentVrms="
+          << (iv.vrms ? QString::number(*iv.vrms) : "<none>")
+          << ", instrumentdBm="
+          << (iv.dBm ? QString::number(*iv.dBm) : "<none>")
+          << "}";
+
+    return debug;
+}

@@ -80,6 +80,8 @@ private:
     void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
     void setAmplitude(int channel, double value);
+    void setAmplitudeRepresentation(int channel,
+            SdgAmplitude::Representation representation);
     void setOffset(int channel, double value);
     void setPhase(int channel, double value);
     void setDuty(int channel, double value);

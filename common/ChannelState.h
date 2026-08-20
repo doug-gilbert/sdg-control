@@ -1,8 +1,21 @@
 #pragma once
 
 #include <QString>
+#include <QDebug>
 
 #include "SdgAmplitude.h"
+
+enum class OutputLoad
+{
+    Ohm50,
+    HighZ
+};
+
+struct OutputState
+{
+    bool enabled = false;
+    OutputLoad load = OutputLoad::Ohm50;
+};
 
 struct ChannelState
 {
@@ -29,5 +42,15 @@ struct ChannelState
     double dcOffset = 0.0;
     bool dcPrecisionHigh = true;  // false implies low precision
 
-    bool output = false;
+    OutputState output;
 };
+
+inline QDebug operator<<(QDebug debug, const OutputState &output)
+{
+    debug << "OutputState{"
+          << " enabled=" << output.enabled
+          << " load="
+          << (output.load == OutputLoad::Ohm50 ? "Ohm50" : "HighZ")
+          << " }";
+    return debug;
+}

@@ -140,6 +140,12 @@ bool SDG2000X::setUserAmplitude(
 
     case SdgAmplitude::Representation::dBm:
         return setAmplitudedBm(channel, amplitude.userValue());
+
+    case SdgAmplitude::Representation::mVpp:
+        return setAmplitude(channel, amplitude.userValue() / 1000.0);
+
+    case SdgAmplitude::Representation::mVrms:
+        return setAmplitudeVrms(channel, amplitude.userValue() / 1000.0);
     }
 
     return false;
@@ -273,7 +279,9 @@ bool SDG2000X::output(int channel, bool enabled)
         return false;
     }
 
-    return getOutputState(channel) == enabled;
+    auto state = getOutputState(channel);
+
+    return state && state->enabled == enabled;
 }
 
 bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
@@ -295,7 +303,9 @@ bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
         return false;
     }
 
-    return getOutputState(channel) == enabled;
+    auto state = getOutputState(channel);
+
+    return state && state->enabled == enabled;
 }
 
 bool SDG2000X::outputBoth(bool enabled)
@@ -440,7 +450,10 @@ ChannelState SDG2000X::getChannelState(int channel)
         }
     }
 
-    state.output = getOutputState(channel);
+    const auto outputState = getOutputState(channel);
+
+    if (outputState)
+        state.output = *outputState;
 
     return state;
 }
@@ -453,14 +466,27 @@ bool SDG2000X::clearErrors()
     return scpi.command("*CLS");
 }
 
-bool SDG2000X::getOutputState(int channel)
+std::optional<OutputState> SDG2000X::getOutputState(int channel)
 {
     QString response =
         scpi.query(channelPrefix(channel) + ":OUTP?");
 
     sdgDebug() << "OUTP response:" << response;
 
-    return response.contains("OUTP ON");
+    if (response.isEmpty())
+        return std::nullopt;
+
+    OutputState state;
+    state.enabled = response.contains("OUTP ON");
+
+    if (response.contains("LOAD,50"))
+        state.load = OutputLoad::Ohm50;
+    else if (response.contains("LOAD,HZ"))
+        state.load = OutputLoad::HighZ;
+    else
+        return std::nullopt;
+
+    return state;
 }
 
 QString SDG2000X::getError()
@@ -530,7 +556,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
 
     // Wait up to 5 seconds, could be connection lost
     ok &= waitForOperationComplete(5000);
-    ok &= output(channel, state.output);
+    ok &= output(channel, state.output.enabled);
 
     return ok;
 }

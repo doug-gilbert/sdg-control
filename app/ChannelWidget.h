@@ -8,6 +8,7 @@
 #include <QString>
 
 #include "SdgAmplitude.h"
+#include "ChannelState.h"
 
 class QLabel;
 class QCheckBox;
@@ -44,7 +45,7 @@ public:
     void setDcOffsetState(double value);
     void setDcPrecisionHighState(bool enabled);
 
-    void setOutputState(bool enabled);
+    void setOutputState(const OutputState &output);
 
     void setControlsEnabled(bool enabled);
 
@@ -75,6 +76,9 @@ signals:
 private:
     void updateControlVisibility();
     void updatePulseDuty();
+
+    SdgAmplitude::Representation amplitudeRepresentation() const;
+    void updateAmplitudeControls();
 
     int channel;
 

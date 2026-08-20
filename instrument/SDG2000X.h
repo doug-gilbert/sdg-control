@@ -2,6 +2,8 @@
 
 #include <QString>
 
+#include <optional>
+
 #include "ScpiConnection.h"
 #include "Instrument.h"
 
@@ -72,7 +74,7 @@ public:
 
     bool clearErrors();
 
-    bool getOutputState(int channel);
+    std::optional<OutputState> getOutputState(int channel);
 
     QString getError();
 

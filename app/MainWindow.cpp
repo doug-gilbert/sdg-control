@@ -261,11 +261,13 @@ MainWindow::MainWindow(QWidget *parent)
                 if (checked)
                 {
                     sendButton->hide();
+                    sdgDebug() << "enter Immediate mode";
                     setDirty(false);
                 }
                 else
                 {
                     sendButton->show();
+                    sdgDebug() << "enter Send mode";
                     sendButton->setEnabled(dirty);
                 }
             });
@@ -298,6 +300,14 @@ MainWindow::MainWindow(QWidget *parent)
         [this](int channel, double value)
         {
             setAmplitude(channel, value);
+        });
+
+    connectChannelWidgets(
+        &ChannelWidget::amplitudeRepresentationChanged,
+        [this](int channel,
+               SdgAmplitude::Representation representation)
+        {
+            setAmplitudeRepresentation(channel, representation);
         });
 
     connectChannelWidgets(
@@ -655,33 +665,33 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
         cwid.setStatus( QString("%1  Sym %2  Output %3")
             .arg(common)
             .arg(ch.rampSymmetry)
-            .arg(ch.output ? "ON" : "OFF"));
+            .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "DC")
         cwid.setStatus( QString("%1  DC_OFST %2  Output %3")
             .arg(common)
             .arg(ch.dcOffset)
-            .arg(ch.output ? "ON" : "OFF"));
+            .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "PULSE")
         cwid.setStatus( QString("%1  Width %2  Rise %3  Fall %4  Output %5")
             .arg(common)
             .arg(ch.pulseWidth)
             .arg(ch.pulseRise)
             .arg(ch.pulseFall)
-            .arg(ch.output ? "ON" : "OFF"));
+            .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "SQUARE")
         cwid.setStatus( QString("%1  Duty %2 Output %3")
             .arg(common)
             .arg(ch.duty)
-            .arg(ch.output ? "ON" : "OFF"));
+            .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (my_chan == 1 && ch.waveform == "SINE")
         cwid.setStatus( QString("%1  Output %2  %3")
             .arg(common)
-            .arg(ch.output ? "ON" : "OFF")
+            .arg(ch.output.enabled ? "ON" : "OFF")
             .arg(BUILD_TIME));
     else
         cwid.setStatus( QString("%1  Output %2")
             .arg(common)
-            .arg(ch.output ? "ON" : "OFF"));
+            .arg(ch.output.enabled ? "ON" : "OFF"));
 }
 #endif
 
@@ -887,11 +897,33 @@ void MainWindow::setFrequency(int channel, double value)
         setDirty(true);
 }
 
-// Currently setting Vpp
 void MainWindow::setAmplitude(int channel, double value)
 {
-    pendingState[channel - 1].amplitude.setUserValue(
-            value, SdgAmplitude::Representation::Vpp);
+    auto &amplitude = pendingState[channel - 1].amplitude;
+
+    amplitude.setUserValue(
+        value,
+        amplitude.userRepresentation());
+
+    sdgDebug() << "setAmplitude:" << amplitude;
+
+    if (immediateMode)
+        generator->applyChannelState(channel, pendingState[channel - 1]);
+    else
+        setDirty(true);
+}
+
+void MainWindow::setAmplitudeRepresentation(
+    int channel,
+    SdgAmplitude::Representation representation)
+{
+    auto &amplitude = pendingState[channel - 1].amplitude;
+
+    amplitude.setUserValue(
+        amplitude.userValue(),
+        representation);
+
+    sdgDebug() << "setAmplitudeRepresentation:" << amplitude;
 
     if (immediateMode)
         generator->applyChannelState(channel, pendingState[channel - 1]);
@@ -1031,7 +1063,7 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 
 void MainWindow::setOutput(int channel, bool enabled)
 {
-    pendingState[channel - 1].output = enabled;
+    pendingState[channel - 1].output.enabled = enabled;
 
     if (immediateMode)
         generator->applyChannelState(channel, pendingState[channel - 1]);

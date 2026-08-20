@@ -70,7 +70,7 @@ namespace
         obj[DcOffsetKey]       = state.dcOffset;
         obj[DcPrecisionHighKey] = state.dcPrecisionHigh;
 
-        obj[OutputKey]         = state.output;
+        obj[OutputKey]         = state.output.enabled;
 
         return obj;
     }
@@ -84,7 +84,7 @@ namespace
         }
 
         state.waveform  = obj[WaveformKey].toString();
-        state.output    = obj[OutputKey].toBool();
+        state.output.enabled = obj[OutputKey].toBool();
 
         if (obj.contains(FrequencyKey))
             state.frequency = obj[FrequencyKey].toDouble();
