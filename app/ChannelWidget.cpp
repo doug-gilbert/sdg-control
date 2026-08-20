@@ -120,8 +120,31 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     amplitudeSpin->setRange(0, 20);
     amplitudeSpin->setDecimals(3);
     amplitudeSpin->setSingleStep(0.1);
-    amplitudeSpin->setSuffix(" V");
+    amplitudeSpin->setSuffix("");
     amplitudeSpin->setKeyboardTracking(false);
+
+    amplitudeUnitCombo = new QComboBox(groupBox);
+    amplitudeUnitCombo->addItems({
+        "Vpp",
+        "mVpp",
+        "Vrms",
+        "mVrms"
+    });
+    amplitudeUnitCombo->setSizeAdjustPolicy(
+        QComboBox::AdjustToContents);
+
+    amplitudeUnitCombo->setSizePolicy(
+        QSizePolicy::Fixed,
+        QSizePolicy::Fixed);
+
+    auto *amplitudeWidget = new QWidget(groupBox);
+    auto *amplitudeLayout = new QHBoxLayout(amplitudeWidget);
+
+    amplitudeLayout->setContentsMargins(0, 0, 0, 0);
+    amplitudeLayout->setSpacing(6);
+
+    amplitudeLayout->addWidget(amplitudeSpin);
+    amplitudeLayout->addWidget(amplitudeUnitCombo);
 
     offsetSpin = new QDoubleSpinBox(groupBox);
     offsetSpin->setRange(-10, 10);
@@ -238,7 +261,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     // Add labels and related fields to form (which is in groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencySpin);
-    formLayout->addRow(amplitudeLabel, amplitudeSpin);
+    formLayout->addRow(amplitudeLabel, amplitudeWidget);
     formLayout->addRow(offsetLabel, offsetSpin);
     formLayout->addRow(phaseLabel, phaseSpin);
     formLayout->addRow(dutyLabel, dutySpin);
@@ -422,7 +445,15 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     updateControlVisibility();
 }
 
-void ChannelWidget::setFrequency(double frequency)
+void ChannelWidget::setWaveformState(const QString &waveform)
+{
+    waveformCombo->blockSignals(true);
+    waveformCombo->setCurrentText(waveform);
+    waveformCombo->blockSignals(false);
+    updateControlVisibility();
+}
+
+void ChannelWidget::setFrequencyState(double frequency)
 {
     frequencySpin->blockSignals(true);
     frequencySpin->setValue(frequency);
@@ -430,42 +461,46 @@ void ChannelWidget::setFrequency(double frequency)
     updatePulseDuty();
 }
 
-void ChannelWidget::setAmplitude(double amplitude)
+void ChannelWidget::setAmplitudeState(const SdgAmplitude &amplitude)
 {
     amplitudeSpin->blockSignals(true);
-    amplitudeSpin->setValue(amplitude);
+
+    if (amplitude.instrumentValues().vpp)
+        amplitudeSpin->setValue(
+            *amplitude.instrumentValues().vpp);
+
     amplitudeSpin->blockSignals(false);
 }
 
-void ChannelWidget::setOffset(double offset)
+void ChannelWidget::setOffsetState(double offset)
 {
     offsetSpin->blockSignals(true);
     offsetSpin->setValue(offset);
     offsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setPhase(double value)
+void ChannelWidget::setPhaseState(double value)
 {
     phaseSpin->blockSignals(true);
     phaseSpin->setValue(value);
     phaseSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDuty(double value)
+void ChannelWidget::setDutyState(double value)
 {
     dutySpin->blockSignals(true);
     dutySpin->setValue(value);
     dutySpin->blockSignals(false);
 }
 
-void ChannelWidget::setRampSymmetry(double percent)
+void ChannelWidget::setRampSymmetryState(double percent)
 {
     rampSymmetrySpin->blockSignals(true);
     rampSymmetrySpin->setValue(percent);
     rampSymmetrySpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseWidth(double value)
+void ChannelWidget::setPulseWidthState(double value)
 {
     pulseWidthSpin->blockSignals(true);
     pulseWidthSpin->setValue(value);
@@ -473,14 +508,14 @@ void ChannelWidget::setPulseWidth(double value)
     updatePulseDuty();
 }
 
-void ChannelWidget::setPulseRise(double value)
+void ChannelWidget::setPulseRiseState(double value)
 {
     pulseRiseSpin->blockSignals(true);
     pulseRiseSpin->setValue(value * 1'000'000'000.0);
     pulseRiseSpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseFall(double value)
+void ChannelWidget::setPulseFallState(double value)
 {
     pulseFallSpin->blockSignals(true);
     pulseFallSpin->setValue(value * 1'000'000'000.0);
@@ -506,7 +541,7 @@ void ChannelWidget::updatePulseDuty()
     pulseDutySpin->setValue(duty);
 }
 
-void ChannelWidget::setNoiseBandset(bool enabled)
+void ChannelWidget::setNoiseBandsetState(bool enabled)
 {
     noiseBandsetCheck->blockSignals(true);
     noiseBandsetCheck->setChecked(enabled);
@@ -515,42 +550,42 @@ void ChannelWidget::setNoiseBandset(bool enabled)
     updateControlVisibility();
 }
 
-void ChannelWidget::setNoiseStdev(double value)
+void ChannelWidget::setNoiseStdevState(double value)
 {
     noiseStdevSpin->blockSignals(true);
     noiseStdevSpin->setValue(value);
     noiseStdevSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseMean(double value)
+void ChannelWidget::setNoiseMeanState(double value)
 {
     noiseMeanSpin->blockSignals(true);
     noiseMeanSpin->setValue(value);
     noiseMeanSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseBandwidth(double value)
+void ChannelWidget::setNoiseBandwidthState(double value)
 {
     noiseBandwidthSpin->blockSignals(true);
     noiseBandwidthSpin->setValue(value);
     noiseBandwidthSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcOffset(double value)
+void ChannelWidget::setDcOffsetState(double value)
 {
     dcOffsetSpin->blockSignals(true);
     dcOffsetSpin->setValue(value);
     dcOffsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcPrecisionHigh(bool enabled)
+void ChannelWidget::setDcPrecisionHighState(bool enabled)
 {
     dcPrecisionHighCheck->blockSignals(true);
     dcPrecisionHighCheck->setChecked(enabled);
     dcPrecisionHighCheck->blockSignals(false);
 }
 
-void ChannelWidget::setOutput(bool enabled)
+void ChannelWidget::setOutputState(bool enabled)
 {
     outputCheck->blockSignals(true);
     outputCheck->setChecked(enabled);
@@ -564,14 +599,6 @@ void ChannelWidget::setStatus(const QString &text)
 #else
     Q_UNUSED(text);
 #endif
-}
-
-void ChannelWidget::setWaveform(const QString &waveform)
-{
-    waveformCombo->blockSignals(true);
-    waveformCombo->setCurrentText(waveform);
-    waveformCombo->blockSignals(false);
-    updateControlVisibility();
 }
 
 void ChannelWidget::updateControlVisibility()

@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QString>
 
+#include "SdgAmplitude.h"
+
 class QLabel;
 class QCheckBox;
 class QDoubleSpinBox;
@@ -14,6 +16,7 @@ class QComboBox;
 class QGroupBox;
 class QFormLayout;
 class QPushButton;
+
 
 class ChannelWidget : public QWidget
 {
@@ -24,30 +27,32 @@ public:
 
     void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
-    void setWaveform(const QString &waveform);
-    void setFrequency(double value);
-    void setAmplitude(double value);
-    void setOffset(double value);
-    void setPhase(double value);
-    void setDuty(double value);
-    void setRampSymmetry(double value);
-    void setPulseWidth(double value);
-    void setPulseRise(double value);
-    void setPulseFall(double value);
-    void setNoiseBandset(bool enabled);
-    void setNoiseStdev(double value);
-    void setNoiseMean(double value);
-    void setNoiseBandwidth(double value);
-    void setDcOffset(double value);
-    void setDcPrecisionHigh(bool enabled);
+    void setWaveformState(const QString &waveform);
+    void setFrequencyState(double value);
+    void setAmplitudeState(const SdgAmplitude &amplitude);
+    void setOffsetState(double value);
+    void setPhaseState(double value);
+    void setDutyState(double value);
+    void setRampSymmetryState(double value);
+    void setPulseWidthState(double value);
+    void setPulseRiseState(double value);
+    void setPulseFallState(double value);
+    void setNoiseBandsetState(bool enabled);
+    void setNoiseStdevState(double value);
+    void setNoiseMeanState(double value);
+    void setNoiseBandwidthState(double value);
+    void setDcOffsetState(double value);
+    void setDcPrecisionHighState(bool enabled);
 
-    void setOutput(bool enabled);
+    void setOutputState(bool enabled);
 
     void setControlsEnabled(bool enabled);
 
 signals:
     void frequencyChanged(int channel, double value);
     void amplitudeChanged(int channel, double value);
+    void amplitudeRepresentationChanged(int channel,
+            SdgAmplitude::Representation representation);
     void offsetChanged(int channel, double value);
     void waveformChanged(int channel, const QString &waveform);
     void phaseChanged(int channel, double phase);
@@ -99,6 +104,7 @@ private:
     QLabel *dcPrecisionHighLabel;
 
     QComboBox *waveformCombo;
+    QComboBox *amplitudeUnitCombo;
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;

@@ -438,9 +438,6 @@ ChannelState SDG2000X::getChannelState(int channel)
             value.remove("HZ");
             state.noiseBandwidth = value.toDouble();
         }
-        else if (key == "DUTY") {
-            state.duty = value.toDouble();
-        }
     }
 
     state.output = getOutputState(channel);

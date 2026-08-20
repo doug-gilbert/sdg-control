@@ -688,31 +688,31 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
-    auto vpp = ch.amplitude.instrumentValues().vpp;
+    // auto vpp = ch.amplitude.instrumentValues().vpp;
 
-    cwid.setWaveform(ch.waveform);
-    cwid.setFrequency(ch.frequency);
-    cwid.setAmplitude(vpp.value_or(0.0));
-    cwid.setOffset(ch.offset);
-    cwid.setPhase(ch.phase);
-    cwid.setDuty(ch.duty);
-    cwid.setRampSymmetry(ch.rampSymmetry);
-    cwid.setPulseWidth(ch.pulseWidth);
-    cwid.setPulseRise(ch.pulseRise);
-    cwid.setPulseFall(ch.pulseFall);
-    cwid.setNoiseBandset(ch.noiseBandset);
-    cwid.setNoiseStdev(ch.noiseStdev);
-    cwid.setNoiseMean(ch.noiseMean);
-    cwid.setNoiseBandwidth(ch.noiseBandwidth);
-    cwid.setDcOffset(ch.dcOffset);
+    cwid.setWaveformState(ch.waveform);
+    cwid.setFrequencyState(ch.frequency);
+    cwid.setAmplitudeState(ch.amplitude);
+    cwid.setOffsetState(ch.offset);
+    cwid.setPhaseState(ch.phase);
+    cwid.setDutyState(ch.duty);
+    cwid.setRampSymmetryState(ch.rampSymmetry);
+    cwid.setPulseWidthState(ch.pulseWidth);
+    cwid.setPulseRiseState(ch.pulseRise);
+    cwid.setPulseFallState(ch.pulseFall);
+    cwid.setNoiseBandsetState(ch.noiseBandset);
+    cwid.setNoiseStdevState(ch.noiseStdev);
+    cwid.setNoiseMeanState(ch.noiseMean);
+    cwid.setNoiseBandwidthState(ch.noiseBandwidth);
+    cwid.setDcOffsetState(ch.dcOffset);
 
 // DC Precision is present in the SDG UI/firmware but is not currently
 // documented by Siglent and is not returned by BSWV?. Leave the field
 // in the application state/UI so it can be wired up if a future
 // firmware/SCPI implementation exposes it.
-    cwid.setDcPrecisionHigh(ch.dcPrecisionHigh);
+    cwid.setDcPrecisionHighState(ch.dcPrecisionHigh);
 
-    cwid.setOutput(ch.output);
+    cwid.setOutputState(ch.output);
 
 #ifdef SDG_DEVELOPER_UI
     setChannelStatus(my_chan, cwid, ch);
@@ -1108,25 +1108,24 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 {
     ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
 
-    widget->setWaveform(state.waveform);
-    widget->setFrequency(state.frequency);
-    widget->setAmplitude(
-           state.amplitude.instrumentValues().vpp.value_or(0.0));
-    widget->setOffset(state.offset);
-    widget->setPhase(state.phase);
-    widget->setDuty(state.duty);
-    widget->setRampSymmetry(state.rampSymmetry);
-    widget->setPulseWidth(state.pulseWidth);
-    widget->setPulseRise(state.pulseRise);
-    widget->setPulseFall(state.pulseFall);
-    widget->setNoiseBandset(state.noiseBandset);
-    widget->setNoiseStdev(state.noiseStdev);
-    widget->setNoiseMean(state.noiseMean);
-    widget->setNoiseBandwidth(state.noiseBandwidth);
-    widget->setDcOffset(state.dcOffset);
-    widget->setDcPrecisionHigh(state.dcPrecisionHigh);
+    widget->setWaveformState(state.waveform);
+    widget->setFrequencyState(state.frequency);
+    widget->setAmplitudeState(state.amplitude);
+    widget->setOffsetState(state.offset);
+    widget->setPhaseState(state.phase);
+    widget->setDutyState(state.duty);
+    widget->setRampSymmetryState(state.rampSymmetry);
+    widget->setPulseWidthState(state.pulseWidth);
+    widget->setPulseRiseState(state.pulseRise);
+    widget->setPulseFallState(state.pulseFall);
+    widget->setNoiseBandsetState(state.noiseBandset);
+    widget->setNoiseStdevState(state.noiseStdev);
+    widget->setNoiseMeanState(state.noiseMean);
+    widget->setNoiseBandwidthState(state.noiseBandwidth);
+    widget->setDcOffsetState(state.dcOffset);
+    widget->setDcPrecisionHighState(state.dcPrecisionHigh);
 
-    widget->setOutput(state.output);
+    widget->setOutputState(state.output);
 }
 
 void MainWindow::createFrontPanelWindow()
