@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QCommandLineParser>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -12,12 +13,29 @@
 
 #include "MainWindow.h"
 
-#include "my_getopt.h"
+#include "debug.h"
 
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("SDG2000X control");
+    parser.addHelpOption();
+
+    QCommandLineOption debugFocusOption(
+        "debug-focus",
+        "Log widget focus changes.");
+
+    parser.addOption(debugFocusOption);
+
+    parser.process(app);
+
+    const bool debugFocus = parser.isSet(debugFocusOption);
+
+    sdgDebug() << "debugFocus=" << debugFocus
+               << "not implemented yet";
 
     MainWindow window;
     window.show();
