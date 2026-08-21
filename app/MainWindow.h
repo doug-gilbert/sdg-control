@@ -22,9 +22,11 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(bool myDebugFocus, QWidget *parent = nullptr);
 
     ~MainWindow();
+
+    bool isAmplitudeWidget(QWidget *widget) const;
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -39,6 +41,8 @@ private slots:
     void saveSettings();
 
 private:
+    bool debugFocus = false;
+
     bool immediateMode = true;
     bool dirty = false;
 

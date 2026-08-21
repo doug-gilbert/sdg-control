@@ -54,9 +54,9 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     auto *headerLayout = new QHBoxLayout;
 
-    auto *titleLabel = new QLabel(
-        QString("Channel %1").arg(channel),
-        this);
+    const QString chOutStr(QString("CH%1 Output").arg(channel));
+
+    auto *titleLabel = new QLabel(chOutStr, this);
 
     QFont font = titleLabel->font();
     font.setBold(true);
@@ -93,9 +93,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow("Status:", statusLabel);
 #endif
 
-    outputCheck = new QCheckBox(
-        QString("CH%1 Output").arg(channel),
-        groupBox);
+    outputCheck = new QCheckBox(chOutStr, groupBox);
+    outputCheck->setObjectName("outputCheck");
 
     waveformCombo = new QComboBox(groupBox);
 
@@ -110,6 +109,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     });
 
     frequencySpin = new QDoubleSpinBox(groupBox);
+    frequencySpin->setObjectName("frequencySpin");
     frequencySpin->setRange(0.000'01, 120'000'000);
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
@@ -117,6 +117,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     frequencySpin->setKeyboardTracking(false);
 
     amplitudeSpin = new QDoubleSpinBox(groupBox);
+    amplitudeSpin->setObjectName("amplitudeSpin");
     amplitudeSpin->setRange(0, 20);
     amplitudeSpin->setDecimals(3);
     amplitudeSpin->setSingleStep(0.1);
@@ -124,6 +125,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     amplitudeSpin->setKeyboardTracking(false);
 
     amplitudeUnitCombo = new QComboBox(groupBox);
+    amplitudeUnitCombo->setObjectName("amplitudeUnitCombo");
     amplitudeUnitCombo->addItems({
         "Vpp",
         "mVpp",
@@ -138,16 +140,23 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         QSizePolicy::Fixed,
         QSizePolicy::Fixed);
 
-    auto *amplitudeWidget = new QWidget(groupBox);
-    auto *amplitudeLayout = new QHBoxLayout(amplitudeWidget);
+    amplitudeGroup = new QGroupBox(groupBox);
+    amplitudeGroup->setObjectName("amplitudeGroup");
+    amplitudeGroup->setSizePolicy(
+        QSizePolicy::Preferred,
+        QSizePolicy::Fixed);
+    amplitudeGroup->setMinimumHeight(
+    amplitudeGroup->sizeHint().height());
 
-    amplitudeLayout->setContentsMargins(0, 0, 0, 0);
+    auto *amplitudeLayout = new QHBoxLayout(amplitudeGroup);
+    amplitudeLayout->setContentsMargins(4, 2, 4, 2);
     amplitudeLayout->setSpacing(6);
 
     amplitudeLayout->addWidget(amplitudeSpin);
     amplitudeLayout->addWidget(amplitudeUnitCombo);
 
     offsetSpin = new QDoubleSpinBox(groupBox);
+    offsetSpin->setObjectName("offsetSpin");
     offsetSpin->setRange(-10, 10);
     offsetSpin->setDecimals(3);
     offsetSpin->setSingleStep(0.1);
@@ -155,6 +164,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     offsetSpin->setKeyboardTracking(false);
 
     phaseSpin = new QDoubleSpinBox(groupBox);
+    phaseSpin->setObjectName("phaseSpin");
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
     phaseSpin->setSingleStep(1.0);
@@ -162,6 +172,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     phaseSpin->setKeyboardTracking(false);
 
     dutySpin = new QDoubleSpinBox(groupBox);
+    dutySpin->setObjectName("dutySpin");
     dutySpin->setRange(0.0, 100.0);
     dutySpin->setDecimals(1);
     dutySpin->setSingleStep(1.0);
@@ -169,6 +180,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     dutySpin->setKeyboardTracking(false);
 
     rampSymmetrySpin = new QDoubleSpinBox(groupBox);
+    rampSymmetrySpin->setObjectName("rampSymmetrySpin");
     rampSymmetrySpin->setRange(0.0, 100.0);
     rampSymmetrySpin->setDecimals(1);
     rampSymmetrySpin->setSingleStep(1.0);
@@ -176,6 +188,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     rampSymmetrySpin->setKeyboardTracking(false);
 
     pulseWidthSpin = new QDoubleSpinBox(groupBox);
+    pulseWidthSpin->setObjectName("pulseWidthSpin");
     pulseWidthSpin->setRange(0.000'000'001, 1.0);
     pulseWidthSpin->setDecimals(9);
     pulseWidthSpin->setSingleStep(0.000'001);
@@ -183,6 +196,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseWidthSpin->setKeyboardTracking(false);
 
     pulseRiseSpin = new QDoubleSpinBox(groupBox);
+    pulseRiseSpin->setObjectName("pulseRiseSpin");
     pulseRiseSpin->setRange(0.001, 1'000'000.0);
     pulseRiseSpin->setDecimals(3);
     pulseRiseSpin->setSingleStep(0.1);
@@ -190,6 +204,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseRiseSpin->setKeyboardTracking(false);
 
     pulseFallSpin = new QDoubleSpinBox(groupBox);
+    pulseFallSpin->setObjectName("pulseFallSpin");
     pulseFallSpin->setRange(0.001, 1'000'000.0);
     pulseFallSpin->setDecimals(3);
     pulseFallSpin->setSingleStep(0.1);
@@ -197,6 +212,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseFallSpin->setKeyboardTracking(false);
 
     pulseDutySpin = new QDoubleSpinBox(groupBox);
+    pulseDutySpin->setObjectName("pulseDutySpin");
     pulseDutySpin->setRange(0.0, 100.0);
     pulseDutySpin->setDecimals(3);
     pulseDutySpin->setSuffix(" %");
@@ -205,6 +221,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     pulseDutySpin->setFocusPolicy(Qt::NoFocus);
 
     noiseStdevSpin = new QDoubleSpinBox(groupBox);
+    noiseStdevSpin->setObjectName("noiseStdevSpin");
     noiseStdevSpin->setRange(0.002, 10.0);
     noiseStdevSpin->setDecimals(3);
     noiseStdevSpin->setSingleStep(0.001);
@@ -212,6 +229,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     noiseStdevSpin->setKeyboardTracking(false);
 
     noiseMeanSpin = new QDoubleSpinBox(groupBox);
+    noiseMeanSpin->setObjectName("noiseMeanSpin");
     noiseMeanSpin->setRange(-10.0, 10.0);
     noiseMeanSpin->setDecimals(3);
     noiseMeanSpin->setSingleStep(0.001);
@@ -219,6 +237,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     noiseMeanSpin->setKeyboardTracking(false);
 
     noiseBandwidthSpin = new QDoubleSpinBox(groupBox);
+    noiseBandwidthSpin->setObjectName("noiseBandwidthSpin");
     noiseBandwidthSpin->setRange(0.001, 120'000'000.0);
     noiseBandwidthSpin->setDecimals(3);
     noiseBandwidthSpin->setSingleStep(1.0);
@@ -226,9 +245,11 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     noiseBandwidthSpin->setKeyboardTracking(false);
 
     noiseBandsetCheck = new QCheckBox(groupBox);
+    noiseBandsetCheck->setObjectName("noiseBandsetCheck");
     noiseBandsetCheck->setText("On");
 
     dcOffsetSpin = new QDoubleSpinBox(groupBox);
+    dcOffsetSpin->setObjectName("dcOffsetSpin");
     dcOffsetSpin->setRange(-10.000'0, 10.000'0);
     dcOffsetSpin->setDecimals(4);
     dcOffsetSpin->setSingleStep(1.0);
@@ -236,6 +257,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     dcOffsetSpin->setKeyboardTracking(false);
 
     dcPrecisionHighCheck = new QCheckBox(groupBox);
+    dcPrecisionHighCheck->setObjectName("dcPrecisionHighCheck");
     dcPrecisionHighCheck->setText("High");
 
     // Create widgets and labels
@@ -259,10 +281,12 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     updateControlVisibility();
 
-    // Add labels and related fields to form (which is in groupbox)
+    // Add labels and related fields to form (which is in a groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencySpin);
-    formLayout->addRow(amplitudeLabel, amplitudeWidget);
+
+    formLayout->addRow(amplitudeLabel, amplitudeGroup);
+
     formLayout->addRow(offsetLabel, offsetSpin);
     formLayout->addRow(phaseLabel, phaseSpin);
     formLayout->addRow(dutyLabel, dutySpin);
@@ -280,8 +304,10 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     formLayout->addRow(outputCheck);
 
+#if 0
     // Important step
     outerLayout->addWidget(groupBox);
+#endif
 
     // updateControlVisibility() call is _after_ the connect() calls
 
@@ -456,6 +482,24 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
+
+if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
+{
+    sdgDebug()
+        << "CH" << channel
+        << "widget:"
+        << size()
+        << "sizeHint:" << sizeHint()
+        << "minimumSizeHint:" << minimumSizeHint()
+        << "group:"
+        << groupBox->size()
+        << "groupHint:" << groupBox->sizeHint()
+        << "groupMinHint:" << groupBox->minimumSizeHint()
+        << "amplitudeGroup:"
+        << amplitudeGroup->size()
+        << "hint:" << amplitudeGroup->sizeHint()
+        << "minHint:" << amplitudeGroup->minimumSizeHint();
+}
 }
 
 void ChannelWidget::setWaveformState(const QString &waveform)
@@ -687,6 +731,20 @@ void ChannelWidget::setStatus(const QString &text)
 {
 #ifdef SDG_DEVELOPER_UI
     statusLabel->setText(text);
+
+ sdgDebug()
+        << "CH" << channel
+        << "status size" << statusLabel->size()
+        << "status hint" << statusLabel->sizeHint()
+        << "status minHint" << statusLabel->minimumSizeHint()
+        << "group size" << groupBox->size()
+        << "group hint" << groupBox->sizeHint()
+        << "channel size" << size()
+        << "channel hint" << sizeHint()
+        << "amplitude size" << amplitudeGroup->size()
+        << "amplitude hint" << amplitudeGroup->sizeHint()
+        << "amp spin size" << amplitudeSpin->size()
+        << "amp combo size" << amplitudeUnitCombo->size();
 #else
     Q_UNUSED(text);
 #endif
@@ -758,4 +816,22 @@ void ChannelWidget::updateControlVisibility()
 void ChannelWidget::setControlsEnabled(bool enabled)
 {
     groupBox->setEnabled(enabled);
+}
+
+void ChannelWidget::debugLayout() const
+{
+    sdgDebug()
+        << "CH" << channel
+        << "widget" << size()
+        << "hint" << sizeHint()
+        << "minHint" << minimumSizeHint()
+        << "group" << groupBox->size()
+        << "groupHint" << groupBox->sizeHint()
+        << "ampGroup" << amplitudeGroup->size()
+        << "ampHint" << amplitudeGroup->sizeHint()
+        << "ampMinHint" << amplitudeGroup->minimumSizeHint()
+        << "ampSpin" << amplitudeSpin->size()
+        << "ampSpinHint" << amplitudeSpin->sizeHint()
+        << "combo" << amplitudeUnitCombo->size()
+        << "comboHint" << amplitudeUnitCombo->sizeHint();
 }

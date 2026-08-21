@@ -80,6 +80,8 @@ private:
     SdgAmplitude::Representation amplitudeRepresentation() const;
     void updateAmplitudeControls();
 
+    void debugLayout() const;
+
     int channel;
 
     QGroupBox *groupBox;
@@ -109,6 +111,7 @@ private:
 
     QComboBox *waveformCombo;
     QComboBox *amplitudeUnitCombo;
+    QGroupBox *amplitudeGroup = nullptr;
     QDoubleSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
     QDoubleSpinBox *offsetSpin;

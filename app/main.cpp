@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     sdgDebug() << "debugFocus=" << debugFocus
                << "not implemented yet";
 
-    MainWindow window;
+    MainWindow window(debugFocus);
     window.show();
 
     return app.exec();

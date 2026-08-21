@@ -1,4 +1,5 @@
 
+#include <QApplication>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -122,8 +123,9 @@
  *
  */
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
+    : QMainWindow(parent),
+      debugFocus(myDebugFocus)
 {
     setWindowTitle("SDG Control");
 
@@ -165,16 +167,20 @@ MainWindow::MainWindow(QWidget *parent)
     ipEdit = new QLineEdit(
         settings.value("host", "sdg2000x").toString(),
         central);
+    ipEdit->setObjectName("ipEdit");
 
     connectButton = new QPushButton("Connect", central);
+    connectButton->setObjectName("connectButton");
     connectButton->setToolTip(
         "Try to connect to the given Host/IP or the simulator");
     disconnectButton = new QPushButton("Disconnect", central);
+    disconnectButton->setObjectName("disconnectButton");
     disconnectButton->setToolTip(
         "Disconnect from either a Host/IP or the simulator");
     disconnectButton->setEnabled(false);
 
     immediateCheck = new QCheckBox("Immediate updates", central);
+    immediateCheck->setObjectName("immediateCheck");
     immediateCheck->setChecked(true);
     immediateCheck->setToolTip(
         "When Checked: changes are sent to the function generator\n"
@@ -182,6 +188,7 @@ MainWindow::MainWindow(QWidget *parent)
         "When Unchecked: changes are sent when Send button is pressed.");
 
     sendButton = new QPushButton("Send", central);
+    sendButton->setObjectName("sendButton");
     sendButton->hide();
     sendButton->setEnabled(false);
     sendButton->setToolTip(
@@ -221,6 +228,7 @@ MainWindow::MainWindow(QWidget *parent)
     ch2Widget = new ChannelWidget(2, central);
 
     refreshButton = new QPushButton("Refresh", central);
+    refreshButton->setObjectName("refreshButton");
     refreshButton->setEnabled(false);
     refreshButton->setToolTip(
         "Read the current settings from the function generator.\n"
@@ -250,6 +258,30 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(frame);
 
     setInstrument(InstrumentType::Simulator);
+
+    if (debugFocus)
+    {
+        connect(qApp, &QApplication::focusChanged,
+                this,
+                [](QWidget *oldWidget, QWidget *newWidget)
+                {
+                    sdgDebug()
+                        << "focus:"
+                        << (oldWidget
+                            ? oldWidget->metaObject()->className()
+                            : "<none>")
+                        << (oldWidget
+                            ? oldWidget->objectName()
+                            : "")
+                        << "->"
+                        << (newWidget
+                            ? newWidget->metaObject()->className()
+                            : "<none>")
+                        << (newWidget
+                            ? newWidget->objectName()
+                            : "");
+                });
+    }
 
     connect(immediateCheck,
             &QCheckBox::toggled,
@@ -1200,4 +1232,18 @@ void MainWindow::updateFrontPanelAction()
 
     if (frontPanelWindow)
         frontPanelWindow->setInstrumentConnected(connected);
+}
+
+bool MainWindow::isAmplitudeWidget(QWidget *widget) const
+{
+    if (!widget)
+        return false;
+
+    for (QWidget *w = widget; w; w = w->parentWidget())
+    {
+        if (w->objectName() == "amplitudeGroup")
+            return true;
+    }
+
+    return false;
 }
