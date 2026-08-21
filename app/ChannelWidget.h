@@ -17,6 +17,7 @@ class QComboBox;
 class QGroupBox;
 class QFormLayout;
 class QPushButton;
+class QScrollArea;
 
 
 class ChannelWidget : public QWidget
@@ -83,6 +84,9 @@ private:
     void debugLayout() const;
 
     int channel;
+
+    QScrollArea *scrollArea = nullptr;
+    QWidget *scrollContents = nullptr;
 
     QGroupBox *groupBox;
     QFormLayout *formLayout;

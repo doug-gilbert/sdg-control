@@ -8,6 +8,7 @@
 #include <QToolButton>
 #include <QResizeEvent>
 #include <QPushButton>
+#include <QScrollArea>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -72,10 +73,25 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     outerLayout->addLayout(headerLayout);
 
-    groupBox = new QGroupBox(this);
+    scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(
+        Qt::ScrollBarAlwaysOff);
+    scrollArea->setVerticalScrollBarPolicy(
+        Qt::ScrollBarAsNeeded);
+
+    scrollContents = new QWidget;
+    scrollArea->setWidget(scrollContents);
+
+    outerLayout->addWidget(scrollArea);
+
+    auto *scrollLayout = new QVBoxLayout(scrollContents);
+    scrollLayout->setContentsMargins(0, 0, 0, 0);
+
+    groupBox = new QGroupBox(scrollContents);
     formLayout = new QFormLayout(groupBox);
 
-    outerLayout->addWidget(groupBox);
+    scrollLayout->addWidget(groupBox);
 
 #ifdef SDG_DEVELOPER_UI
     statusLabel = new QLabel(
@@ -145,8 +161,12 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     amplitudeGroup->setSizePolicy(
         QSizePolicy::Preferred,
         QSizePolicy::Fixed);
-    amplitudeGroup->setMinimumHeight(
-    amplitudeGroup->sizeHint().height());
+
+    if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
+        sdgDebug() << "amplitudeGroup policy:"
+                   << amplitudeGroup->sizePolicy()
+                   << "minimum:"
+                   << amplitudeGroup->minimumSize();
 
     auto *amplitudeLayout = new QHBoxLayout(amplitudeGroup);
     amplitudeLayout->setContentsMargins(4, 2, 4, 2);
@@ -483,6 +503,8 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
 
+    amplitudeGroup->setMinimumHeight(amplitudeGroup->sizeHint().height());
+
 if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
 {
     sdgDebug()
@@ -491,6 +513,10 @@ if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
         << size()
         << "sizeHint:" << sizeHint()
         << "minimumSizeHint:" << minimumSizeHint()
+        << "scroll:"
+        << scrollArea->size()
+        << "scrollHint:" << scrollArea->sizeHint()
+        << "scrollMinHint:" << scrollArea->minimumSizeHint()
         << "group:"
         << groupBox->size()
         << "groupHint:" << groupBox->sizeHint()
