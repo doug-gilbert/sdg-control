@@ -6,6 +6,8 @@ add_executable(sdg-control
     FrontPanelWindow.h
     ChannelWidget.cpp
     ChannelWidget.h
+    StepAdjustSpinBox.cpp
+    StepAdjustSpinBox.h
     SettingsIO.cpp
     SettingsIO.h
     ${getopt_if_needed}

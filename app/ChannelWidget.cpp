@@ -20,6 +20,7 @@
 
 #include "debug.h"
 #include "ChannelWidget.h"
+#include "StepAdjustSpinBox.h"
 
 
 // Helper class ChannelGroupBox hidden in this source file
@@ -124,11 +125,15 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "ARB"
     });
 
-    frequencySpin = new QDoubleSpinBox(groupBox);
+    frequencySpin = new StepAdjustSpinBox(groupBox);
     frequencySpin->setObjectName("frequencySpin");
+    frequencySpin->setToolTip(
+        "Right click in the numeric field to modify\n"
+        "the spinner step size");
     frequencySpin->setRange(0.000'01, 120'000'000);
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
+    frequencySpin->setStepLimits(0.000'01 /* minimum */, 100'000'000.0);
     frequencySpin->setSuffix(" Hz");
     frequencySpin->setKeyboardTracking(false);
 
@@ -175,19 +180,21 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     amplitudeLayout->addWidget(amplitudeSpin);
     amplitudeLayout->addWidget(amplitudeUnitCombo);
 
-    offsetSpin = new QDoubleSpinBox(groupBox);
+    offsetSpin = new StepAdjustSpinBox(groupBox);
     offsetSpin->setObjectName("offsetSpin");
     offsetSpin->setRange(-10, 10);
     offsetSpin->setDecimals(3);
     offsetSpin->setSingleStep(0.1);
+    offsetSpin->setStepLimits(0.001, 10.0);
     offsetSpin->setSuffix(" V");
     offsetSpin->setKeyboardTracking(false);
 
-    phaseSpin = new QDoubleSpinBox(groupBox);
+    phaseSpin = new StepAdjustSpinBox(groupBox);
     phaseSpin->setObjectName("phaseSpin");
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
     phaseSpin->setSingleStep(1.0);
+    phaseSpin->setStepLimits(0.1, 100.0);
     phaseSpin->setSuffix("°");
     phaseSpin->setKeyboardTracking(false);
 

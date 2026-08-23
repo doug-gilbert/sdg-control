@@ -19,6 +19,8 @@ class QFormLayout;
 class QPushButton;
 class QScrollArea;
 
+class StepAdjustSpinBox;
+
 
 class ChannelWidget : public QWidget
 {
@@ -116,10 +118,10 @@ private:
     QComboBox *waveformCombo;
     QComboBox *amplitudeUnitCombo;
     QGroupBox *amplitudeGroup = nullptr;
-    QDoubleSpinBox *frequencySpin;
+    StepAdjustSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
-    QDoubleSpinBox *offsetSpin;
-    QDoubleSpinBox *phaseSpin;
+    StepAdjustSpinBox *offsetSpin;
+    StepAdjustSpinBox *phaseSpin;
     QDoubleSpinBox *dutySpin;
     QDoubleSpinBox *rampSymmetrySpin;
     QDoubleSpinBox *pulseWidthSpin;
