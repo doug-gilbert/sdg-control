@@ -10,6 +10,8 @@ add_executable(sdg-control
     StepAdjustSpinBox.h
     SettingsIO.cpp
     SettingsIO.h
+    QuantityEdit.cpp
+    QuantityEdit.h
     ${getopt_if_needed}
 )
 

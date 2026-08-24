@@ -20,6 +20,7 @@ class QPushButton;
 class QScrollArea;
 
 class StepAdjustSpinBox;
+class QuantityEdit;
 
 
 class ChannelWidget : public QWidget
@@ -34,6 +35,9 @@ public:
     void setWaveformState(const QString &waveform);
     void setFrequencyState(double value);
     void setAmplitudeState(const SdgAmplitude &amplitude);
+    void setAmplitudeDisplay(double value,
+                             SdgAmplitude::Representation representation);
+    void setAmplitudeValue(double value);
     void setOffsetState(double value);
     void setPhaseState(double value);
     void setDutyState(double value);
@@ -52,13 +56,28 @@ public:
 
     void setControlsEnabled(bool enabled);
 
+    bool isAmplitudeValueEdited() const
+    {
+        return amplitudeValueEdited;
+    }
+
+    SdgAmplitude::Representation amplitudeDisplayedRepresentation() const
+    {
+        return m_amplitudeDisplayedRepresentation;
+    }
+
 signals:
+    void waveformChanged(int channel, const QString &waveform);
     void frequencyChanged(int channel, double value);
     void amplitudeChanged(int channel, double value);
     void amplitudeRepresentationChanged(int channel,
             SdgAmplitude::Representation representation);
-    void offsetChanged(int channel, double value);
-    void waveformChanged(int channel, const QString &waveform);
+    void amplitudeGroupChanged(int channel, double value,
+            SdgAmplitude::Representation representation);
+    void amplitudeGroupEditingFinished(int channel, double value,
+                    SdgAmplitude::Representation representation);
+    void offsetChanged(int channel, double value,
+                       const QString &representation);
     void phaseChanged(int channel, double phase);
     void dutyChanged(int channel, double phase);
     void rampSymmetryChanged(int channel, double percent);
@@ -76,12 +95,20 @@ signals:
 
     void hideRequested(int channel);
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
+    void commitAmplitudeGroup();
     void updateControlVisibility();
     void updatePulseDuty();
 
     SdgAmplitude::Representation amplitudeRepresentation() const;
-    void updateAmplitudeControls();
+    void updateAmplitudeControls(double displayedValue);
+
+    bool amplitudeValueEdited = false;
+    SdgAmplitude::Representation m_amplitudeDisplayedRepresentation =
+        SdgAmplitude::Representation::Vpp;
 
     void debugLayout() const;
 
@@ -120,7 +147,7 @@ private:
     QGroupBox *amplitudeGroup = nullptr;
     StepAdjustSpinBox *frequencySpin;
     QDoubleSpinBox *amplitudeSpin;
-    StepAdjustSpinBox *offsetSpin;
+    QuantityEdit *offsetEdit;
     StepAdjustSpinBox *phaseSpin;
     QDoubleSpinBox *dutySpin;
     QDoubleSpinBox *rampSymmetrySpin;

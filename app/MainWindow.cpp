@@ -259,30 +259,6 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
 
     setInstrument(InstrumentType::Simulator);
 
-    if (debugFocus)
-    {
-        connect(qApp, &QApplication::focusChanged,
-                this,
-                [](QWidget *oldWidget, QWidget *newWidget)
-                {
-                    sdgDebug()
-                        << "focus:"
-                        << (oldWidget
-                            ? oldWidget->metaObject()->className()
-                            : "<none>")
-                        << (oldWidget
-                            ? oldWidget->objectName()
-                            : "")
-                        << "->"
-                        << (newWidget
-                            ? newWidget->metaObject()->className()
-                            : "<none>")
-                        << (newWidget
-                            ? newWidget->objectName()
-                            : "");
-                });
-    }
-
     connect(immediateCheck,
             &QCheckBox::toggled,
             this,
@@ -343,10 +319,41 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
         });
 
     connectChannelWidgets(
-        &ChannelWidget::offsetChanged,
-        [this](int channel, double value)
+        &ChannelWidget::amplitudeGroupEditingFinished,
+        [this](int channel,
+               double value,
+               SdgAmplitude::Representation representation)
         {
-            setOffset(channel, value);
+            auto &amplitude =
+                pendingState[channel - 1].amplitude;
+
+            amplitude.setUserValue(value, representation);
+
+            sdgDebug()
+                << "amplitude group committed:"
+                << "channel =" << channel
+                << "value =" << value
+                << "representation =" << representation;
+
+            if (immediateMode)
+            {
+                generator->applyChannelState(
+                    channel,
+                    pendingState[channel - 1]);
+            }
+            else
+            {
+                setDirty(true);
+            }
+        });
+
+    connectChannelWidgets(
+        &ChannelWidget::offsetChanged,
+        [this](int channel,
+               double value,
+               const QString &representation)
+        {
+            setOffset(channel, value, representation);
         });
 
     connectChannelWidgets(
@@ -951,24 +958,61 @@ void MainWindow::setAmplitudeRepresentation(
 {
     auto &amplitude = pendingState[channel - 1].amplitude;
 
-    amplitude.setUserValue(
-        amplitude.userValue(),
-        representation);
+    const auto oldRepresentation = amplitude.userRepresentation();
 
-    sdgDebug() << "setAmplitudeRepresentation:" << amplitude;
+    if (oldRepresentation == representation)
+        return;
+
+    if (isSimpleAmplitudeScale(oldRepresentation, representation))
+    {
+        const double oldValue = amplitude.userValue();
+        const double factor =
+            amplitudeScaleFactor(oldRepresentation, representation);
+
+        amplitude.setUserValue(oldValue * factor, representation);
+
+        sdgDebug() << "setAmplitudeRepresentation:"
+                   << "simple scale"
+                   << oldValue << "->" << amplitude.userValue();
+    }
+    else
+    {
+        amplitude.setUserValue(
+            amplitude.userValue(),
+            representation);
+
+        sdgDebug() << "setAmplitudeRepresentation:"
+                   << "requires SDG conversion:"
+                   << amplitude;
+    }
 
     if (immediateMode)
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(
+            channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
 
-void MainWindow::setOffset(int channel, double value)
+void MainWindow::setOffset(int channel, double value,
+                           const QString &representation)
 {
-    pendingState[channel - 1].offset = value;
+    double volts = value;
+
+    if (representation == "mVdc")
+        volts *= 0.001;
+
+    pendingState[channel - 1].offset = volts;
+
+    sdgDebug()
+        << "setOffset:"
+        << "value =" << value
+        << "representation =" << representation
+        << "volts =" << volts;
 
     if (immediateMode)
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        generator->applyChannelState(
+            channel,
+            pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -1246,4 +1290,44 @@ bool MainWindow::isAmplitudeWidget(QWidget *widget) const
     }
 
     return false;
+}
+
+bool MainWindow::isSimpleAmplitudeScale(
+    SdgAmplitude::Representation from,
+    SdgAmplitude::Representation to) const
+{
+    return
+        (from == SdgAmplitude::Representation::Vpp &&
+         to   == SdgAmplitude::Representation::mVpp) ||
+        (from == SdgAmplitude::Representation::mVpp &&
+         to   == SdgAmplitude::Representation::Vpp) ||
+
+        (from == SdgAmplitude::Representation::Vrms &&
+         to   == SdgAmplitude::Representation::mVrms) ||
+        (from == SdgAmplitude::Representation::mVrms &&
+         to   == SdgAmplitude::Representation::Vrms);
+}
+
+double MainWindow::amplitudeScaleFactor(
+    SdgAmplitude::Representation from,
+    SdgAmplitude::Representation to) const
+{
+    if (from == SdgAmplitude::Representation::Vpp &&
+        to   == SdgAmplitude::Representation::mVpp)
+        return 1000.0;
+
+    if (from == SdgAmplitude::Representation::mVpp &&
+        to   == SdgAmplitude::Representation::Vpp)
+        return 0.001;
+
+    if (from == SdgAmplitude::Representation::Vrms &&
+        to   == SdgAmplitude::Representation::mVrms)
+        return 1000.0;
+
+    if (from == SdgAmplitude::Representation::mVrms &&
+        to   == SdgAmplitude::Representation::Vrms)
+        return 0.001;
+
+    // Not a simple scale conversion.
+    return 1.0;
 }

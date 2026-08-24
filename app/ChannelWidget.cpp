@@ -9,6 +9,8 @@
 #include <QResizeEvent>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QApplication>
+#include <QTimer>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -21,7 +23,22 @@
 #include "debug.h"
 #include "ChannelWidget.h"
 #include "StepAdjustSpinBox.h"
+#include "QuantityEdit.h"
 
+
+namespace
+{
+class OffsetRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QString> representations() const override
+    {
+        return {"Vdc", "mVdc"};
+    }
+};
+
+const OffsetRepresentation offsetRepresentation;
+}
 
 // Helper class ChannelGroupBox hidden in this source file
 class ChannelGroupBox : public QGroupBox
@@ -88,9 +105,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     auto *scrollLayout = new QVBoxLayout(scrollContents);
     scrollLayout->setContentsMargins(0, 0, 0, 0);
+    scrollLayout->setAlignment(Qt::AlignTop);
+    scrollLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
     groupBox = new QGroupBox(scrollContents);
+    groupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     formLayout = new QFormLayout(groupBox);
+    formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
     scrollLayout->addWidget(groupBox);
 
@@ -130,6 +151,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     frequencySpin->setToolTip(
         "Right click in the numeric field to modify\n"
         "the spinner step size");
+    frequencySpin->setFixedWidth(150);
     frequencySpin->setRange(0.000'01, 120'000'000);
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
@@ -138,14 +160,18 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     frequencySpin->setKeyboardTracking(false);
 
     amplitudeSpin = new QDoubleSpinBox(groupBox);
+    amplitudeSpin->installEventFilter(this);
     amplitudeSpin->setObjectName("amplitudeSpin");
-    amplitudeSpin->setRange(0, 20);
+    amplitudeSpin->setRange(-std::numeric_limits<double>::max(),
+                            std::numeric_limits<double>::max());
     amplitudeSpin->setDecimals(3);
     amplitudeSpin->setSingleStep(0.1);
     amplitudeSpin->setSuffix("");
     amplitudeSpin->setKeyboardTracking(false);
+    amplitudeSpin->setFixedWidth(150);
 
     amplitudeUnitCombo = new QComboBox(groupBox);
+    amplitudeUnitCombo->installEventFilter(this);
     amplitudeUnitCombo->setObjectName("amplitudeUnitCombo");
     amplitudeUnitCombo->addItems({
         "Vpp",
@@ -154,24 +180,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "mVrms",
         "dBm"
     });
-    amplitudeUnitCombo->setSizeAdjustPolicy(
-        QComboBox::AdjustToContents);
+    amplitudeUnitCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
 
-    amplitudeUnitCombo->setSizePolicy(
-        QSizePolicy::Fixed,
-        QSizePolicy::Fixed);
+    amplitudeUnitCombo->setSizePolicy(QSizePolicy::Fixed,
+                                      QSizePolicy::Fixed);
 
     amplitudeGroup = new QGroupBox(groupBox);
     amplitudeGroup->setObjectName("amplitudeGroup");
-    amplitudeGroup->setSizePolicy(
-        QSizePolicy::Preferred,
-        QSizePolicy::Fixed);
-
-    if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
-        sdgDebug() << "amplitudeGroup policy:"
-                   << amplitudeGroup->sizePolicy()
-                   << "minimum:"
-                   << amplitudeGroup->minimumSize();
 
     auto *amplitudeLayout = new QHBoxLayout(amplitudeGroup);
     amplitudeLayout->setContentsMargins(4, 2, 4, 2);
@@ -179,15 +194,14 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     amplitudeLayout->addWidget(amplitudeSpin);
     amplitudeLayout->addWidget(amplitudeUnitCombo);
+    amplitudeGroup->setSizePolicy(QSizePolicy::Expanding,
+                                  QSizePolicy::Fixed);
 
-    offsetSpin = new StepAdjustSpinBox(groupBox);
-    offsetSpin->setObjectName("offsetSpin");
-    offsetSpin->setRange(-10, 10);
-    offsetSpin->setDecimals(3);
-    offsetSpin->setSingleStep(0.1);
-    offsetSpin->setStepLimits(0.001, 10.0);
-    offsetSpin->setSuffix(" V");
-    offsetSpin->setKeyboardTracking(false);
+    offsetEdit = new QuantityEdit(offsetRepresentation, groupBox);
+    offsetEdit->setObjectName("offsetEdit");
+    offsetEdit->setMinimumWidth(215);
+    offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
 
     phaseSpin = new StepAdjustSpinBox(groupBox);
     phaseSpin->setObjectName("phaseSpin");
@@ -314,7 +328,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     formLayout->addRow(amplitudeLabel, amplitudeGroup);
 
-    formLayout->addRow(offsetLabel, offsetSpin);
+    formLayout->addRow(offsetLabel, offsetEdit);
     formLayout->addRow(phaseLabel, phaseSpin);
     formLayout->addRow(dutyLabel, dutySpin);
     formLayout->addRow(rampSymmetryLabel, rampSymmetrySpin);
@@ -330,11 +344,6 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     formLayout->addRow(dcPrecisionHighLabel, dcPrecisionHighCheck);
 
     formLayout->addRow(outputCheck);
-
-#if 0
-    // Important step
-    outerLayout->addWidget(groupBox);
-#endif
 
     // updateControlVisibility() call is _after_ the connect() calls
 
@@ -361,7 +370,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             this,
             [this](double value)
             {
-                emit amplitudeChanged(this->channel, value);
+                amplitudeValueEdited = true;
+
+                sdgDebug() << objectName()
+                           << "amplitude valueChanged:"
+                           << "value =" << value
+                           << "representation ="
+                           << amplitudeUnitCombo->currentText();
             });
 
     connect(amplitudeUnitCombo,
@@ -369,19 +384,67 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             this,
             [this](const QString &)
             {
-                updateAmplitudeControls();
+                const auto newRepresentation =
+                    amplitudeRepresentation();
 
-                emit amplitudeRepresentationChanged(
-                    this->channel,
-                    amplitudeRepresentation());
+                if (!amplitudeValueEdited)
+                {
+                    // Existing/model value: representation change may
+                    // scale the displayed value.
+                    emit amplitudeRepresentationChanged(
+                        this->channel,
+                        newRepresentation);
+                }
+                else
+                {
+                    // User has started editing the numeric field.
+                    // Do NOT scale or otherwise modify the number.
+                    m_amplitudeDisplayedRepresentation =
+                        newRepresentation;
+
+                    sdgDebug()
+                        << objectName()
+                        << "amplitude representation changed after edit:"
+                        << amplitudeSpin->value();
+                }
             });
 
-    connect(offsetSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(amplitudeUnitCombo,
+            &QComboBox::currentTextChanged,
             this,
-            [this](double value)
+            [this](const QString &)
             {
-                emit offsetChanged(this->channel, value);
+                const auto representation = amplitudeRepresentation();
+
+                m_amplitudeDisplayedRepresentation = representation;
+
+                sdgDebug() << objectName()
+                           << "amplitude representation changed:"
+                           << "value =" << amplitudeSpin->value()
+                           << "representation =" << representation;
+
+                emit amplitudeGroupChanged(channel, amplitudeSpin->value(),
+                                           representation);
+
+                amplitudeValueEdited = false;
+            });
+
+    connect(offsetEdit,
+            &QuantityEdit::committed,
+            this,
+            [this](const QuantityEdit::Value &,
+                   const QuantityEdit::Value &final)
+            {
+                sdgDebug()
+                    << objectName()
+                    << "offset committed:"
+                    << "value =" << final.value
+                    << "representation =" << final.representation;
+
+                emit offsetChanged(
+                    channel,
+                    final.value,
+                    final.representation);
             });
 
     connect(phaseSpin,
@@ -512,27 +575,6 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 
     amplitudeGroup->setMinimumHeight(amplitudeGroup->sizeHint().height());
 
-if (qEnvironmentVariableIsSet("SDG_LAYOUT_DEBUG"))
-{
-    sdgDebug()
-        << "CH" << channel
-        << "widget:"
-        << size()
-        << "sizeHint:" << sizeHint()
-        << "minimumSizeHint:" << minimumSizeHint()
-        << "scroll:"
-        << scrollArea->size()
-        << "scrollHint:" << scrollArea->sizeHint()
-        << "scrollMinHint:" << scrollArea->minimumSizeHint()
-        << "group:"
-        << groupBox->size()
-        << "groupHint:" << groupBox->sizeHint()
-        << "groupMinHint:" << groupBox->minimumSizeHint()
-        << "amplitudeGroup:"
-        << amplitudeGroup->size()
-        << "hint:" << amplitudeGroup->sizeHint()
-        << "minHint:" << amplitudeGroup->minimumSizeHint();
-}
 }
 
 void ChannelWidget::setWaveformState(const QString &waveform)
@@ -581,6 +623,11 @@ void ChannelWidget::setAmplitudeState(const SdgAmplitude &amplitude)
         break;
     }
 
+    m_amplitudeDisplayedRepresentation =
+        amplitude.userRepresentation();
+
+    amplitudeValueEdited = false;
+
     amplitudeUnitCombo->blockSignals(false);
     amplitudeSpin->blockSignals(false);
 }
@@ -604,47 +651,80 @@ SdgAmplitude::Representation ChannelWidget::amplitudeRepresentation() const
     return SdgAmplitude::Representation::Vpp;
 }
 
-void ChannelWidget::updateAmplitudeControls()
+void ChannelWidget::setAmplitudeValue(double value)
 {
-    switch (amplitudeRepresentation())
-    {
-    case SdgAmplitude::Representation::Vpp:
-        amplitudeSpin->setRange(0.0, 20.0);
-        amplitudeSpin->setDecimals(3);
-        amplitudeSpin->setSingleStep(0.1);
-        break;
+    amplitudeSpin->blockSignals(true);
+    amplitudeSpin->setValue(value);
+    amplitudeSpin->blockSignals(false);
 
-    case SdgAmplitude::Representation::mVpp:
-        amplitudeSpin->setRange(0.0, 20000.0);
-        amplitudeSpin->setDecimals(1);
-        amplitudeSpin->setSingleStep(10.0);
-        break;
+    amplitudeValueEdited = false;
+}
 
-    case SdgAmplitude::Representation::Vrms:
-        amplitudeSpin->setRange(0.0, 10.0);
-        amplitudeSpin->setDecimals(3);
-        amplitudeSpin->setSingleStep(0.1);
-        break;
+void ChannelWidget::updateAmplitudeControls(double displayedValue)
+{
+    amplitudeSpin->setValue(displayedValue);
+}
 
-    case SdgAmplitude::Representation::mVrms:
-        amplitudeSpin->setRange(0.0, 10000.0);
-        amplitudeSpin->setDecimals(1);
-        amplitudeSpin->setSingleStep(10.0);
-        break;
+void ChannelWidget::setAmplitudeDisplay(double value,
+                    SdgAmplitude::Representation representation)
+{
+    amplitudeSpin->blockSignals(true);
+    amplitudeUnitCombo->blockSignals(true);
 
-    case SdgAmplitude::Representation::dBm:
-        amplitudeSpin->setRange(-100.0, 30.0);
-        amplitudeSpin->setDecimals(3);
-        amplitudeSpin->setSingleStep(0.1);
-        break;
-    }
+    amplitudeUnitCombo->setCurrentText(
+        [&]() -> QString
+        {
+            switch (representation)
+            {
+            case SdgAmplitude::Representation::Vpp:
+                return "Vpp";
+
+            case SdgAmplitude::Representation::mVpp:
+                return "mVpp";
+
+            case SdgAmplitude::Representation::Vrms:
+                return "Vrms";
+
+            case SdgAmplitude::Representation::mVrms:
+                return "mVrms";
+
+            case SdgAmplitude::Representation::dBm:
+                return "dBm";
+            }
+
+            return "Vpp";
+        }());
+
+    m_amplitudeDisplayedRepresentation = representation;
+
+    updateAmplitudeControls(value);
+
+    amplitudeSpin->blockSignals(false);
+    amplitudeUnitCombo->blockSignals(false);
+}
+
+void ChannelWidget::commitAmplitudeGroup()
+{
+    const auto value = amplitudeSpin->value();
+    const auto representation = amplitudeRepresentation();
+
+    sdgDebug()
+        << objectName()
+        << "amplitude group committed:"
+        << "value =" << value
+        << "representation =" << representation;
+
+    emit amplitudeGroupEditingFinished(
+        channel,
+        value,
+        representation);
+
+    amplitudeValueEdited = false;
 }
 
 void ChannelWidget::setOffsetState(double offset)
 {
-    offsetSpin->blockSignals(true);
-    offsetSpin->setValue(offset);
-    offsetSpin->blockSignals(false);
+    offsetEdit->setValue(offset, "Vdc");
 }
 
 void ChannelWidget::setPhaseState(double value)
@@ -801,7 +881,7 @@ void ChannelWidget::updateControlVisibility()
     amplitudeSpin->setVisible(showStandardControls);
 
     offsetLabel->setVisible(showStandardControls);
-    offsetSpin->setVisible(showStandardControls);
+    offsetEdit->setVisible(showStandardControls);
 
     phaseLabel->setVisible(showStandardControls);
     phaseSpin->setVisible(showStandardControls);
@@ -867,4 +947,40 @@ void ChannelWidget::debugLayout() const
         << "ampSpinHint" << amplitudeSpin->sizeHint()
         << "combo" << amplitudeUnitCombo->size()
         << "comboHint" << amplitudeUnitCombo->sizeHint();
+}
+
+bool ChannelWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() == QEvent::FocusOut &&
+        (watched == amplitudeSpin ||
+         watched == amplitudeUnitCombo))
+    {
+        QTimer::singleShot(
+            0,
+            this,
+            [this]
+            {
+                QWidget *focus = QApplication::focusWidget();
+
+                if (focus &&
+                    (focus == amplitudeSpin ||
+                     focus == amplitudeUnitCombo ||
+                     amplitudeGroup->isAncestorOf(focus)))
+                {
+                    return;
+                }
+
+                if (!amplitudeValueEdited)
+                    return;
+
+                amplitudeValueEdited = false;
+
+                emit amplitudeGroupEditingFinished(
+                    channel,
+                    amplitudeSpin->value(),
+                    amplitudeRepresentation());
+            });
+    }
+
+    return QWidget::eventFilter(watched, event);
 }

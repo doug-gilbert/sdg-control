@@ -86,7 +86,17 @@ private:
     void setAmplitude(int channel, double value);
     void setAmplitudeRepresentation(int channel,
             SdgAmplitude::Representation representation);
-    void setOffset(int channel, double value);
+
+    bool isSimpleAmplitudeScale(
+        SdgAmplitude::Representation from,
+        SdgAmplitude::Representation to) const;
+
+    double amplitudeScaleFactor(
+        SdgAmplitude::Representation from,
+        SdgAmplitude::Representation to) const;
+
+    void setOffset(int channel, double value,
+                   const QString &representation);
     void setPhase(int channel, double value);
     void setDuty(int channel, double value);
     void setRampSymmetry(int channel, double value);

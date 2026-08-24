@@ -67,6 +67,25 @@ private:
     Representation m_userRepresentation = Representation::Vpp;
 };
 
+inline QDebug operator<<(QDebug debug,
+                         SdgAmplitude::Representation representation)
+{
+    switch (representation)
+    {
+    case SdgAmplitude::Representation::Vpp:
+        return debug << "Vpp";
+    case SdgAmplitude::Representation::mVpp:
+        return debug << "mVpp";
+    case SdgAmplitude::Representation::Vrms:
+        return debug << "Vrms";
+    case SdgAmplitude::Representation::mVrms:
+        return debug << "mVrms";
+    case SdgAmplitude::Representation::dBm:
+        return debug << "dBm";
+    }
+    return debug << "<unknown>";
+}
+
 inline QDebug operator<<(QDebug debug, const SdgAmplitude &amplitude)
 {
     const auto &iv = amplitude.instrumentValues();
