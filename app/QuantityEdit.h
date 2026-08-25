@@ -7,6 +7,8 @@
 
 #include <vector>
 
+class StepAdjustSpinBox;
+
 
 class QuantityRepresentation
 {
@@ -68,7 +70,12 @@ public:
     Value value() const
     {
         return currentValue();
-    }
+    } 
+
+    void setSingleStep(double step);
+    void setStepLimits(double minimum, double maximum);
+
+    QString debugString() const;
 
 signals:
     void editingStarted();
@@ -88,7 +95,8 @@ private:
     void beginEditing();
     void commit();
 
-    QDoubleSpinBox *m_valueSpin = nullptr;
+    // Note that StepAdjustSpinBox is derived from QDoubleSpinBox
+    StepAdjustSpinBox *m_valueSpin = nullptr;
     QComboBox *m_representationCombo = nullptr;
 
     const QuantityRepresentation &m_representation;

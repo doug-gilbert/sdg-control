@@ -17,6 +17,7 @@
 #endif
 
 #include "QuantityEdit.h"
+#include "StepAdjustSpinBox.h"
 #include "debug.h"
 
 
@@ -26,7 +27,7 @@ QuantityEdit::QuantityEdit(
     : QWidget(parent),
       m_representation(representation)
 {
-    m_valueSpin = new QDoubleSpinBox(this);
+    m_valueSpin = new StepAdjustSpinBox(this);
     m_valueSpin->setObjectName("quantityValueSpin");
     m_valueSpin->setRange(-1.0e9, 1.0e9);
     m_valueSpin->setDecimals(3);
@@ -217,4 +218,26 @@ void QuantityEdit::focusOutEvent(QFocusEvent *event)
 {
     sdgDebug() << objectName() << __func__;
     QWidget::focusOutEvent(event);
+}
+
+void QuantityEdit::setSingleStep(double step)
+{
+    m_valueSpin->setSingleStep(step);
+}
+
+void QuantityEdit::setStepLimits(double minimum, double maximum)
+{
+    m_valueSpin->setStepLimits(minimum, maximum);
+}
+
+QString QuantityEdit::debugString() const
+{
+    const Value cval = currentValue();
+
+    return QString("current: [%1, %2]  orig: [%3, %4]  editing: %5")
+                   .arg(cval.value, 0, 'g', 6)
+                   .arg(cval.representation)
+                   .arg(m_originalValue.value, 0, 'g', 6)
+                   .arg(m_originalValue.representation)
+                   .arg(m_editing ? "true" : "false");
 }

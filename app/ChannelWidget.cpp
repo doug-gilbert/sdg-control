@@ -435,6 +435,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             [this](const QuantityEdit::Value &,
                    const QuantityEdit::Value &final)
             {
+                sdgDebug() << "offsetEdit: " << offsetEdit->debugString();
                 sdgDebug()
                     << objectName()
                     << "offset committed:"
