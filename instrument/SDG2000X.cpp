@@ -159,7 +159,7 @@ bool SDG2000X::setOffset(int channel, double volts)
     QString cmd =
         QString("%1:BSWV OFST,%2")
         .arg(channelPrefix(channel))
-        .arg(QString::number(volts, 'f', 3));
+        .arg(QString::number(volts, 'g', 4));
 
     return scpi.command(cmd);
 }
@@ -246,7 +246,7 @@ bool SDG2000X::setDcOffset(int channel, double value)
     return scpi.command(
         QString("%1:BSWV OFST,%2")
             .arg(channelPrefix(channel))
-            .arg(value, 0, 'g', 12));
+            .arg(value, 0, 'g', 4));
 }
 
 bool SDG2000X::setDcPrecisionHigh(int channel, bool enabled)
