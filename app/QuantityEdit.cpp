@@ -5,6 +5,8 @@
 #include <QFocusEvent>
 #include <QHBoxLayout>
 #include <QTimer>
+#include <QContextMenuEvent>
+#include <QMenu>
 
 #include <limits>
 
@@ -149,6 +151,15 @@ bool QuantityEdit::eventFilter(
     {
         return QWidget::eventFilter(watched, event);
     }
+    if (watched == m_representationCombo &&
+        event->type() == QEvent::ContextMenu)
+    {
+        auto *contextEvent = static_cast<QContextMenuEvent *>(event);
+
+        showRepresentationContextMenu(contextEvent->globalPos());
+
+        return true;
+    }
 
     if (event->type() == QEvent::FocusIn)
     {
@@ -228,6 +239,57 @@ void QuantityEdit::setSingleStep(double step)
 void QuantityEdit::setStepLimits(double minimum, double maximum)
 {
     m_valueSpin->setStepLimits(minimum, maximum);
+}
+
+double QuantityEdit::convertedValue(double value, const QString &from,
+                                    const QString &to) const
+{
+    const double fromScale = m_representation.scale(from);
+    const double toScale = m_representation.scale(to);
+
+    return value * fromScale / toScale;
+}
+
+void QuantityEdit::showRepresentationContextMenu(
+    const QPoint &globalPos)
+{
+    const QString from = m_representationCombo->currentText();
+
+    QMenu menu(this);
+
+    for (const auto &to : m_representation.representations())
+    {
+        if (to == from)
+            continue;
+
+        if (!m_representation.convertible(from, to))
+            continue;
+
+        auto *action = menu.addAction(
+            QString("Convert %1 to %2").arg(from, to));
+
+        connect(action,
+                &QAction::triggered,
+                this,
+                [this, from, to]
+                {
+                    beginEditing();
+
+                    const double value =
+                        convertedValue(
+                            m_valueSpin->value(),
+                            from,
+                            to);
+
+                    m_valueSpin->setValue(value);
+                    m_representationCombo->setCurrentText(to);
+                });
+    }
+
+    if (menu.isEmpty())
+        return;
+
+    menu.exec(globalPos);
 }
 
 QString QuantityEdit::debugString() const

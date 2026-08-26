@@ -16,6 +16,11 @@ public:
     virtual ~QuantityRepresentation() = default;
 
     virtual std::vector<QString> representations() const = 0;
+
+    virtual double scale(const QString &representation) const = 0;
+
+    virtual bool convertible(const QString &from,
+                             const QString &to) const = 0;
 };
 
 
@@ -94,6 +99,11 @@ private:
 
     void beginEditing();
     void commit();
+
+    double convertedValue(double value, const QString &from,
+                          const QString &to) const;
+
+    void showRepresentationContextMenu(const QPoint &globalPos);
 
     // Note that StepAdjustSpinBox is derived from QDoubleSpinBox
     StepAdjustSpinBox *m_valueSpin = nullptr;

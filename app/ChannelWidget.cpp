@@ -11,6 +11,7 @@
 #include <QScrollArea>
 #include <QApplication>
 #include <QTimer>
+#include <QtGlobal>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -28,12 +29,31 @@
 
 namespace
 {
+
 class OffsetRepresentation : public QuantityRepresentation
 {
 public:
     std::vector<QString> representations() const override
     {
         return {"Vdc", "mVdc"};
+    }
+
+    double scale(const QString &representation) const override
+    {
+        if (representation == "Vdc")
+            return 1.0;
+
+        if (representation == "mVdc")
+            return 0.001;
+
+        Q_ASSERT(false);
+        return 1.0;
+    }
+
+    bool convertible(const QString &from, const QString &to) const override
+    {
+        return (from == "Vdc" && to == "mVdc") ||
+               (from == "mVdc" && to == "Vdc");
     }
 };
 
