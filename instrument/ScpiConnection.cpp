@@ -35,7 +35,7 @@ ScpiConnection::ScpiConnection(QObject *parent)
 
 ScpiConnection::~ScpiConnection()
 {
-    sdgDebug() << "ScpiConnection destructor";
+    sdgDebug() << Q_FUNC_INFO;
 
     if (socket.state() != QAbstractSocket::UnconnectedState)
     {
@@ -57,7 +57,7 @@ bool ScpiConnection::connectTo(const QString& host, quint16 port)
 
     if (!socket.waitForConnected(3000))
     {
-        sdgDebug() << "Connection failed:"
+        sdgDebug() << Q_FUNC_INFO << "Connection failed:"
                    << socket.errorString();
 
         socket.abort();
@@ -190,7 +190,7 @@ bool ScpiConnection::waitForOperationComplete(int timeout_ms)
     if (!isConnected())
         return false;
 
-    sdgDebug() << "Waiting for operation complete";
+    sdgDebug() << Q_FUNC_INFO;
 
     QString response = query("*OPC?", timeout_ms);
 

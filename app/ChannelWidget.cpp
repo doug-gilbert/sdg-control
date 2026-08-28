@@ -30,6 +30,50 @@
 namespace
 {
 
+class AmplitudeRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QString> representations() const override
+    {
+        return {
+            "Vpp",
+            "mVpp",
+            "Vrms",
+            "mVrms",
+            "dBm"
+        };
+    }
+
+    double scale(const QString &representation) const override
+    {
+        if (representation == "Vpp")
+            return 1.0;
+
+        if (representation == "mVpp")
+            return 0.001;
+
+        if (representation == "Vrms")
+            return 1.0;
+
+        if (representation == "mVrms")
+            return 0.001;
+
+        Q_ASSERT(representation == "dBm");
+        return 1.0;
+    }
+
+    bool convertible(const QString &from, const QString &to) const override
+    {
+        return
+            (from == "Vpp"  && to == "mVpp") ||
+            (from == "mVpp" && to == "Vpp")  ||
+            (from == "Vrms" && to == "mVrms") ||
+            (from == "mVrms" && to == "Vrms");
+    }
+};
+
+const AmplitudeRepresentation amplitudeQuantityRepresentation;
+
 class OffsetRepresentation : public QuantityRepresentation
 {
 public:
@@ -59,6 +103,7 @@ public:
 
 const OffsetRepresentation offsetRepresentation;
 }
+
 
 // Helper class ChannelGroupBox hidden in this source file
 class ChannelGroupBox : public QGroupBox
@@ -176,46 +221,17 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     frequencySpin->setDecimals(6);
     frequencySpin->setSingleStep(0.000'01);
     frequencySpin->setStepLimits(0.000'01 /* minimum */, 100'000'000.0);
+#if 0
     frequencySpin->setSuffix(" Hz");
+#endif
     frequencySpin->setKeyboardTracking(false);
 
-    amplitudeSpin = new QDoubleSpinBox(groupBox);
-    amplitudeSpin->installEventFilter(this);
-    amplitudeSpin->setObjectName("amplitudeSpin");
-    amplitudeSpin->setRange(-std::numeric_limits<double>::max(),
-                            std::numeric_limits<double>::max());
-    amplitudeSpin->setDecimals(3);
-    amplitudeSpin->setSingleStep(0.1);
-    amplitudeSpin->setSuffix("");
-    amplitudeSpin->setKeyboardTracking(false);
-    amplitudeSpin->setFixedWidth(150);
-
-    amplitudeUnitCombo = new QComboBox(groupBox);
-    amplitudeUnitCombo->installEventFilter(this);
-    amplitudeUnitCombo->setObjectName("amplitudeUnitCombo");
-    amplitudeUnitCombo->addItems({
-        "Vpp",
-        "mVpp",
-        "Vrms",
-        "mVrms",
-        "dBm"
-    });
-    amplitudeUnitCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-
-    amplitudeUnitCombo->setSizePolicy(QSizePolicy::Fixed,
-                                      QSizePolicy::Fixed);
-
-    amplitudeGroup = new QGroupBox(groupBox);
-    amplitudeGroup->setObjectName("amplitudeGroup");
-
-    auto *amplitudeLayout = new QHBoxLayout(amplitudeGroup);
-    amplitudeLayout->setContentsMargins(4, 2, 4, 2);
-    amplitudeLayout->setSpacing(6);
-
-    amplitudeLayout->addWidget(amplitudeSpin);
-    amplitudeLayout->addWidget(amplitudeUnitCombo);
-    amplitudeGroup->setSizePolicy(QSizePolicy::Expanding,
-                                  QSizePolicy::Fixed);
+    amplitudeEdit = new QuantityEdit(amplitudeQuantityRepresentation,
+                                     groupBox);
+    amplitudeEdit->setObjectName("amplitudeEdit");
+    amplitudeEdit->setMinimumWidth(215);
+    amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
+                                 QSizePolicy::Fixed);
 
     offsetEdit = new QuantityEdit(offsetRepresentation, groupBox);
     offsetEdit->setObjectName("offsetEdit");
@@ -345,9 +361,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     // Add labels and related fields to form (which is in a groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencySpin);
-
-    formLayout->addRow(amplitudeLabel, amplitudeGroup);
-
+    formLayout->addRow(amplitudeLabel, amplitudeEdit);
     formLayout->addRow(offsetLabel, offsetEdit);
     formLayout->addRow(phaseLabel, phaseSpin);
     formLayout->addRow(dutyLabel, dutySpin);
@@ -385,68 +399,26 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
                 emit frequencyChanged(this->channel, value);
             });
 
-    connect(amplitudeSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(amplitudeEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                amplitudeValueEdited = true;
+                sdgDebug() << objectName() << "Field contents:"
+                           << amplitudeEdit->cleanText();
+                sdgDebug() << offsetEdit->debugString();
+                sdgDebug()
+                    << "amplitude committed:"
+                    << "original =" << original.value
+                    << original.representation
+                    << "final =" << final.value
+                    << final.representation;
 
-                sdgDebug() << objectName()
-                           << "amplitude valueChanged:"
-                           << "value =" << value
-                           << "representation ="
-                           << amplitudeUnitCombo->currentText();
-            });
+                emit amplitudeChanged(channel, final.value,
+                                      final.representation);
 
-    connect(amplitudeUnitCombo,
-            &QComboBox::currentTextChanged,
-            this,
-            [this](const QString &)
-            {
-                const auto newRepresentation =
-                    amplitudeRepresentation();
-
-                if (!amplitudeValueEdited)
-                {
-                    // Existing/model value: representation change may
-                    // scale the displayed value.
-                    emit amplitudeRepresentationChanged(
-                        this->channel,
-                        newRepresentation);
-                }
-                else
-                {
-                    // User has started editing the numeric field.
-                    // Do NOT scale or otherwise modify the number.
-                    m_amplitudeDisplayedRepresentation =
-                        newRepresentation;
-
-                    sdgDebug()
-                        << objectName()
-                        << "amplitude representation changed after edit:"
-                        << amplitudeSpin->value();
-                }
-            });
-
-    connect(amplitudeUnitCombo,
-            &QComboBox::currentTextChanged,
-            this,
-            [this](const QString &)
-            {
-                const auto representation = amplitudeRepresentation();
-
-                m_amplitudeDisplayedRepresentation = representation;
-
-                sdgDebug() << objectName()
-                           << "amplitude representation changed:"
-                           << "value =" << amplitudeSpin->value()
-                           << "representation =" << representation;
-
-                emit amplitudeGroupChanged(channel, amplitudeSpin->value(),
-                                           representation);
-
-                amplitudeValueEdited = false;
+                // Bridge to the existing amplitude/model code here.
             });
 
     connect(offsetEdit,
@@ -455,17 +427,15 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             [this](const QuantityEdit::Value &,
                    const QuantityEdit::Value &final)
             {
-                sdgDebug() << "offsetEdit: " << offsetEdit->debugString();
+                sdgDebug() << objectName() << offsetEdit->debugString();
                 sdgDebug()
                     << objectName()
                     << "offset committed:"
                     << "value =" << final.value
                     << "representation =" << final.representation;
 
-                emit offsetChanged(
-                    channel,
-                    final.value,
-                    final.representation);
+                emit offsetChanged(channel, final.value,
+                                   final.representation);
             });
 
     connect(phaseSpin,
@@ -594,8 +564,12 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
 
-    amplitudeGroup->setMinimumHeight(amplitudeGroup->sizeHint().height());
+}
 
+void ChannelWidget::setAllAdaptiveStepType(bool enabled)
+{
+    amplitudeEdit->setAdaptiveStepType(enabled);
+    offsetEdit->setAdaptiveStepType(enabled);
 }
 
 void ChannelWidget::setWaveformState(const QString &waveform)
@@ -614,133 +588,35 @@ void ChannelWidget::setFrequencyState(double frequency)
     updatePulseDuty();
 }
 
-void ChannelWidget::setAmplitudeState(const SdgAmplitude &amplitude)
+// Going from internal state (where voltages are normalized) to UI
+void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit)
 {
-    amplitudeSpin->blockSignals(true);
-    amplitudeUnitCombo->blockSignals(true);
+    const QString & rep { amplit.userRepresentation };
 
-    amplitudeSpin->setValue(amplitude.userValue());
-
-    switch (amplitude.userRepresentation())
+    if (rep == "Vpp" || rep == "mVpp")
     {
-    case SdgAmplitude::Representation::Vpp:
-        amplitudeUnitCombo->setCurrentText("Vpp");
-        break;
-
-    case SdgAmplitude::Representation::mVpp:
-        amplitudeUnitCombo->setCurrentText("mVpp");
-        break;
-
-    case SdgAmplitude::Representation::Vrms:
-        amplitudeUnitCombo->setCurrentText("Vrms");
-        break;
-
-    case SdgAmplitude::Representation::mVrms:
-        amplitudeUnitCombo->setCurrentText("mVrms");
-        break;
-
-    case SdgAmplitude::Representation::dBm:
-        amplitudeUnitCombo->setCurrentText("dBm");
-        break;
+        double volts = amplit.getVpp();
+        if (is_mV(rep))
+            volts *= 1000.0;
+        amplitudeEdit->setValue(volts, rep);
     }
-
-    m_amplitudeDisplayedRepresentation =
-        amplitude.userRepresentation();
-
-    amplitudeValueEdited = false;
-
-    amplitudeUnitCombo->blockSignals(false);
-    amplitudeSpin->blockSignals(false);
-}
-
-SdgAmplitude::Representation ChannelWidget::amplitudeRepresentation() const
-{
-    const QString representation = amplitudeUnitCombo->currentText();
-
-    if (representation == "mVpp")
-        return SdgAmplitude::Representation::mVpp;
-
-    if (representation == "Vrms")
-        return SdgAmplitude::Representation::Vrms;
-
-    if (representation == "mVrms")
-        return SdgAmplitude::Representation::mVrms;
-
-    if (representation == "dBm")
-        return SdgAmplitude::Representation::dBm;
-
-    return SdgAmplitude::Representation::Vpp;
-}
-
-void ChannelWidget::setAmplitudeValue(double value)
-{
-    amplitudeSpin->blockSignals(true);
-    amplitudeSpin->setValue(value);
-    amplitudeSpin->blockSignals(false);
-
-    amplitudeValueEdited = false;
-}
-
-void ChannelWidget::updateAmplitudeControls(double displayedValue)
-{
-    amplitudeSpin->setValue(displayedValue);
-}
-
-void ChannelWidget::setAmplitudeDisplay(double value,
-                    SdgAmplitude::Representation representation)
-{
-    amplitudeSpin->blockSignals(true);
-    amplitudeUnitCombo->blockSignals(true);
-
-    amplitudeUnitCombo->setCurrentText(
-        [&]() -> QString
-        {
-            switch (representation)
-            {
-            case SdgAmplitude::Representation::Vpp:
-                return "Vpp";
-
-            case SdgAmplitude::Representation::mVpp:
-                return "mVpp";
-
-            case SdgAmplitude::Representation::Vrms:
-                return "Vrms";
-
-            case SdgAmplitude::Representation::mVrms:
-                return "mVrms";
-
-            case SdgAmplitude::Representation::dBm:
-                return "dBm";
-            }
-
-            return "Vpp";
-        }());
-
-    m_amplitudeDisplayedRepresentation = representation;
-
-    updateAmplitudeControls(value);
-
-    amplitudeSpin->blockSignals(false);
-    amplitudeUnitCombo->blockSignals(false);
-}
-
-void ChannelWidget::commitAmplitudeGroup()
-{
-    const auto value = amplitudeSpin->value();
-    const auto representation = amplitudeRepresentation();
-
-    sdgDebug()
-        << objectName()
-        << "amplitude group committed:"
-        << "value =" << value
-        << "representation =" << representation;
-
-    emit amplitudeGroupEditingFinished(
-        channel,
-        value,
-        representation);
-
-    amplitudeValueEdited = false;
+    else if (rep == "Vrms" || rep == "mVrms")
+    {
+        double volts = amplit.getVrms();
+        if (is_mV(rep))
+            volts *= 1000.0;
+        amplitudeEdit->setValue(volts, rep);
+    }
+    else if (rep == "dBm")
+        amplitudeEdit->setValue(amplit.get_dBm(), rep);
+    else if (rep.isEmpty())   // this case: Initial refresh after connect
+    {
+        sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
+        amplitudeEdit->setValue(amplit.getVpp(), "Vpp");
+    }
+    else
+        sdgDebug() << objectName() << Q_FUNC_INFO
+                   << ">>> BAD representation: " << rep;
 }
 
 void ChannelWidget::setOffsetState(double offset)
@@ -875,10 +751,8 @@ void ChannelWidget::setStatus(const QString &text)
         << "group hint" << groupBox->sizeHint()
         << "channel size" << size()
         << "channel hint" << sizeHint()
-        << "amplitude size" << amplitudeGroup->size()
-        << "amplitude hint" << amplitudeGroup->sizeHint()
-        << "amp spin size" << amplitudeSpin->size()
-        << "amp combo size" << amplitudeUnitCombo->size();
+        << "amplitude size" << amplitudeEdit->size()
+        << "amplitude hint" << amplitudeEdit->sizeHint();
 #else
     Q_UNUSED(text);
 #endif
@@ -899,7 +773,7 @@ void ChannelWidget::updateControlVisibility()
     frequencySpin->setVisible(showStandardControls);
 
     amplitudeLabel->setVisible(showStandardControls);
-    amplitudeSpin->setVisible(showStandardControls);
+    amplitudeEdit->setVisible(showStandardControls);
 
     offsetLabel->setVisible(showStandardControls);
     offsetEdit->setVisible(showStandardControls);
@@ -961,47 +835,7 @@ void ChannelWidget::debugLayout() const
         << "minHint" << minimumSizeHint()
         << "group" << groupBox->size()
         << "groupHint" << groupBox->sizeHint()
-        << "ampGroup" << amplitudeGroup->size()
-        << "ampHint" << amplitudeGroup->sizeHint()
-        << "ampMinHint" << amplitudeGroup->minimumSizeHint()
-        << "ampSpin" << amplitudeSpin->size()
-        << "ampSpinHint" << amplitudeSpin->sizeHint()
-        << "combo" << amplitudeUnitCombo->size()
-        << "comboHint" << amplitudeUnitCombo->sizeHint();
-}
-
-bool ChannelWidget::eventFilter(QObject *watched, QEvent *event)
-{
-    if (event->type() == QEvent::FocusOut &&
-        (watched == amplitudeSpin ||
-         watched == amplitudeUnitCombo))
-    {
-        QTimer::singleShot(
-            0,
-            this,
-            [this]
-            {
-                QWidget *focus = QApplication::focusWidget();
-
-                if (focus &&
-                    (focus == amplitudeSpin ||
-                     focus == amplitudeUnitCombo ||
-                     amplitudeGroup->isAncestorOf(focus)))
-                {
-                    return;
-                }
-
-                if (!amplitudeValueEdited)
-                    return;
-
-                amplitudeValueEdited = false;
-
-                emit amplitudeGroupEditingFinished(
-                    channel,
-                    amplitudeSpin->value(),
-                    amplitudeRepresentation());
-            });
-    }
-
-    return QWidget::eventFilter(watched, event);
+        << "ampEdit" << amplitudeEdit->size()
+        << "ampEditHint" << amplitudeEdit->sizeHint()
+        << "ampMinHint" << amplitudeEdit->minimumSizeHint();
 }

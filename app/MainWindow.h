@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <QMainWindow>
@@ -63,6 +64,7 @@ private:
     QLineEdit *idEdit;
 
     QAction *resetAction;
+    QAction *adaptiveDecimalStepAction;
 
     QAction *showChannel1Action;
     QAction *showChannel2Action;
@@ -83,20 +85,9 @@ private:
 
     void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
-    void setAmplitude(int channel, double value);
-    void setAmplitudeRepresentation(int channel,
-            SdgAmplitude::Representation representation);
-
-    bool isSimpleAmplitudeScale(
-        SdgAmplitude::Representation from,
-        SdgAmplitude::Representation to) const;
-
-    double amplitudeScaleFactor(
-        SdgAmplitude::Representation from,
-        SdgAmplitude::Representation to) const;
-
-    void setOffset(int channel, double value,
-                   const QString &representation);
+    void setAmplitude(int channel, double value,
+                      const QString &representation);
+    void setOffset(int channel, double value, const QString &representation);
     void setPhase(int channel, double value);
     void setDuty(int channel, double value);
     void setRampSymmetry(int channel, double value);

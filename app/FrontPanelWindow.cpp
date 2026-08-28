@@ -18,6 +18,7 @@
 
 #include "FrontPanelWindow.h"
 #include "Instrument.h"
+#include "debug.h"
 
 
 FrontPanelWindow::FrontPanelWindow(Instrument *a_instrument, QWidget *parent)
@@ -103,6 +104,8 @@ void FrontPanelWindow::updateScreen()
 
 void FrontPanelWindow::closeEvent(QCloseEvent *event)
 {
+    sdgDebug() << Q_FUNC_INFO;
+
     hide();
     emit windowClosed();
     event->ignore();

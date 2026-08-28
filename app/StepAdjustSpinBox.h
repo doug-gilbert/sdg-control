@@ -1,5 +1,7 @@
 #include <QDoubleSpinBox>
 
+class QLineEdit;
+
 // Helper class for extending ContextMenu on right click
 // Want to allow user to change the step size of a spinner
 class StepAdjustSpinBox : public QDoubleSpinBox
@@ -17,6 +19,10 @@ public:
     double maximumStep() const { return m_maximumStep; }
 
     double defaultStep() const { return m_defaultStep; }
+
+    QLineEdit *edit() const { return lineEdit(); }
+
+    QLineEdit *lineEditWidget() const;
 
 private:
     void setAdjustedStep(double step);

@@ -79,6 +79,14 @@ public:
 
     void setSingleStep(double step);
     void setStepLimits(double minimum, double maximum);
+    void setAdaptiveStepType(bool enabled);
+    void setDecimals(int num);
+    void setSuffix(const QString & suffix);
+    void setRange(double minimum, double maximum);
+
+    // get the contents of the SpinBox without leading and trailing
+    // spaces as well as any prefix or suffix
+    QString cleanText() const;
 
     QString debugString() const;
 

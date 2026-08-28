@@ -88,66 +88,35 @@ bool SDG2000X::setFrequency(int channel, double hz)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setAmplitude(int channel, double volts)
+bool SDG2000X::setAmplitude(int channel, const AmplitudeState &amp)
 {
+    QString cmd {};
+    const QString & rep { amp.userRepresentation };
+
     if (!scpi.isConnected())
         return false;
-
-    QString cmd =
-        QString("%1:BSWV AMP,%2")
-        .arg(channelPrefix(channel))
-        .arg(QString::number(volts, 'f', 3));
-
-    return scpi.command(cmd);
-}
-
-bool SDG2000X::setAmplitudeVrms(int channel, double volts)
-{
-    if (!scpi.isConnected())
-        return false;
-
-    QString cmd =
-        QString("%1:BSWV AMPVRMS,%2")
-        .arg(channelPrefix(channel))
-        .arg(QString::number(volts, 'f', 6));
-
-    return scpi.command(cmd);
-}
-
-bool SDG2000X::setAmplitudedBm(int channel, double dbm)
-{
-    if (!scpi.isConnected())
-        return false;
-
-    QString cmd =
-        QString("%1:BSWV AMPDBM,%2")
-        .arg(channelPrefix(channel))
-        .arg(QString::number(dbm, 'f', 6));
-
-    return scpi.command(cmd);
-}
-
-bool SDG2000X::setUserAmplitude(
-    int channel, const SdgAmplitude &amplitude)
-{
-    switch (amplitude.userRepresentation())
+    if (amp.v_ppValid && (rep == "Vpp" || rep == "mVpp"))
     {
-    case SdgAmplitude::Representation::Vpp:
-        return setAmplitude(channel, amplitude.userValue());
-
-    case SdgAmplitude::Representation::Vrms:
-        return setAmplitudeVrms(channel, amplitude.userValue());
-
-    case SdgAmplitude::Representation::dBm:
-        return setAmplitudedBm(channel, amplitude.userValue());
-
-    case SdgAmplitude::Representation::mVpp:
-        return setAmplitude(channel, amplitude.userValue() / 1000.0);
-
-    case SdgAmplitude::Representation::mVrms:
-        return setAmplitudeVrms(channel, amplitude.userValue() / 1000.0);
+        cmd = QString("%1:BSWV AMP,%2")
+              .arg(channelPrefix(channel))
+              .arg(QString::number(amp.getVpp(), 'f', 3));
+        return scpi.command(cmd);
     }
-
+    if (amp.v_rmsValid && (rep == "Vrms" || rep == "mVrms"))
+    {
+        cmd = QString("%1:BSWV AMPVRMS,%2")
+              .arg(channelPrefix(channel))
+              .arg(QString::number(amp.getVrms(), 'f', 6));
+        return scpi.command(cmd);
+    }
+    if (amp.dBmValid && (rep == "dBm"))
+    {
+        cmd = QString("%1:BSWV AMPDBM,%2")
+              .arg(channelPrefix(channel))
+              .arg(QString::number(amp.get_dBm(), 'f', 6));
+        return scpi.command(cmd);
+    }
+    sdgDebug() << Q_FUNC_INFO << "Channel=" << channel << ">>> Rep=" << rep;
     return false;
 }
 
@@ -275,7 +244,7 @@ bool SDG2000X::output(int channel, bool enabled)
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << __func__ << "scpi.command() returned false";
+        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
         return false;
     }
 
@@ -299,7 +268,7 @@ bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << __func__ << "scpi.command() returned false";
+        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
         return false;
     }
 
@@ -319,7 +288,7 @@ bool SDG2000X::outputBoth(bool enabled)
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << __func__ << "scpi.command() returned false";
+        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
         return false;
     }
     return true;
@@ -337,7 +306,7 @@ bool SDG2000X::invert(int channel, bool enabled)
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << __func__ << "scpi.command() returned false";
+        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
         return false;
     }
     return true;
@@ -382,17 +351,17 @@ ChannelState SDG2000X::getChannelState(int channel)
         else if (key == "AMP")
         {
             value.remove("V");
-            state.amplitude.setInstrumentVpp(value.toDouble());
+            state.amplitude.setAmplitudeVpp(value.toDouble());
         }
         else if (key == "AMPVRMS")
         {
             value.remove("Vrms");
-            state.amplitude.setInstrumentVrms(value.toDouble());
+            state.amplitude.setAmplitudeVrms(value.toDouble());
         }
         else if (key == "AMPDBM")
         {
             value.remove("dBm");
-            state.amplitude.setInstrumentdBm(value.toDouble());
+            state.amplitude.setAmplitude_dBm(value.toDouble());
         }
         else if (key == "OFST")
         {
@@ -513,7 +482,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     if (state.waveform == "RAMP")
     {
         ok &= setFrequency(channel, state.frequency);
-        ok &= setUserAmplitude(channel, state.amplitude);
+        ok &= setAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
         ok &= setRampSymmetry(channel, state.rampSymmetry);
@@ -521,7 +490,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     else if (state.waveform == "PULSE")
     {
         ok &= setFrequency(channel, state.frequency);
-        ok &= setUserAmplitude(channel, state.amplitude);
+        ok &= setAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
 
@@ -547,7 +516,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
     {
         // SINE, SQUARE, ARB, etc.
         ok &= setFrequency(channel, state.frequency);
-        ok &= setUserAmplitude(channel, state.amplitude);
+        ok &= setAmplitude(channel, state.amplitude);
         ok &= setOffset(channel, state.offset);
         ok &= setPhase(channel, state.phase);
         if (state.waveform == "SQUARE")
@@ -593,7 +562,7 @@ bool SDG2000X::reset()
 bool SDG2000X::setDuty(int channel, double percent)
 {
     if (percent < 0.0 || percent > 100.0) {
-        sdgDebug() << __func__ << "bad percentage:" << percent;
+        sdgDebug() << Q_FUNC_INFO << "bad percentage:" << percent;
         return false;
     }
     if (!scpi.isConnected())

@@ -34,8 +34,7 @@ int main(int argc, char *argv[])
 
     const bool debugFocus = parser.isSet(debugFocusOption);
 
-    sdgDebug() << "debugFocus=" << debugFocus
-               << "not implemented yet";
+    sdgDebug() << "debugFocus=" << debugFocus;
 
     MainWindow window(debugFocus);
     window.show();

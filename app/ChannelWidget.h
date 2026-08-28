@@ -7,7 +7,6 @@
 #include <QWidget>
 #include <QString>
 
-#include "SdgAmplitude.h"
 #include "ChannelState.h"
 
 class QLabel;
@@ -30,14 +29,14 @@ class ChannelWidget : public QWidget
 public:
     explicit ChannelWidget(int channel, QWidget *parent = nullptr);
 
+    void setAllAdaptiveStepType(bool enabled);
+
     void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
+    // Going from internal state (where Units may be normalized) to UI
     void setWaveformState(const QString &waveform);
     void setFrequencyState(double value);
-    void setAmplitudeState(const SdgAmplitude &amplitude);
-    void setAmplitudeDisplay(double value,
-                             SdgAmplitude::Representation representation);
-    void setAmplitudeValue(double value);
+    void setAmplitudeState(const AmplitudeState &amplitud);
     void setOffsetState(double value);
     void setPhaseState(double value);
     void setDutyState(double value);
@@ -56,26 +55,11 @@ public:
 
     void setControlsEnabled(bool enabled);
 
-    bool isAmplitudeValueEdited() const
-    {
-        return amplitudeValueEdited;
-    }
-
-    SdgAmplitude::Representation amplitudeDisplayedRepresentation() const
-    {
-        return m_amplitudeDisplayedRepresentation;
-    }
-
 signals:
     void waveformChanged(int channel, const QString &waveform);
     void frequencyChanged(int channel, double value);
-    void amplitudeChanged(int channel, double value);
-    void amplitudeRepresentationChanged(int channel,
-            SdgAmplitude::Representation representation);
-    void amplitudeGroupChanged(int channel, double value,
-            SdgAmplitude::Representation representation);
-    void amplitudeGroupEditingFinished(int channel, double value,
-                    SdgAmplitude::Representation representation);
+    void amplitudeChanged(int channel, double value,
+                          const QString &representation);
     void offsetChanged(int channel, double value,
                        const QString &representation);
     void phaseChanged(int channel, double phase);
@@ -95,20 +79,9 @@ signals:
 
     void hideRequested(int channel);
 
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
 private:
-    void commitAmplitudeGroup();
     void updateControlVisibility();
     void updatePulseDuty();
-
-    SdgAmplitude::Representation amplitudeRepresentation() const;
-    void updateAmplitudeControls(double displayedValue);
-
-    bool amplitudeValueEdited = false;
-    SdgAmplitude::Representation m_amplitudeDisplayedRepresentation =
-        SdgAmplitude::Representation::Vpp;
 
     void debugLayout() const;
 
@@ -143,10 +116,8 @@ private:
     QLabel *dcPrecisionHighLabel;
 
     QComboBox *waveformCombo;
-    QComboBox *amplitudeUnitCombo;
-    QGroupBox *amplitudeGroup = nullptr;
     StepAdjustSpinBox *frequencySpin;
-    QDoubleSpinBox *amplitudeSpin;
+    QuantityEdit *amplitudeEdit = nullptr;
     QuantityEdit *offsetEdit;
     StepAdjustSpinBox *phaseSpin;
     QDoubleSpinBox *dutySpin;

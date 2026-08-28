@@ -28,7 +28,7 @@
 #include "debug.h"
 
 
-static const char * version_str = "0.90 20260818";
+static const char * version_str = "0.90 20260826";
 
 static const struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
@@ -60,8 +60,8 @@ static void printChannelState(SDG2000X & generator, int channel)
     sdgDebug() << "CH" << channel << ":";
     sdgDebug() << "  Waveform:" << state.waveform;
     sdgDebug() << "  Frequency:" << state.frequency;
-    sdgDebug() << "  Amplitude:"
-              << state.amplitude.instrumentValues().vpp.value_or(0.0);
+    sdgDebug() << "  Vpp:"
+              << state.amplitude.getVpp();
     sdgDebug() << "  Offset:" << state.offset;
     sdgDebug() << "  Duty:" << state.duty;
     sdgDebug() << "  Output:" << state.output;
@@ -169,7 +169,10 @@ int main(int argc, char *argv[])
 
     generator.setWaveform(1, "SQUARE");
     generator.setFrequency(1, 2000);
-    generator.setAmplitude(1, 2);
+
+    AmplitudeState amp1 {};
+    amp1.setAmplitudeVpp(2);
+    generator.setAmplitude(1, amp1);
     generator.setOffset(1, 1);
 
     generator.setDuty(1, 90);
@@ -224,7 +227,11 @@ std::cin.get();
 
     generator.setWaveform(2, "SINE");
     generator.setFrequency(2, 1000);
-    generator.setAmplitude(2, 2);
+
+    AmplitudeState amp2 {};
+    amp2.setAmplitudeVpp(2);
+
+    generator.setAmplitude(2, amp2);
     generator.setOffset(2, 0);
 #ifdef SDG_DEBUG
 sdgDebug() << "SCPI error:"

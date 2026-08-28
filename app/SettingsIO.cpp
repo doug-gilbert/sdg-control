@@ -46,16 +46,13 @@ namespace
     QJsonObject channelToJson(const ChannelState &state)
     {
         QJsonObject obj;
-        const auto representation = state.amplitude.userRepresentation();
+        const auto & ampState = state.amplitude;
 
 
         obj[WaveformKey]       = state.waveform;
         obj[FrequencyKey]      = state.frequency;
-        obj[AmplitudeKey]      = state.amplitude.userValue();
-        obj[AmplitudeRepresentationKey] =
-            representation == SdgAmplitude::Representation::Vpp  ? "Vpp" :
-            representation == SdgAmplitude::Representation::Vrms ? "Vrms" :
-                                                                   "dBm";
+        obj[AmplitudeKey]      = ampState.getMainValue();
+        obj[AmplitudeRepresentationKey] = ampState.userRepresentation;
         obj[OffsetKey]         = state.offset;
         obj[PhaseKey]          = state.phase;
         obj[DutyKey]           = state.duty;
@@ -91,21 +88,27 @@ namespace
         if (obj.contains(AmplitudeKey))
         {
             const double value = obj[AmplitudeKey].toDouble();
-
-            SdgAmplitude::Representation representation =
-                SdgAmplitude::Representation::Vpp;
+            AmplitudeState & ampState = state.amplitude;
 
             if (obj.contains(AmplitudeRepresentationKey))
             {
                 const QString r = obj[AmplitudeRepresentationKey].toString();
+                bool ok = true;
 
-                if (r == "Vrms")
-                    representation = SdgAmplitude::Representation::Vrms;
+                if (r == "Vpp" || r == "mVpp")
+                    ampState.setAmplitudeVpp(value);
+                else if (r == "Vrms" || r == "mVrms")
+                    ampState.setAmplitudeVrms(value);
                 else if (r == "dBm")
-                    representation = SdgAmplitude::Representation::dBm;
+                    ampState.setAmplitude_dBm(value);
+                else if (! r.isEmpty())	// preserve empty userRep
+                {
+                    ok = false;
+                    sdgDebug() << __func__ << ">>> rep=" << r;
+                }
+                if (ok)
+                    ampState.userRepresentation = r;
             }
-
-            state.amplitude.setUserValue(value, representation);
         }
         if (state.waveform == "DC")
         {

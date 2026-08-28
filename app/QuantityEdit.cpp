@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QContextMenuEvent>
 #include <QMenu>
+#include <QLineEdit>
 
 #include <limits>
 
@@ -32,7 +33,7 @@ QuantityEdit::QuantityEdit(
     m_valueSpin = new StepAdjustSpinBox(this);
     m_valueSpin->setObjectName("quantityValueSpin");
     m_valueSpin->setRange(-1.0e9, 1.0e9);
-    m_valueSpin->setDecimals(3);
+    m_valueSpin->setDecimals(6);     // changeable via this->setDecimals()
     m_valueSpin->setSingleStep(0.1);
     m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -57,8 +58,13 @@ QuantityEdit::QuantityEdit(
     layout->addWidget(m_representationCombo, 0);
 
     m_valueSpin->installEventFilter(this);
+
+    auto *lineEdit = m_valueSpin->lineEditWidget();
+    lineEdit->setObjectName("quantityValueLineEdit");
+    lineEdit->installEventFilter(this);
     m_representationCombo->installEventFilter(this);
 
+#if 1
     connect(m_valueSpin,
             &QDoubleSpinBox::valueChanged,
             this,
@@ -69,6 +75,7 @@ QuantityEdit::QuantityEdit(
                     << "SpinBox::valueChanged:"
                     << value;
             });
+#endif
 
     connect(m_representationCombo,
             &QComboBox::currentTextChanged,
@@ -96,6 +103,7 @@ void QuantityEdit::setValue(
     double value,
     const QString &representation)
 {
+sdgDebug() << Q_FUNC_INFO << " value=" << value;
     m_valueSpin->blockSignals(true);
     m_representationCombo->blockSignals(true);
 
@@ -107,8 +115,8 @@ void QuantityEdit::setValue(
     if (index >= 0)
         m_representationCombo->setCurrentIndex(index);
 
-    m_valueSpin->blockSignals(false);
     m_representationCombo->blockSignals(false);
+    m_valueSpin->blockSignals(false);
 
     m_originalValue = currentValue();
     m_editing = false;
@@ -142,15 +150,14 @@ void QuantityEdit::commit()
     m_editing = false;
 }
 
-bool QuantityEdit::eventFilter(
-    QObject *watched,
-    QEvent *event)
+bool QuantityEdit::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != m_valueSpin &&
         watched != m_representationCombo)
     {
         return QWidget::eventFilter(watched, event);
     }
+
     if (watched == m_representationCombo &&
         event->type() == QEvent::ContextMenu)
     {
@@ -169,7 +176,7 @@ bool QuantityEdit::eventFilter(
     {
         /*
          * FocusOut happens before Qt has necessarily finished
-         * moving focus to the next widget.  Check it after the
+         * moving focus to the next widget. Check it after the
          * focus transition has completed.
          */
         QTimer::singleShot(
@@ -221,16 +228,17 @@ void QuantityEdit::focusInEvent(QFocusEvent *event)
 {
     beginEditing();
 
-    sdgDebug() << objectName() << __func__;
+    sdgDebug() << objectName() << Q_FUNC_INFO;
     QWidget::focusInEvent(event);
 }
 
 void QuantityEdit::focusOutEvent(QFocusEvent *event)
 {
-    sdgDebug() << objectName() << __func__;
+    sdgDebug() << objectName() << Q_FUNC_INFO;
     QWidget::focusOutEvent(event);
 }
 
+// ctor sets this to 0.1
 void QuantityEdit::setSingleStep(double step)
 {
     m_valueSpin->setSingleStep(step);
@@ -239,6 +247,31 @@ void QuantityEdit::setSingleStep(double step)
 void QuantityEdit::setStepLimits(double minimum, double maximum)
 {
     m_valueSpin->setStepLimits(minimum, maximum);
+}
+
+void QuantityEdit::setAdaptiveStepType(bool enabled)
+{
+    m_valueSpin->setStepType(enabled ?
+                             QAbstractSpinBox::AdaptiveDecimalStepType :
+                             QAbstractSpinBox::DefaultStepType);
+}
+
+// ctor sets this to 6
+void QuantityEdit::setDecimals(int num)
+{
+    m_valueSpin->setDecimals(num);
+}
+
+// ctor sets this to [-1.0e9, 1.0e9]
+void QuantityEdit::setRange(double minimum, double maximum)
+{
+    m_valueSpin->setRange(minimum, maximum);
+}
+
+// ctor does NOT set this so there is no suffix by default
+void QuantityEdit::setSuffix(const QString &suffix)
+{
+    m_valueSpin->setSuffix(suffix);
 }
 
 double QuantityEdit::convertedValue(double value, const QString &from,
@@ -273,8 +306,6 @@ void QuantityEdit::showRepresentationContextMenu(
                 this,
                 [this, from, to]
                 {
-                    beginEditing();
-
                     const double value =
                         convertedValue(
                             m_valueSpin->value(),
@@ -290,6 +321,11 @@ void QuantityEdit::showRepresentationContextMenu(
         return;
 
     menu.exec(globalPos);
+}
+
+QString QuantityEdit::cleanText() const
+{
+     return m_valueSpin ? m_valueSpin->cleanText() : "";
 }
 
 QString QuantityEdit::debugString() const

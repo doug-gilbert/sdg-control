@@ -23,6 +23,23 @@ StepAdjustSpinBox::StepAdjustSpinBox(QWidget *parent)
             this, [this](const QPoint &pos) {
         QMenu *menu = lineEdit()->createStandardContextMenu();
 
+        for (QAction *action : menu->actions())
+        {
+            if (action->text().contains("Paste"))
+            {
+                connect(action, &QAction::triggered,
+                        this, [this]
+                        {
+                            sdgDebug()
+                                << objectName()
+                                << "context Paste triggered";
+
+                            lineEdit()->paste();
+                        });
+
+                break;
+            }
+        }
         menu->addSeparator();
 
         const double currentStep = singleStep();
@@ -97,4 +114,9 @@ void StepAdjustSpinBox::setSingleStep(double step)
 void StepAdjustSpinBox::setAdjustedStep(double step)
 {
     QDoubleSpinBox::setSingleStep(step);
+}
+
+QLineEdit *StepAdjustSpinBox::lineEditWidget() const
+{
+    return lineEdit();
 }

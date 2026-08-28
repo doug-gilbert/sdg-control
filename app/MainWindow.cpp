@@ -129,6 +129,9 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
 {
     setWindowTitle("SDG Control");
 
+    // this should give us a Status Bar at the bottom of the main window
+    // statusBar();
+
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
 
@@ -257,6 +260,28 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
 
     setCentralWidget(frame);
 
+#if 0
+    setStyleSheet(R"(
+        QMainWindow {
+            background: #dedfdd;
+        }
+
+        QMenuBar {
+            background: #dedfdd;
+            border-bottom: 1px solid #aeb0ad;
+        }
+
+        QStatusBar {
+            background: #dedfdd;
+            border-top: 1px solid #aeb0ad;
+        }
+    )");
+
+    central->setStyleSheet("background: #f7f7f4;");
+
+    // central->setStyleSheet("background-color: #f5f5f2;");
+#endif
+
     setInstrument(InstrumentType::Simulator);
 
     connect(immediateCheck,
@@ -305,46 +330,11 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
 
     connectChannelWidgets(
         &ChannelWidget::amplitudeChanged,
-        [this](int channel, double value)
-        {
-            setAmplitude(channel, value);
-        });
-
-    connectChannelWidgets(
-        &ChannelWidget::amplitudeRepresentationChanged,
-        [this](int channel,
-               SdgAmplitude::Representation representation)
-        {
-            setAmplitudeRepresentation(channel, representation);
-        });
-
-    connectChannelWidgets(
-        &ChannelWidget::amplitudeGroupEditingFinished,
         [this](int channel,
                double value,
-               SdgAmplitude::Representation representation)
+               const QString &representation)
         {
-            auto &amplitude =
-                pendingState[channel - 1].amplitude;
-
-            amplitude.setUserValue(value, representation);
-
-            sdgDebug()
-                << "amplitude group committed:"
-                << "channel =" << channel
-                << "value =" << value
-                << "representation =" << representation;
-
-            if (immediateMode)
-            {
-                generator->applyChannelState(
-                    channel,
-                    pendingState[channel - 1]);
-            }
-            else
-            {
-                setDirty(true);
-            }
+            setAmplitude(channel, value, representation);
         });
 
     connectChannelWidgets(
@@ -473,6 +463,7 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
     resize(800, 350);
 }
 
+// Offloaded work from the ctor
 void MainWindow::createMenuBar()
 {
     auto *fileMenu = menuBar()->addMenu("&File");
@@ -499,6 +490,14 @@ void MainWindow::createMenuBar()
     QMenu *editMenu = menuBar()->addMenu("&Edit");
 
     resetAction = editMenu->addAction("Reset and set defaults");
+    adaptiveDecimalStepAction = editMenu->addAction("Spin second MS digit");
+    adaptiveDecimalStepAction->setCheckable(true);
+    adaptiveDecimalStepAction->setChecked(false);
+    adaptiveDecimalStepAction->setEnabled(false);
+    // adaptiveDecimalStepAction->setStatusTip(<string>); // but no Status bar
+    adaptiveDecimalStepAction->setToolTip(
+        "In Adaptive decimal step mode the\n"
+        "second Most Significant Digit spins");
 
     connect(resetAction,
             &QAction::triggered,
@@ -510,6 +509,15 @@ void MainWindow::createMenuBar()
                     refreshClicked();
             });
 
+    connect(adaptiveDecimalStepAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                ch1Widget->setAllAdaptiveStepType(checked);
+                ch2Widget->setAllAdaptiveStepType(checked);
+            });
+
     auto *viewMenu = menuBar()->addMenu("&View");
 
     showChannel1Action = viewMenu->addAction("Show Channel 1");
@@ -518,6 +526,7 @@ void MainWindow::createMenuBar()
     showChannel1Action->setChecked(true);
     // At this point the widgets have not yet been shown, so isVisible()
     // cannot be used to initialize these actions.
+    // Needs a connect(viewMenu, QMenu::hovered, ...) for toolTip to work
     showChannel1Action->setToolTip(
         "Remove Channel 1 from this UI leaving more\n"
         "screen 'real estate' for Channel 2");
@@ -634,7 +643,7 @@ void MainWindow::createMenuBar()
 
 MainWindow::~MainWindow()
 {
-    sdgDebug() << "start of MainWindow destructor";
+    sdgDebug() << Q_FUNC_INFO << "starting";
     delete frontPanelWindow;
     delete generator;
 }
@@ -683,7 +692,7 @@ QString MainWindow::displayIdentification(const QString &idn) const
 static void setChannelStatus(int my_chan, ChannelWidget & cwid,
                              const ChannelState &ch)
 {
-    auto ampInstru = ch.amplitude.instrumentValues();
+    auto amp = ch.amplitude;
     const QString missing = "---";
 
     QString common =
@@ -691,12 +700,12 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
         .arg(my_chan)
         .arg(ch.waveform)
         .arg(ch.frequency, 0, 'f', 1)
-        .arg(ampInstru.vpp
-                 ? QString::number(*ampInstru.vpp, 'f', 3) : missing)
-        .arg(ampInstru.vrms
-                 ? QString::number(*ampInstru.vrms, 'f', 3) : missing)
-        .arg(ampInstru.dBm
-                 ? QString::number(*ampInstru.dBm, 'f', 1) : missing)
+        .arg(amp.v_ppValid
+                 ? QString::number(amp.getVpp(), 'f', 3) : missing)
+        .arg(amp.v_rmsValid
+                 ? QString::number(amp.getVrms(), 'f', 3) : missing)
+        .arg(amp.dBmValid
+                 ? QString::number(amp.get_dBm(), 'f', 1) : missing)
         .arg(ch.offset, 0, 'f', 2)
         .arg(ch.phase, 0, 'f', 1);
 
@@ -734,11 +743,10 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 }
 #endif
 
+// This function is called when the Refresh button is pressed
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
-    // auto vpp = ch.amplitude.instrumentValues().vpp;
-
     cwid.setWaveformState(ch.waveform);
     cwid.setFrequencyState(ch.frequency);
     cwid.setAmplitudeState(ch.amplitude);
@@ -793,7 +801,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch1))
     {
-        sdgDebug() << __func__ << ":ch1: " << ioErrorMsg;
+        sdgDebug() << Q_FUNC_INFO << ":ch1: " << ioErrorMsg;
         return;
     }
     setChannelFields(1, *ch1Widget, ch1);
@@ -802,7 +810,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch2))
     {
-        sdgDebug() << __func__ << ":ch2: " << ioErrorMsg;
+        sdgDebug() << Q_FUNC_INFO << ":ch2: " << ioErrorMsg;
         return;
     }
     setChannelFields(2, *ch2Widget, ch2);
@@ -817,7 +825,7 @@ void MainWindow::refreshClicked()
 // the SDG (or simulator). In effect, Connect performs a Refresh.
 void MainWindow::connectClicked()
 {
-    sdgDebug() << __func__ ;
+    sdgDebug() << Q_FUNC_INFO ;
     if (!generator->connectTo(ipEdit->text()))
     {
         idEdit->setText("Connection failed: " +
@@ -840,6 +848,8 @@ void MainWindow::connectClicked()
     connectButton->setEnabled(false);
     disconnectButton->setEnabled(true);
 
+    adaptiveDecimalStepAction->setEnabled(true);
+
     refreshClicked();
     instrumentCombo->setEnabled(false);
     updateFrontPanelAction();
@@ -847,12 +857,14 @@ void MainWindow::connectClicked()
 
 void MainWindow::disconnectClicked()
 {
-    sdgDebug() << __func__ ;
+    sdgDebug() << Q_FUNC_INFO ;
     generator->disconnect();
 
     connectButton->setEnabled(true);
     disconnectButton->setEnabled(false);
     refreshButton->setEnabled(false);
+
+    adaptiveDecimalStepAction->setEnabled(false);
 
     ch1Widget->setControlsEnabled(false);
     ch2Widget->setControlsEnabled(false);
@@ -867,7 +879,7 @@ void MainWindow::sendClicked()
 {
     bool ok = true;
 
-    sdgDebug() << __func__;
+    sdgDebug() << Q_FUNC_INFO;
 
     if (!generator->isConnected())
         return;
@@ -881,14 +893,14 @@ void MainWindow::sendClicked()
     if (ok)
         setDirty(false);
     else
-        sdgDebug() << __func__
+        sdgDebug() << Q_FUNC_INFO
                    << "setting of at least one field failed";
     // sdgDebug() << "focusWidget:" << focusWidget();
 }
 
 void MainWindow::connectionLost()
 {
-    sdgDebug() << __func__;
+    sdgDebug() << Q_FUNC_INFO;
 
     idEdit->setText("Connection lost");
 
@@ -906,13 +918,19 @@ void MainWindow::connectionLost()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    sdgDebug() << __func__;
+    sdgDebug() << Q_FUNC_INFO << "starting";
 
-    if (generator->isConnected())
+    if (generator && generator->isConnected())
     {
         generator->disconnect();
     }
+    if (frontPanelWindow)
+    {
+        sdgDebug() << __PRETTY_FUNCTION__ << "closing frontPanelWindow";
+        frontPanelWindow->close();
+    }
     event->accept();
+    sdgDebug() << Q_FUNC_INFO << "finishing";
 }
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
@@ -936,59 +954,53 @@ void MainWindow::setFrequency(int channel, double value)
         setDirty(true);
 }
 
-void MainWindow::setAmplitude(int channel, double value)
+void MainWindow::setAmplitude(int channel, double value,
+                              const QString &representation)
 {
-    auto &amplitude = pendingState[channel - 1].amplitude;
+    AmplitudeState & ampState = pendingState[channel - 1].amplitude;
 
-    amplitude.setUserValue(
-        value,
-        amplitude.userRepresentation());
+    sdgDebug() << Q_FUNC_INFO << "value =" << value
+               << "representation =" << representation;
 
-    sdgDebug() << "setAmplitude:" << amplitude;
+    ampState.v_ppValid = false;
+    ampState.v_rmsValid = false;
+    ampState.dBmValid = false;
+
+    if (representation == "Vpp")
+    {
+        ampState.setAmplitudeVpp(value);
+        ampState.v_ppValid = true;
+    }
+    else if (representation == "mVpp")
+    {
+        ampState.setAmplitudeVpp(value * 0.001);
+        ampState.v_ppValid = true;
+    }
+    else if (representation == "Vrms")
+    {
+        ampState.setAmplitudeVrms(value);
+        ampState.v_rmsValid = true;
+    }
+    else if (representation == "mVrms")
+    {
+        ampState.setAmplitudeVrms(value * 0.001);
+        ampState.v_rmsValid = true;
+    }
+    else if (representation == "dBm")
+    {
+        ampState.setAmplitude_dBm(value);
+        ampState.dBmValid = true;
+    }
+    else
+    {
+        sdgDebug() << objectName() << ">>>> BAD representation:"
+                   << representation;
+        return;
+    }
+    ampState.userRepresentation = representation;
 
     if (immediateMode)
         generator->applyChannelState(channel, pendingState[channel - 1]);
-    else
-        setDirty(true);
-}
-
-void MainWindow::setAmplitudeRepresentation(
-    int channel,
-    SdgAmplitude::Representation representation)
-{
-    auto &amplitude = pendingState[channel - 1].amplitude;
-
-    const auto oldRepresentation = amplitude.userRepresentation();
-
-    if (oldRepresentation == representation)
-        return;
-
-    if (isSimpleAmplitudeScale(oldRepresentation, representation))
-    {
-        const double oldValue = amplitude.userValue();
-        const double factor =
-            amplitudeScaleFactor(oldRepresentation, representation);
-
-        amplitude.setUserValue(oldValue * factor, representation);
-
-        sdgDebug() << "setAmplitudeRepresentation:"
-                   << "simple scale"
-                   << oldValue << "->" << amplitude.userValue();
-    }
-    else
-    {
-        amplitude.setUserValue(
-            amplitude.userValue(),
-            representation);
-
-        sdgDebug() << "setAmplitudeRepresentation:"
-                   << "requires SDG conversion:"
-                   << amplitude;
-    }
-
-    if (immediateMode)
-        generator->applyChannelState(
-            channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -1010,9 +1022,7 @@ void MainWindow::setOffset(int channel, double value,
         << "volts =" << volts;
 
     if (immediateMode)
-        generator->applyChannelState(
-            channel,
-            pendingState[channel - 1]);
+        generator->applyChannelState(channel, pendingState[channel - 1]);
     else
         setDirty(true);
 }
@@ -1157,7 +1167,7 @@ void MainWindow::setDirty(bool value)
 
 void MainWindow::loadSettings()
 {
-    sdgDebug() << __func__;
+    sdgDebug() << Q_FUNC_INFO;
 
     QString fileName = QFileDialog::getOpenFileName(
         this,
@@ -1187,7 +1197,7 @@ void MainWindow::loadSettings()
 
 void MainWindow::saveSettings()
 {
-    sdgDebug() << __func__;
+    sdgDebug() << Q_FUNC_INFO;
 
     QString fileName = QFileDialog::getSaveFileName(
         this,
@@ -1276,58 +1286,4 @@ void MainWindow::updateFrontPanelAction()
 
     if (frontPanelWindow)
         frontPanelWindow->setInstrumentConnected(connected);
-}
-
-bool MainWindow::isAmplitudeWidget(QWidget *widget) const
-{
-    if (!widget)
-        return false;
-
-    for (QWidget *w = widget; w; w = w->parentWidget())
-    {
-        if (w->objectName() == "amplitudeGroup")
-            return true;
-    }
-
-    return false;
-}
-
-bool MainWindow::isSimpleAmplitudeScale(
-    SdgAmplitude::Representation from,
-    SdgAmplitude::Representation to) const
-{
-    return
-        (from == SdgAmplitude::Representation::Vpp &&
-         to   == SdgAmplitude::Representation::mVpp) ||
-        (from == SdgAmplitude::Representation::mVpp &&
-         to   == SdgAmplitude::Representation::Vpp) ||
-
-        (from == SdgAmplitude::Representation::Vrms &&
-         to   == SdgAmplitude::Representation::mVrms) ||
-        (from == SdgAmplitude::Representation::mVrms &&
-         to   == SdgAmplitude::Representation::Vrms);
-}
-
-double MainWindow::amplitudeScaleFactor(
-    SdgAmplitude::Representation from,
-    SdgAmplitude::Representation to) const
-{
-    if (from == SdgAmplitude::Representation::Vpp &&
-        to   == SdgAmplitude::Representation::mVpp)
-        return 1000.0;
-
-    if (from == SdgAmplitude::Representation::mVpp &&
-        to   == SdgAmplitude::Representation::Vpp)
-        return 0.001;
-
-    if (from == SdgAmplitude::Representation::Vrms &&
-        to   == SdgAmplitude::Representation::mVrms)
-        return 1000.0;
-
-    if (from == SdgAmplitude::Representation::mVrms &&
-        to   == SdgAmplitude::Representation::Vrms)
-        return 0.001;
-
-    // Not a simple scale conversion.
-    return 1.0;
 }
