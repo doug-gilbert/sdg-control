@@ -8,6 +8,7 @@
 #include <QContextMenuEvent>
 #include <QMenu>
 #include <QLineEdit>
+#include <QLabel>
 
 #include <limits>
 
@@ -37,32 +38,48 @@ QuantityEdit::QuantityEdit(
     m_valueSpin->setSingleStep(0.1);
     m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    m_representationCombo = new QComboBox(this);
-    m_representationCombo->setObjectName("quantityRepresentationCombo");
-    m_representationCombo->setSizePolicy(QSizePolicy::Preferred,
-                                         QSizePolicy::Fixed);
-    m_representationCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    const auto representations = m_representation.representations();
 
-    for (const auto &text : m_representation.representations())
-        m_representationCombo->addItem(text);
+    if (representations.size() == 1)
+    {
+        m_representationLabel = new QLabel(representations.front(), this);
+        m_representationLabel->setObjectName("quantityRepresentationLabel");
+        m_representationLabel->setSizePolicy(QSizePolicy::Preferred,
+                                             QSizePolicy::Fixed);
+        m_representationLabel->setContentsMargins(4, 0, 0, 0);
+    }
+    else
+    {
+        m_representationCombo = new QComboBox(this);
+        m_representationCombo->setObjectName("quantityRepresentationCombo");
+        m_representationCombo->setSizePolicy(QSizePolicy::Preferred,
+                                             QSizePolicy::Fixed);
+        m_representationCombo->setSizeAdjustPolicy(
+                                            QComboBox::AdjustToContents);
+
+        for (const auto &text : representations)
+            m_representationCombo->addItem(text);
+    }
 
     auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    m_representationCombo->setSizePolicy(QSizePolicy::Preferred,
-                                         QSizePolicy::Fixed);
 
     layout->addWidget(m_valueSpin, 1);
-    layout->addWidget(m_representationCombo, 0);
+    if (m_representationCombo)
+        layout->addWidget(m_representationCombo, 0);
+    else
+        layout->addWidget(m_representationLabel, 0);
 
     m_valueSpin->installEventFilter(this);
 
     auto *lineEdit = m_valueSpin->lineEditWidget();
     lineEdit->setObjectName("quantityValueLineEdit");
     lineEdit->installEventFilter(this);
-    m_representationCombo->installEventFilter(this);
+    if (m_representationCombo)
+        m_representationCombo->installEventFilter(this);
 
 #if 1
     connect(m_valueSpin,
@@ -77,25 +94,28 @@ QuantityEdit::QuantityEdit(
             });
 #endif
 
-    connect(m_representationCombo,
-            &QComboBox::currentTextChanged,
-            this,
-            [this](const QString &representationText)
-            {
-                sdgDebug()
-                    << objectName()
-                    << "ComboBox::currentTextChanged:"
-                    << representationText;
-            });
+    if (m_representationCombo)
+    {
+        connect(m_representationCombo,
+                &QComboBox::currentTextChanged,
+                this,
+                [this](const QString &representationText)
+                {
+                    sdgDebug()
+                        << objectName()
+                        << "ComboBox::currentTextChanged:"
+                        << representationText;
+                });
+    }
 }
-
 
 QuantityEdit::Value QuantityEdit::currentValue() const
 {
-    return {
-        m_valueSpin->value(),
-        m_representationCombo->currentText()
-    };
+    return {m_valueSpin->value(),
+            m_representationCombo ?
+                  m_representationCombo->currentText()
+                : m_representationLabel->text()
+           };
 }
 
 
@@ -105,17 +125,25 @@ void QuantityEdit::setValue(
 {
 sdgDebug() << Q_FUNC_INFO << " value=" << value;
     m_valueSpin->blockSignals(true);
-    m_representationCombo->blockSignals(true);
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(true);
 
     m_valueSpin->setValue(value);
 
-    const int index =
-        m_representationCombo->findText(representation);
+    if (m_representationCombo)
+    {
+        const int index = m_representationCombo->findText(representation);
 
-    if (index >= 0)
-        m_representationCombo->setCurrentIndex(index);
+        if (index >= 0)
+            m_representationCombo->setCurrentIndex(index);
+    }
+    else
+    {
+        m_representationLabel->setText(representation);
+    }
 
-    m_representationCombo->blockSignals(false);
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(false);
     m_valueSpin->blockSignals(false);
 
     m_originalValue = currentValue();
@@ -153,6 +181,7 @@ void QuantityEdit::commit()
 bool QuantityEdit::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != m_valueSpin &&
+        watched != m_valueSpin->lineEditWidget() &&
         watched != m_representationCombo)
     {
         return QWidget::eventFilter(watched, event);
@@ -210,7 +239,8 @@ bool QuantityEdit::eventFilter(QObject *watched, QEvent *event)
                  * If the combo currently has an open popup,
                  * don't commit merely because focus moved to it.
                  */
-                if (m_representationCombo->view() &&
+                if (m_representationCombo &&
+                    m_representationCombo->view() &&
                     (newFocus == m_representationCombo->view() ||
                      m_representationCombo->view()->isAncestorOf(newFocus)))
                 {
@@ -272,6 +302,16 @@ void QuantityEdit::setRange(double minimum, double maximum)
 void QuantityEdit::setSuffix(const QString &suffix)
 {
     m_valueSpin->setSuffix(suffix);
+}
+
+void QuantityEdit::setToolTip(const QString &toolTip)
+{
+    m_valueSpin->setToolTip(toolTip);
+}
+
+QString QuantityEdit::toolTip() const
+{
+    return m_valueSpin->toolTip();
 }
 
 double QuantityEdit::convertedValue(double value, const QString &from,

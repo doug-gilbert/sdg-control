@@ -7,6 +7,8 @@
 
 #include <vector>
 
+class QLabel;
+
 class StepAdjustSpinBox;
 
 
@@ -75,14 +77,17 @@ public:
     Value value() const
     {
         return currentValue();
-    } 
+    }
 
+    // The setters are forwarded to the spinBox (user input field)
     void setSingleStep(double step);
     void setStepLimits(double minimum, double maximum);
     void setAdaptiveStepType(bool enabled);
     void setDecimals(int num);
     void setSuffix(const QString & suffix);
     void setRange(double minimum, double maximum);
+    void setToolTip(const QString &toolTip);
+    QString toolTip() const;
 
     // get the contents of the SpinBox without leading and trailing
     // spaces as well as any prefix or suffix
@@ -116,6 +121,7 @@ private:
     // Note that StepAdjustSpinBox is derived from QDoubleSpinBox
     StepAdjustSpinBox *m_valueSpin = nullptr;
     QComboBox *m_representationCombo = nullptr;
+    QLabel *m_representationLabel = nullptr;
 
     const QuantityRepresentation &m_representation;
 
@@ -123,4 +129,3 @@ private:
 
     bool m_editing = false;
 };
-

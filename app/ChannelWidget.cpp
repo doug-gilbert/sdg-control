@@ -102,6 +102,30 @@ public:
 };
 
 const OffsetRepresentation offsetRepresentation;
+
+class PhaseRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QString> representations() const override
+    {
+        return {"°"};
+    }
+
+    double scale(const QString &representation) const override
+    {
+        Q_ASSERT(representation == "°");
+        return 1.0;
+    }
+
+    bool convertible(const QString &from, const QString &to) const override
+    {
+        Q_UNUSED(from);
+        Q_UNUSED(to);
+        return false;
+    }
+};
+
+const PhaseRepresentation phaseRepresentation;
 }
 
 
@@ -238,15 +262,13 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     offsetEdit->setMinimumWidth(215);
     offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-
-    phaseSpin = new StepAdjustSpinBox(groupBox);
+    phaseSpin = new QuantityEdit(phaseRepresentation, groupBox);
     phaseSpin->setObjectName("phaseSpin");
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
     phaseSpin->setSingleStep(1.0);
     phaseSpin->setStepLimits(0.1, 100.0);
-    phaseSpin->setSuffix("°");
-    phaseSpin->setKeyboardTracking(false);
+    phaseSpin->setToolTip("Phase angle in degrees, from -360 to 360");
 
     dutySpin = new QDoubleSpinBox(groupBox);
     dutySpin->setObjectName("dutySpin");
@@ -439,11 +461,15 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
             });
 
     connect(phaseSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit phaseChanged(this->channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << objectName() << phaseSpin->debugString();
+
+                emit phaseChanged(this->channel, final.value);
             });
 
     connect(dutySpin,
@@ -570,6 +596,7 @@ void ChannelWidget::setAllAdaptiveStepType(bool enabled)
 {
     amplitudeEdit->setAdaptiveStepType(enabled);
     offsetEdit->setAdaptiveStepType(enabled);
+    phaseSpin->setAdaptiveStepType(enabled);
 }
 
 void ChannelWidget::setWaveformState(const QString &waveform)
@@ -626,9 +653,7 @@ void ChannelWidget::setOffsetState(double offset)
 
 void ChannelWidget::setPhaseState(double value)
 {
-    phaseSpin->blockSignals(true);
-    phaseSpin->setValue(value);
-    phaseSpin->blockSignals(false);
+    phaseSpin->setValue(value, "°");
 }
 
 void ChannelWidget::setDutyState(double value)

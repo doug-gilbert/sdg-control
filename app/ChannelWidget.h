@@ -63,7 +63,7 @@ signals:
     void offsetChanged(int channel, double value,
                        const QString &representation);
     void phaseChanged(int channel, double phase);
-    void dutyChanged(int channel, double phase);
+    void dutyChanged(int channel, double duty);
     void rampSymmetryChanged(int channel, double percent);
     void pulseWidthChanged(int channel, double value);
     void pulseRiseChanged(int channel, double value);
@@ -119,7 +119,7 @@ private:
     StepAdjustSpinBox *frequencySpin;
     QuantityEdit *amplitudeEdit = nullptr;
     QuantityEdit *offsetEdit;
-    StepAdjustSpinBox *phaseSpin;
+    QuantityEdit *phaseSpin;
     QDoubleSpinBox *dutySpin;
     QDoubleSpinBox *rampSymmetrySpin;
     QDoubleSpinBox *pulseWidthSpin;
