@@ -20,7 +20,10 @@ public:
 
     virtual std::vector<QString> representations() const = 0;
 
-    virtual double scale(const QString &representation) const = 0;
+    // Convert a value expressed in `from` representation to `to`.
+    virtual double convert(double value,
+                           const QString &from,
+                           const QString &to) const = 0;
 
     virtual bool convertible(const QString &from,
                              const QString &to) const = 0;

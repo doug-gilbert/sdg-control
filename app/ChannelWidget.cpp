@@ -46,22 +46,28 @@ public:
         };
     }
 
-    double scale(const QString &representation) const override
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
     {
-        if (representation == "Vpp")
-            return 1.0;
+        if (from == to)
+            return value;
 
-        if (representation == "mVpp")
-            return 0.001;
+        if (from == "Vpp" && to == "mVpp")
+            return value * 1000.0;
 
-        if (representation == "Vrms")
-            return 1.0;
+        if (from == "mVpp" && to == "Vpp")
+            return value / 1000.0;
 
-        if (representation == "mVrms")
-            return 0.001;
+        if (from == "Vrms" && to == "mVrms")
+            return value * 1000.0;
 
-        Q_ASSERT(representation == "dBm");
-        return 1.0;
+        if (from == "mVrms" && to == "Vrms")
+            return value / 1000.0;
+
+        Q_ASSERT_X(false, "AmplitudeRepresentation::convert",
+                   "unsupported amplitude conversion");
+        return value;
     }
 
     bool convertible(const QString &from, const QString &to) const override
@@ -84,16 +90,22 @@ public:
         return {"Vdc", "mVdc"};
     }
 
-    double scale(const QString &representation) const override
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
     {
-        if (representation == "Vdc")
-            return 1.0;
+        if (from == to)
+            return value;
 
-        if (representation == "mVdc")
-            return 0.001;
+        if (from == "Vdc" && to == "mVdc")
+            return value * 1000.0;
 
-        Q_ASSERT(false);
-        return 1.0;
+        if (from == "mVdc" && to == "Vdc")
+            return value / 1000.0;
+
+        Q_ASSERT_X(false, "OffsetRepresentation::convert",
+                   "unsupported offset conversion");
+        return value;
     }
 
     bool convertible(const QString &from, const QString &to) const override
@@ -113,10 +125,13 @@ public:
         return {"°"};
     }
 
-    double scale(const QString &representation) const override
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
     {
-        Q_ASSERT(representation == "°");
-        return 1.0;
+        Q_ASSERT(from == "°");
+        Q_ASSERT(to == "°");
+        return value;
     }
 
     bool convertible(const QString &from, const QString &to) const override

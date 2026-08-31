@@ -357,10 +357,7 @@ QString QuantityEdit::toolTip() const
 double QuantityEdit::convertedValue(double value, const QString &from,
                                     const QString &to) const
 {
-    const double fromScale = m_representation.scale(from);
-    const double toScale = m_representation.scale(to);
-
-    return value * fromScale / toScale;
+    return m_representation.convert(value, from, to);
 }
 
 void QuantityEdit::showRepresentationContextMenu(
