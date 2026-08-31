@@ -21,10 +21,12 @@
 #endif
 #endif
 
-#include "debug.h"
 #include "ChannelWidget.h"
 #include "StepAdjustSpinBox.h"
 #include "QuantityEdit.h"
+#include "AppController.h"
+#include "ChannelState.h"
+#include "debug.h"
 
 
 namespace
@@ -154,8 +156,10 @@ protected:
 };
 
 
-ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
+ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
+                             QWidget *parent)
     : QWidget(parent),
+      m_controller(controller),
       channel(my_channel)
 {
     auto *outerLayout = new QVBoxLayout(this);
@@ -235,7 +239,7 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
         "ARB"
     });
 
-    frequencySpin = new StepAdjustSpinBox(groupBox);
+    frequencySpin = new StepAdjustSpinBox(m_controller, groupBox);
     frequencySpin->setObjectName("frequencySpin");
     frequencySpin->setToolTip(
         "Right click in the numeric field to modify\n"
@@ -250,19 +254,22 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
 #endif
     frequencySpin->setKeyboardTracking(false);
 
-    amplitudeEdit = new QuantityEdit(amplitudeQuantityRepresentation,
+    amplitudeEdit = new QuantityEdit(m_controller,
+                                     amplitudeQuantityRepresentation,
                                      groupBox);
     amplitudeEdit->setObjectName("amplitudeEdit");
     amplitudeEdit->setMinimumWidth(215);
     amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
                                  QSizePolicy::Fixed);
 
-    offsetEdit = new QuantityEdit(offsetRepresentation, groupBox);
+    offsetEdit = new QuantityEdit(m_controller, offsetRepresentation,
+                                  groupBox);
     offsetEdit->setObjectName("offsetEdit");
     offsetEdit->setMinimumWidth(215);
     offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    phaseSpin = new QuantityEdit(phaseRepresentation, groupBox);
+    phaseSpin = new QuantityEdit(m_controller, phaseRepresentation,
+                                 groupBox);
     phaseSpin->setObjectName("phaseSpin");
     phaseSpin->setRange(-360.0, 360.0);
     phaseSpin->setDecimals(1);
@@ -590,13 +597,6 @@ ChannelWidget::ChannelWidget(int my_channel, QWidget *parent)
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
 
-}
-
-void ChannelWidget::setAllAdaptiveStepType(bool enabled)
-{
-    amplitudeEdit->setAdaptiveStepType(enabled);
-    offsetEdit->setAdaptiveStepType(enabled);
-    phaseSpin->setAdaptiveStepType(enabled);
 }
 
 void ChannelWidget::setWaveformState(const QString &waveform)

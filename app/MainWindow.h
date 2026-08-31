@@ -15,6 +15,7 @@ class QComboBox;
 class QAction;
 
 class ChannelWidget;
+class AppController;
 class FrontPanelWindow;
 
 
@@ -32,7 +33,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
-private slots:
+private slots:  // 'slots' Qt6 keyword not needed with modern connects()s
     void refreshClicked();
     void connectClicked();
     void disconnectClicked();
@@ -73,6 +74,8 @@ private:
     ChannelWidget *ch2Widget;
 
     Instrument *generator = nullptr;
+
+    AppController *m_controller = nullptr;
 
     void createFrontPanelWindow();
     void updateFrontPanelAction();

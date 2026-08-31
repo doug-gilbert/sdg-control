@@ -7,8 +7,6 @@
 #include <QWidget>
 #include <QString>
 
-#include "ChannelState.h"
-
 class QLabel;
 class QCheckBox;
 class QDoubleSpinBox;
@@ -20,6 +18,9 @@ class QScrollArea;
 
 class StepAdjustSpinBox;
 class QuantityEdit;
+class AppController;
+class AmplitudeState;
+class OutputState;
 
 
 class ChannelWidget : public QWidget
@@ -27,9 +28,8 @@ class ChannelWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit ChannelWidget(int channel, QWidget *parent = nullptr);
-
-    void setAllAdaptiveStepType(bool enabled);
+    explicit ChannelWidget(AppController *controller, int channel,
+                           QWidget *parent = nullptr);
 
     void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
@@ -86,6 +86,8 @@ private:
     void debugLayout() const;
 
     int channel;
+
+    AppController *m_controller = nullptr;
 
     QScrollArea *scrollArea = nullptr;
     QWidget *scrollContents = nullptr;

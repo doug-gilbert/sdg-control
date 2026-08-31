@@ -21,7 +21,7 @@ public:
 public:
     void setInstrumentConnected(bool connected);
 
-public slots:
+// public slots:
     void updateScreen();
 
 signals:

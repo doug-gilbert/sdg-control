@@ -10,6 +10,7 @@
 class QLabel;
 
 class StepAdjustSpinBox;
+class AppController;
 
 
 class QuantityRepresentation
@@ -25,7 +26,8 @@ public:
                              const QString &to) const = 0;
 };
 
-
+// Holds a [doubleSpinBox, comboBox] or a [doubleSpinBox, label] pair inside
+// a widget.
 class QuantityEdit : public QWidget
 {
     Q_OBJECT
@@ -48,44 +50,36 @@ public:
         }
     };
 
-    explicit QuantityEdit(
-        const QuantityRepresentation &representation,
-        QWidget *parent = nullptr);
+    explicit QuantityEdit(AppController *controller,
+                          const QuantityRepresentation &representation,
+                          QWidget *parent = nullptr);
 
-    Value originalValue() const
-    {
-        return m_originalValue;
-    }
+    Value originalValue() const { return m_originalValue; }
 
-    Value finalValue() const
-    {
-        return currentValue();
-    }
+    Value finalValue() const { return currentValue(); }
 
-    bool modified() const
-    {
-        return currentValue() != m_originalValue;
-    }
+    bool modified() const { return currentValue() != m_originalValue; }
 
-    bool isEditing() const
-    {
-        return m_editing;
-    }
+    bool isEditing() const { return m_editing; }
 
     void setValue(double value, const QString &representation);
 
-    Value value() const
-    {
-        return currentValue();
-    }
+    Value value() const { return currentValue(); }
 
-    // The setters are forwarded to the spinBox (user input field)
+    // These setters and getters are forwarded to the spinBox (input field)
     void setSingleStep(double step);
+    double singleStep() const;
     void setStepLimits(double minimum, double maximum);
-    void setAdaptiveStepType(bool enabled);
+    double minimumStep() const;
+    double maximumStep() const;
+    QAbstractSpinBox::StepType stepType() const;
+    bool isStepType2MSD() const; // spins second Most Significant Digit
     void setDecimals(int num);
+    int decimals() const;
     void setSuffix(const QString & suffix);
     void setRange(double minimum, double maximum);
+    double minimum() const;
+    double maximum() const;
     void setToolTip(const QString &toolTip);
     QString toolTip() const;
 
@@ -93,6 +87,7 @@ public:
     // spaces as well as any prefix or suffix
     QString cleanText() const;
 
+    // Yields current and original state of this widget as a QString
     QString debugString() const;
 
 signals:
@@ -117,6 +112,8 @@ private:
                           const QString &to) const;
 
     void showRepresentationContextMenu(const QPoint &globalPos);
+
+    AppController *m_controller = nullptr;
 
     // Note that StepAdjustSpinBox is derived from QDoubleSpinBox
     StepAdjustSpinBox *m_valueSpin = nullptr;

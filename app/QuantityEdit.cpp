@@ -25,13 +25,14 @@
 #include "debug.h"
 
 
-QuantityEdit::QuantityEdit(
-    const QuantityRepresentation &representation,
-    QWidget *parent)
+QuantityEdit::QuantityEdit(AppController *controller,
+                           const QuantityRepresentation &representation,
+                           QWidget *parent)
     : QWidget(parent),
+      m_controller(controller),
       m_representation(representation)
 {
-    m_valueSpin = new StepAdjustSpinBox(this);
+    m_valueSpin = new StepAdjustSpinBox(m_controller, this);
     m_valueSpin->setObjectName("quantityValueSpin");
     m_valueSpin->setRange(-1.0e9, 1.0e9);
     m_valueSpin->setDecimals(6);     // changeable via this->setDecimals()
@@ -81,18 +82,22 @@ QuantityEdit::QuantityEdit(
     if (m_representationCombo)
         m_representationCombo->installEventFilter(this);
 
-#if 1
+    // this is needed even though (without sdgDebug()) it does not see to
+    // do anything useful. Qt6 magic.
     connect(m_valueSpin,
             &QDoubleSpinBox::valueChanged,
             this,
             [this](double value)
             {
+#if 0
                 sdgDebug()
                     << objectName()
                     << "SpinBox::valueChanged:"
                     << value;
-            });
+#else
+                Q_UNUSED(value);
 #endif
+            });
 
     if (m_representationCombo)
     {
@@ -274,16 +279,36 @@ void QuantityEdit::setSingleStep(double step)
     m_valueSpin->setSingleStep(step);
 }
 
+double QuantityEdit::singleStep() const
+{
+    return m_valueSpin->singleStep();
+}
+
+// This is NOT a Qt6 method, it is implemented in StepAdjustSpinBox
 void QuantityEdit::setStepLimits(double minimum, double maximum)
 {
     m_valueSpin->setStepLimits(minimum, maximum);
 }
 
-void QuantityEdit::setAdaptiveStepType(bool enabled)
+double QuantityEdit::minimumStep() const
 {
-    m_valueSpin->setStepType(enabled ?
-                             QAbstractSpinBox::AdaptiveDecimalStepType :
-                             QAbstractSpinBox::DefaultStepType);
+    return m_valueSpin->minimumStep();
+}
+
+double QuantityEdit::maximumStep() const
+{
+    return m_valueSpin->maximumStep();
+}
+
+QAbstractSpinBox::StepType QuantityEdit::stepType() const
+{
+    return m_valueSpin->stepType();
+}
+
+bool QuantityEdit::isStepType2MSD() const
+{
+    return m_valueSpin->stepType() ==
+           QAbstractSpinBox::AdaptiveDecimalStepType;
 }
 
 // ctor sets this to 6
@@ -292,10 +317,25 @@ void QuantityEdit::setDecimals(int num)
     m_valueSpin->setDecimals(num);
 }
 
+int QuantityEdit::decimals() const
+{
+    return m_valueSpin->decimals();
+}
+
 // ctor sets this to [-1.0e9, 1.0e9]
 void QuantityEdit::setRange(double minimum, double maximum)
 {
     m_valueSpin->setRange(minimum, maximum);
+}
+
+double QuantityEdit::maximum() const
+{
+    return m_valueSpin->maximum();
+}
+
+double QuantityEdit::minimum() const
+{
+    return m_valueSpin->minimum();
 }
 
 // ctor does NOT set this so there is no suffix by default
@@ -372,10 +412,16 @@ QString QuantityEdit::debugString() const
 {
     const Value cval = currentValue();
 
-    return QString("current: [%1, %2]  orig: [%3, %4]  editing: %5")
-                   .arg(cval.value, 0, 'g', 6)
-                   .arg(cval.representation)
-                   .arg(m_originalValue.value, 0, 'g', 6)
-                   .arg(m_originalValue.representation)
-                   .arg(m_editing ? "true" : "false");
+    if (m_representationCombo)
+        return QString("current: [%1, %2]  orig: [%3, %4]  editing: %5")
+                       .arg(cval.value, 0, 'g', 6)
+                       .arg(cval.representation)
+                       .arg(m_originalValue.value, 0, 'g', 6)
+                       .arg(m_originalValue.representation)
+                       .arg(m_editing ? "true" : "false");
+    else
+        return QString("current: %1  orig: %2  editing: %3")
+                       .arg(cval.value, 0, 'g', 6)
+                       .arg(m_originalValue.value, 0, 'g', 6)
+                       .arg(m_editing ? "true" : "false");
 }

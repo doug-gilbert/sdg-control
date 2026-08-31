@@ -34,97 +34,14 @@
 #include "InstrumentFactory.h"
 #include "SettingsIO.h"
 #include "ChannelWidget.h"
+#include "AppController.h"
 
 #include "debug.h"
 
-/*
- * Following is a helper list of actions required to add a field to a
- * Waveform. In this example the Waveform is DC and the field is
- * 'DC Offset'. Will add field 'DC Precision' at the same time as it is the
- * only other field for Waveform DC. sdg-control should compile after most
- * of the steps shown below.
- *
- *  1)  add dcOffset field to common/ChannelState.h with a (default) value
- *      that is valid (e.g. a freqeuency of 0.0 Hz is NOT valid)
- *  2)  in app/ChannelWidget.h add: public setter void setDcOffset(double
- *      value); and a private label: QLabel *dcOffsetLabel; and a private:
- *      QDoubleSpinBox *dcOffsetSpin;
- *      In app/ChannelWidget.cpp define setDcOffset():
- *          void ChannelWidget::setDcOffset(double value)
- *          {
- *              dcOffsetSpin->blockSignals(true);
- *              dcOffsetSpin->setValue(value);
- *              dcOffsetSpin->blockSignals(false);
- *          }    // The blockSignals() are needed
- *  3)  in app/ChannelWidget.cpp ctor add:
- *          dcOffsetSpin = new QDoubleSpinBox(groupBox);
- *      followed by initial setters (see code for other Spinboxes), then add
- *          dcOffsetLabel = new QLabel("DC Offset:", groupBox);
- *      then expand ChannelWidget::updateControlVisibility()
- *          const bool showDC = (waveform == "DC");
- *          const bool showStandardControls = !showNoise && !showDC;
- *      and at the end of that method:
- *          dcOffsetLabel->setVisible(showDC);
- *          dcOffsetSpin->setVisible(showDC);
- *      and the layout of that field in the ChannelWidget ctor:
- *          formLayout->addRow(dcOffsetLabel, dcOffsetSpin);
- *  4)  build and run, Select Waveform DC and the DC Offset spinbox should
- *      appear. Note there is no wiring yet to/from SDG unit
- *  5)  add void dcOffsetChanged(int channel, double value); under the
- *      signals: section on ChannelWidget.h . Note this is not real C++ but
- *      the 'moc' precompiler with Qt converts it into clean C++. Moc
- *      generates the code to implement dcOffsetChanged().
- *          connect(dcOffsetSpin,
- *                  &QDoubleSpinBox::valueChanged,
- *                  this,
- *                  [this](double value)
- *                  {
- *                      emit dcOffsetChanged(channel, value);
- *                  });
- *      which connects the dcOffset field changing to that signal.
- *  6)  Add void setDcOffset(int channel, double value); to the private
- *      part of MainWindow.h . Then add the corresponding method definition
- *      to MainWindow.cpp (by comparing to the similar methods for other
- *      fields). The add: bool setDcOffset(int channel, double value);
- *      to the public part of SDG2000X.h . Then in SDG2000X.cpp define:
- *          bool SDG2000X::setDcOffset(int channel, double value)
- *      to send the SCPI command to the SDG to set the DC Offset. That
- *      is not defined in the Siglent Programming manual so more research
- *      is needed. Try:
- *        bool SDG2000X::setDcOffset(int channel, double value)
- *        {
- *            return scpi.command(
- *                QString("%1:BSWV OFST,%2")
- *                    .arg(channelPrefix(channel))
- *                    .arg(value, 0, 'g', 12));
- *        }
- *
- *  7)  In MainWindow.cpp there is a helper function named setChannelFields()
- *      In the function add this line: 'cwid.setDcOffset(ch.dcOffset);'
- *  8)  In the ctor of MainWindow.cpp add
- *          connectChannelWidgets(
- *              &ChannelWidget::dcOffsetChanged,
- *              [this](int channel, double value)
- *              {
- *                  setDcOffset(channel, value);
- *              });
- *  9)  parse DC offset from C<chan>:BSWV? response in
- *         ChannelState SDG2000X::getChannelState(int channel)
- *            } else if (key == "OFST") {
- *                value.remove("V");
- *                if (wvtp == "DC")
- *                    state.dcOffset = value.toDouble();
- *                else
- *                    state.offset = value.toDouble();
- *            }
- *  10) add new field to app/SettingsIO.cpp so new field appears in
- *      the JSON output.
- *  11) add new field to MainWindow::updateChannelWidget()
- *
- */
 
 MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
     : QMainWindow(parent),
+      m_controller(new AppController(this)),
       debugFocus(myDebugFocus)
 {
     setWindowTitle("SDG Control");
@@ -227,8 +144,8 @@ MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
                                      Qt::TextSelectableByKeyboard);
 #endif
 
-    ch1Widget = new ChannelWidget(1, central);
-    ch2Widget = new ChannelWidget(2, central);
+    ch1Widget = new ChannelWidget(m_controller, 1, central);
+    ch2Widget = new ChannelWidget(m_controller, 2, central);
 
     refreshButton = new QPushButton("Refresh", central);
     refreshButton->setObjectName("refreshButton");
@@ -514,8 +431,7 @@ void MainWindow::createMenuBar()
             this,
             [this](bool checked)
             {
-                ch1Widget->setAllAdaptiveStepType(checked);
-                ch2Widget->setAllAdaptiveStepType(checked);
+                m_controller->secondMSD_inform(checked);
             });
 
     auto *viewMenu = menuBar()->addMenu("&View");

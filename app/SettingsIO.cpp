@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QDateTime>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -20,6 +21,7 @@ namespace
     constexpr int FormatVersion = 1;
 
     constexpr auto FormatVersionKey = "formatVersion";
+    constexpr auto DateTimeKey      = "createDateTime";
     constexpr auto Channel1Key      = "channel1";
     constexpr auto Channel2Key      = "channel2";
 
@@ -27,6 +29,8 @@ namespace
     constexpr auto FrequencyKey     = "frequency";
     constexpr auto AmplitudeKey     = "amplitude";
     constexpr auto AmplitudeRepresentationKey = "amplitudeRepresentation";
+    constexpr auto AmplitudeUserRepresentationKey =
+                                "amplitudeUserRepresentation";
     constexpr auto OffsetKey        = "offset";
     constexpr auto PhaseKey         = "phase";
     constexpr auto DutyKey          = "duty";
@@ -51,8 +55,10 @@ namespace
 
         obj[WaveformKey]       = state.waveform;
         obj[FrequencyKey]      = state.frequency;
-        obj[AmplitudeKey]      = ampState.getMainValue();
-        obj[AmplitudeRepresentationKey] = ampState.userRepresentation;
+        obj[AmplitudeKey]      = ampState.valueRepresentation().value;
+        obj[AmplitudeRepresentationKey] =
+                          ampState.valueRepresentation().representation;
+        obj[AmplitudeUserRepresentationKey] = ampState.userRepresentation;
         obj[OffsetKey]         = state.offset;
         obj[PhaseKey]          = state.phase;
         obj[DutyKey]           = state.duty;
@@ -95,19 +101,21 @@ namespace
                 const QString r = obj[AmplitudeRepresentationKey].toString();
                 bool ok = true;
 
-                if (r == "Vpp" || r == "mVpp")
+                /* Should be only normalized Units (i.e. no milliVolts) */
+                if (r == "Vpp")
                     ampState.setAmplitudeVpp(value);
-                else if (r == "Vrms" || r == "mVrms")
+                else if (r == "Vrms")
                     ampState.setAmplitudeVrms(value);
                 else if (r == "dBm")
                     ampState.setAmplitude_dBm(value);
-                else if (! r.isEmpty())	// preserve empty userRep
+                else if (! r.isEmpty()) // preserve empty userRep
                 {
                     ok = false;
                     sdgDebug() << __func__ << ">>> rep=" << r;
                 }
-                if (ok)
-                    ampState.userRepresentation = r;
+                if (ok && obj.contains(AmplitudeUserRepresentationKey))
+                    ampState.userRepresentation =
+                         obj[AmplitudeUserRepresentationKey].toString();
             }
         }
         if (state.waveform == "DC")
@@ -152,8 +160,10 @@ bool SettingsIO::save(const QString &filename,
                       const std::array<ChannelState, 2> &state)
 {
     QJsonObject root;
+    QDateTime dt = QDateTime::currentDateTime();
 
     root[FormatVersionKey] = FormatVersion;
+    root[DateTimeKey] = dt.toUTC().toString(Qt::ISODate);
     root[Channel1Key] = channelToJson(state.at(0));
     root[Channel2Key] = channelToJson(state.at(1));
 

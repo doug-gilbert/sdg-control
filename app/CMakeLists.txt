@@ -12,6 +12,7 @@ add_executable(sdg-control
     SettingsIO.h
     QuantityEdit.cpp
     QuantityEdit.h
+    AppController.h
     ${getopt_if_needed}
 )
 

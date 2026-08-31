@@ -4,6 +4,12 @@
 #include <QDebug>
 
 
+struct ValueRepresentation
+{
+    double value;
+    QString representation;
+};
+
 enum class OutputLoad
 {
     Ohm50,
@@ -32,28 +38,31 @@ struct AmplitudeState
     double get_dBm() const { return dBm; }
 
     // Returns a normalised value usually corresponding to
-    // userRepresentation. Normalised is the sense that for any voltages the
-    // Unit is Volts (never milliVolts).
-    double getMainValue() const
+    // userRepresentation. Normalised in the sense that for any voltages the
+    // Unit is Volts (never milliVolts). This follows how SCPI communicates
+    // between this app and a SDG2000X series device.
+    ValueRepresentation valueRepresentation() const
     {
         if (userRepresentation.length() > 0)
         {
             if ((userRepresentation == "Vpp" ||
                  userRepresentation == "mVpp") && v_ppValid)
-                return v_pp;
+                return ValueRepresentation {v_pp, "Vpp"};
             if ((userRepresentation == "Vrms" ||
-                 userRepresentation == "mVrms") && v_rmsValid)
-                return v_rms;
+                      userRepresentation == "mVrms") && v_rmsValid)
+                return ValueRepresentation {v_rms, "Vrms"};
             if (userRepresentation == "dBm" && dBmValid)
-                return dBm;
+                return ValueRepresentation {dBm, "dBm"};
+            return ValueRepresentation {0.000'01, ""};
         }
         if (v_ppValid)     // fall backs, not ideal
-            return v_pp;
-        else if (v_rmsValid)
-            return v_rms;
-        else if (dBmValid)
-            return dBm;
-        return 0.000'01; // things are not good, don't make it worse with 0.0
+            return ValueRepresentation {v_pp, "Vpp"};
+        if (v_rmsValid)
+            return ValueRepresentation {v_rms, "Vrms"};
+        if (dBmValid)
+            return ValueRepresentation {dBm, "dBm"};
+        // things are not good, don't make it worse with an Amplitude of 0.0
+        return ValueRepresentation {0.000'01, ""};
     }
 
     QString userRepresentation;   // the Unit specified by user in the UI
