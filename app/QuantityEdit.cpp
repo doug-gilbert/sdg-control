@@ -273,6 +273,15 @@ void QuantityEdit::focusOutEvent(QFocusEvent *event)
     QWidget::focusOutEvent(event);
 }
 
+double QuantityEdit::canonicalValue() const
+{
+    const Value current = currentValue();
+
+    return convertedValue(current.value,
+                          current.representation,
+                          m_representation.canonicalRepresentation());
+}
+
 // ctor sets this to 0.1
 void QuantityEdit::setSingleStep(double step)
 {

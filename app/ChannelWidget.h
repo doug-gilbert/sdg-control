@@ -118,10 +118,10 @@ private:
     QLabel *dcPrecisionHighLabel;
 
     QComboBox *waveformCombo;
-    StepAdjustSpinBox *frequencySpin;
+    QuantityEdit *frequencyEdit = nullptr;
     QuantityEdit *amplitudeEdit = nullptr;
-    QuantityEdit *offsetEdit;
-    QuantityEdit *phaseSpin;
+    QuantityEdit *offsetEdit = nullptr;
+    QuantityEdit *phaseSpin = nullptr;
     QDoubleSpinBox *dutySpin;
     QDoubleSpinBox *rampSymmetrySpin;
     QDoubleSpinBox *pulseWidthSpin;

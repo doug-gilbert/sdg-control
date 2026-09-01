@@ -29,9 +29,10 @@
 #include "debug.h"
 
 
-namespace
+namespace       // anonymous namespace so all within are at file scope
 {
 
+// Start of Amplitude section; still awaiting Vhigh/Vlow support
 class AmplitudeRepresentation : public QuantityRepresentation
 {
 public:
@@ -44,6 +45,11 @@ public:
             "mVrms",
             "dBm"
         };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Vpp" };
     }
 
     double convert(double value,
@@ -82,12 +88,18 @@ public:
 
 const AmplitudeRepresentation amplitudeQuantityRepresentation;
 
+// Start of Offset section
 class OffsetRepresentation : public QuantityRepresentation
 {
 public:
     std::vector<QString> representations() const override
     {
         return {"Vdc", "mVdc"};
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Vdc" };
     }
 
     double convert(double value,
@@ -117,10 +129,17 @@ public:
 
 const OffsetRepresentation offsetRepresentation;
 
+// Start of Phase section
+
 class PhaseRepresentation : public QuantityRepresentation
 {
 public:
     std::vector<QString> representations() const override
+    {
+        return {"°"};
+    }
+
+    QString canonicalRepresentation() const override
     {
         return {"°"};
     }
@@ -143,7 +162,143 @@ public:
 };
 
 const PhaseRepresentation phaseRepresentation;
-}
+
+// Start of Frequency/Period section
+
+class FrequencyRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QString> representations() const override
+    {
+        return {
+            "MHz",
+            "kHz",
+            "Hz",
+            "mHz",
+            "uHz"
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Hz" };
+    }
+
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
+    {
+        if (from == to)
+            return value;
+
+        // Convert via Hz.
+        double valueHz;
+
+        if (from == "MHz")
+            valueHz = value * 1'000'000.0;
+        else if (from == "kHz")
+            valueHz = value * 1'000.0;
+        else if (from == "Hz")
+            valueHz = value;
+        else if (from == "mHz")
+            valueHz = value * 0.001;
+        else {
+            Q_ASSERT(from == "uHz");
+            valueHz = value * 0.000'001;
+        }
+
+        if (to == "MHz")
+            return valueHz / 1'000'000.0;
+        if (to == "kHz")
+            return valueHz / 1'000.0;
+        if (to == "Hz")
+            return valueHz;
+        if (to == "mHz")
+            return valueHz / 0.001;
+
+        Q_ASSERT(to == "uHz");
+        return valueHz / 0.000'001;
+    }
+
+    bool convertible(const QString &from,
+                     const QString &to) const override
+    {
+        Q_UNUSED(from);
+        Q_UNUSED(to);
+
+        // All frequency representations describe the same physical
+        // quantity, so every pair is convertible.
+        return true;
+    }
+};
+
+class PeriodRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QString> representations() const override
+    {
+        return {
+            "s",
+            "ms",
+            "us",
+            "ns"
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "s" };
+    }
+
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
+    {
+        if (from == to)
+            return value;
+
+        // Convert via seconds.
+        double valueSeconds;
+
+        if (from == "s")
+            valueSeconds = value;
+        else if (from == "ms")
+            valueSeconds = value * 0.001;
+        else if (from == "us")
+            valueSeconds = value * 0.000'001;
+        else {
+            Q_ASSERT(from == "ns");
+            valueSeconds = value * 0.000'000'001;
+        }
+
+        if (to == "s")
+            return valueSeconds;
+        if (to == "ms")
+            return valueSeconds / 0.001;
+        if (to == "us")
+            return valueSeconds / 0.000'001;
+
+        Q_ASSERT(to == "ns");
+        return valueSeconds / 0.000'000'001;
+    }
+
+    bool convertible(const QString &from,
+                     const QString &to) const override
+    {
+        Q_UNUSED(from);
+        Q_UNUSED(to);
+
+        // All period representations describe the same physical
+        // quantity, so every pair is convertible.
+        return true;
+    }
+};
+
+
+const FrequencyRepresentation frequencyQuantityRepresentation;
+const PeriodRepresentation periodQuantityRepresentation;
+
+}       // <<< end of anonymous namespace
 
 
 // Helper class ChannelGroupBox hidden in this source file
@@ -254,20 +409,22 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         "ARB"
     });
 
-    frequencySpin = new StepAdjustSpinBox(m_controller, groupBox);
-    frequencySpin->setObjectName("frequencySpin");
-    frequencySpin->setToolTip(
+frequencyEdit =
+    new QuantityEdit(m_controller, frequencyQuantityRepresentation,
+                     groupBox);
+
+    frequencyEdit->setObjectName("frequencyEdit");
+    frequencyEdit->setToolTip(
         "Right click in the numeric field to modify\n"
         "the spinner step size");
-    frequencySpin->setFixedWidth(150);
-    frequencySpin->setRange(0.000'01, 120'000'000);
-    frequencySpin->setDecimals(6);
-    frequencySpin->setSingleStep(0.000'01);
-    frequencySpin->setStepLimits(0.000'01 /* minimum */, 100'000'000.0);
-#if 0
-    frequencySpin->setSuffix(" Hz");
-#endif
-    frequencySpin->setKeyboardTracking(false);
+    frequencyEdit->setMinimumWidth(215);
+    frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
+                                 QSizePolicy::Fixed);
+    frequencyEdit->setRange(0.000'01, 120'000'000);
+    frequencyEdit->setDecimals(6);
+    frequencyEdit->setSingleStep(0.000'01);
+    frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
+    frequencyEdit->setValue(1'000.0, "Hz");
 
     amplitudeEdit = new QuantityEdit(m_controller,
                                      amplitudeQuantityRepresentation,
@@ -404,7 +561,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     // Add labels and related fields to form (which is in a groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
-    formLayout->addRow(frequencyLabel, frequencySpin);
+    formLayout->addRow(frequencyLabel, frequencyEdit);
     formLayout->addRow(amplitudeLabel, amplitudeEdit);
     formLayout->addRow(offsetLabel, offsetEdit);
     formLayout->addRow(phaseLabel, phaseSpin);
@@ -434,13 +591,14 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit waveformChanged(this->channel, waveform);
             });
 
-    connect(frequencySpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(frequencyEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &,
+                   const QuantityEdit::Value &final)
             {
                 updatePulseDuty();
-                emit frequencyChanged(this->channel, value);
+                emit frequencyChanged(this->channel, final.value);
             });
 
     connect(amplitudeEdit,
@@ -624,9 +782,7 @@ void ChannelWidget::setWaveformState(const QString &waveform)
 
 void ChannelWidget::setFrequencyState(double frequency)
 {
-    frequencySpin->blockSignals(true);
-    frequencySpin->setValue(frequency);
-    frequencySpin->blockSignals(false);
+    frequencyEdit->setValue(frequency, "Hz");
     updatePulseDuty();
 }
 
@@ -712,7 +868,7 @@ void ChannelWidget::updatePulseDuty()
     if (waveformCombo->currentText() != "PULSE")
         return;
 
-    const double frequency = frequencySpin->value();
+    const double frequency = frequencyEdit->canonicalValue();
 
     if (frequency <= 0.0)
     {
@@ -810,7 +966,7 @@ void ChannelWidget::updateControlVisibility()
     const bool showStandardControls = !showNoise && !showDC;
 
     frequencyLabel->setVisible(showStandardControls);
-    frequencySpin->setVisible(showStandardControls);
+    frequencyEdit->setVisible(showStandardControls);
 
     amplitudeLabel->setVisible(showStandardControls);
     amplitudeEdit->setVisible(showStandardControls);

@@ -20,6 +20,9 @@ public:
 
     virtual std::vector<QString> representations() const = 0;
 
+    // Returns which one of the representations is canonical (e.g. Hz or V)
+    virtual QString canonicalRepresentation() const = 0;
+
     // Convert a value expressed in `from` representation to `to`.
     virtual double convert(double value,
                            const QString &from,
@@ -68,6 +71,8 @@ public:
     void setValue(double value, const QString &representation);
 
     Value value() const { return currentValue(); }
+
+    double canonicalValue() const;
 
     // These setters and getters are forwarded to the spinBox (input field)
     void setSingleStep(double step);
