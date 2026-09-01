@@ -101,6 +101,7 @@ private:
 
     QLabel *waveformLabel;
     QLabel *frequencyLabel;
+    QLabel *periodLabel;
     QLabel *amplitudeLabel;
     QLabel *offsetLabel;
     QLabel *phaseLabel;
@@ -119,6 +120,7 @@ private:
 
     QComboBox *waveformCombo;
     QuantityEdit *frequencyEdit = nullptr;
+    QuantityEdit *periodEdit = nullptr;
     QuantityEdit *amplitudeEdit = nullptr;
     QuantityEdit *offsetEdit = nullptr;
     QuantityEdit *phaseSpin = nullptr;

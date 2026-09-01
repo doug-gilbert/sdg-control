@@ -409,9 +409,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         "ARB"
     });
 
-frequencyEdit =
-    new QuantityEdit(m_controller, frequencyQuantityRepresentation,
-                     groupBox);
+    frequencyEdit = new QuantityEdit(m_controller,
+                                frequencyQuantityRepresentation, groupBox);
 
     frequencyEdit->setObjectName("frequencyEdit");
     frequencyEdit->setToolTip(
@@ -425,6 +424,22 @@ frequencyEdit =
     frequencyEdit->setSingleStep(0.000'01);
     frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
     frequencyEdit->setValue(1'000.0, "Hz");
+
+    periodEdit = new QuantityEdit(m_controller, periodQuantityRepresentation,
+                                  groupBox);
+    periodEdit->setObjectName("periodEdit");
+    periodEdit->setToolTip(
+        "Right click in the numeric field to modify\n"
+        "the spinner step size");
+
+    periodEdit->setMinimumWidth(215);
+    periodEdit->setSizePolicy(QSizePolicy::Expanding,
+                              QSizePolicy::Fixed);
+    periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
+    periodEdit->setDecimals(6);
+    periodEdit->setSingleStep(0.000'000'001);
+    periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
+    periodEdit->setValue(0.001, "s");
 
     amplitudeEdit = new QuantityEdit(m_controller,
                                      amplitudeQuantityRepresentation,
@@ -541,6 +556,7 @@ frequencyEdit =
     // Create widgets and labels
     waveformLabel = new QLabel("Waveform:", groupBox);
     frequencyLabel = new QLabel("Frequency:", groupBox);
+    periodLabel = new QLabel("Period:", groupBox);
     amplitudeLabel = new QLabel("Amplitude:", groupBox);
     offsetLabel = new QLabel("Offset:", groupBox);
     phaseLabel = new QLabel("Phase:", groupBox);
@@ -562,6 +578,7 @@ frequencyEdit =
     // Add labels and related fields to form (which is in a groupbox)
     formLayout->addRow(waveformLabel, waveformCombo);
     formLayout->addRow(frequencyLabel, frequencyEdit);
+    formLayout->addRow(periodLabel, periodEdit);
     formLayout->addRow(amplitudeLabel, amplitudeEdit);
     formLayout->addRow(offsetLabel, offsetEdit);
     formLayout->addRow(phaseLabel, phaseSpin);
@@ -597,8 +614,27 @@ frequencyEdit =
             [this](const QuantityEdit::Value &,
                    const QuantityEdit::Value &final)
             {
+                Q_UNUSED(final);
+
+                const double frequency = frequencyEdit->canonicalValue();
+
+                if (frequency > 0.0) {
+                    const double period = 1.0 / frequency;
+
+                    periodEdit->setValue(period, "s");
+
+                    sdgDebug() << Q_FUNC_INFO
+                               << "frequency=" << frequency << "Hz"
+                               << "period=" << period << "s";
+                }
+                else {
+                    sdgDebug() << Q_FUNC_INFO
+                               << "<< WILD frequency="
+                               << frequency << "Hz >>";
+                }
+
                 updatePulseDuty();
-                emit frequencyChanged(this->channel, final.value);
+                emit frequencyChanged(this->channel, frequency);
             });
 
     connect(amplitudeEdit,
@@ -783,6 +819,19 @@ void ChannelWidget::setWaveformState(const QString &waveform)
 void ChannelWidget::setFrequencyState(double frequency)
 {
     frequencyEdit->setValue(frequency, "Hz");
+
+    if (frequency > 0.0) {
+        const double period = 1.0 / frequency;
+
+        periodEdit->setValue(period, "s");
+        sdgDebug() << Q_FUNC_INFO
+                   << "frequency=" << frequency << "Hz"
+                   << "period=" << period << "s";
+    }
+    else
+        sdgDebug() << Q_FUNC_INFO << "<< WILD frequency=" << frequency
+                   << "Hz >>";
+
     updatePulseDuty();
 }
 
