@@ -35,14 +35,15 @@
 #include "SettingsIO.h"
 #include "ChannelWidget.h"
 #include "AppController.h"
+#include "cli_options.h"
 
 #include "debug.h"
 
 
-MainWindow::MainWindow(bool myDebugFocus, QWidget *parent)
+MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     : QMainWindow(parent),
-      m_controller(new AppController(this)),
-      debugFocus(myDebugFocus)
+      cli_options(cli_opts),
+      m_controller(new AppController(this))
 {
     setWindowTitle("SDG Control");
 

@@ -17,6 +17,7 @@ class QAction;
 class ChannelWidget;
 class AppController;
 class FrontPanelWindow;
+class CLI_options;
 
 
 class MainWindow : public QMainWindow
@@ -24,7 +25,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(bool myDebugFocus, QWidget *parent = nullptr);
+    explicit MainWindow(const CLI_options &cli_opts,
+                        QWidget *parent = nullptr);
 
     ~MainWindow();
 
@@ -76,6 +78,8 @@ private:
     Instrument *generator = nullptr;
 
     AppController *m_controller = nullptr;
+
+    const CLI_options &cli_options;
 
     void createFrontPanelWindow();
     void updateFrontPanelAction();

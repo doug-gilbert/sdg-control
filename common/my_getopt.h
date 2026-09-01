@@ -48,7 +48,7 @@
 #ifndef _MYPROXY_GETOPT_H_
 #define _MYPROXY_GETOPT_H_
 
-#ifdef HAVE_GETOPT_LONG
+#if defined(HAVE_GETOPT_H) && defined(HAVE_GETOPT_LONG)
 #include <getopt.h>
 #else
 

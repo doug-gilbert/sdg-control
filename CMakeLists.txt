@@ -95,13 +95,6 @@ else()
     message(STATUS "Unknown platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
-if ( NEED_GETOPT_LONG OR NEED_GETOPT_H )
-    MESSAGE( STATUS ">> Couldn't find getopt/getopt_long, use local version" )
-    set (getopt_if_needed ${CMAKE_SOURCE_DIR}/common/getopt_long.c)
-else ( )
-    set (getopt_if_needed "")
-endif ( )
-
 CHECK_INCLUDE_FILE( "getopt.h" HAVE_GETOPT_H )    # non-standard but common
 check_function_exists(getopt_long HAVE_GETOPT_LONG)
 
@@ -114,6 +107,13 @@ set(NEED_GETOPT_LONG 1)
 if ( HAVE_GETOPT_LONG )
     set(NEED_GETOPT_LONG 0)
 endif ( HAVE_GETOPT_LONG )
+
+if ( NEED_GETOPT_LONG OR NEED_GETOPT_H )
+    MESSAGE( STATUS ">> Couldn't find getopt/getopt_long, use local version" )
+    set (getopt_if_needed ${CMAKE_SOURCE_DIR}/common/getopt_long.c)
+else ( )
+    set (getopt_if_needed "")
+endif ( )
 
 set(COMP_GCC 0)
 set(COMP_CLANG 0)
@@ -181,6 +181,8 @@ else ()
 endif ()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
+
+message(STATUS "Qt version: ${Qt6_VERSION}")
 
 set(CMAKE_AUTOMOC ON)
 

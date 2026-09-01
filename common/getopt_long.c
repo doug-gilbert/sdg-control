@@ -57,7 +57,7 @@ __RCSID("$NetBSD: getopt_long.c,v 1.17 2004/06/20 22:20:15 jmc Exp $");
 
 #include <assert.h>
 #include <errno.h>
-#include "getopt.h"
+#include "my_getopt.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

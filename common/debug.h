@@ -15,6 +15,11 @@ inline QDebug sdgDebug()
     return qDebug().noquote()
            << QDateTime::currentDateTime().toString("HH:mm:ss.zzz");
 }
+
+inline QDebug qsdgDebug()
+{
+    return qDebug().noquote() ;
+}
 #else
 
 #define sdgDebug() if (true) {} else qDebug()

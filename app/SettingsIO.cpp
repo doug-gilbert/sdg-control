@@ -163,7 +163,7 @@ bool SettingsIO::save(const QString &filename,
     QDateTime dt = QDateTime::currentDateTime();
 
     root[FormatVersionKey] = FormatVersion;
-    root[DateTimeKey] = dt.toUTC().toString(Qt::ISODate);
+    root[DateTimeKey] = dt.toUTC().toString(Qt::ISODateWithMs);
     root[Channel1Key] = channelToJson(state.at(0));
     root[Channel2Key] = channelToJson(state.at(1));
 
