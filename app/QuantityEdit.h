@@ -38,7 +38,7 @@ public:
                            const QString &to) const;
 
     virtual bool convertible(const QString &from,
-                             const QString &to) const = 0;
+                             const QString &to) const;
 };
 
 // Holds a [doubleSpinBox, comboBox] or a [doubleSpinBox, label] pair inside

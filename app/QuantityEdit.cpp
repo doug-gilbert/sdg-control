@@ -25,6 +25,61 @@
 #include "debug.h"
 
 
+// QuantityRepresentation has default implementation for convert()
+// and convertible()
+double QuantityRepresentation::convert(double value,
+                                       const QString &from,
+                                       const QString &to) const
+{
+    const auto reps = representations();
+
+    const Representation *fromRep = nullptr;
+    const Representation *toRep = nullptr;
+
+    for (const auto &rep : reps)
+    {
+        if (rep.uiRep == from)
+            fromRep = &rep;
+
+        if (rep.uiRep == to)
+            toRep = &rep;
+    }
+
+    Q_ASSERT(fromRep != nullptr);
+    Q_ASSERT(toRep != nullptr);
+    Q_ASSERT(fromRep->canonicalRep == toRep->canonicalRep);
+
+    const double canonicalValue =
+        value * fromRep->ui2CanonicalScale;
+
+    return canonicalValue / toRep->ui2CanonicalScale;
+}
+
+bool QuantityRepresentation::convertible(const QString &from,
+                                         const QString &to) const
+{
+    const auto reps = representations();
+
+    const Representation *fromRep = nullptr;
+    const Representation *toRep = nullptr;
+
+    for (const auto &rep : reps)
+    {
+        if (rep.uiRep == from)
+            fromRep = &rep;
+
+        if (rep.uiRep == to)
+            toRep = &rep;
+    }
+
+    if (!fromRep || !toRep)
+        return false;
+
+    return fromRep->canonicalRep == toRep->canonicalRep;
+}
+
+
+// Start of QuantityEdit mehods
 QuantityEdit::QuantityEdit(AppController *controller,
                            const QuantityRepresentation &representation,
                            QWidget *parent)
@@ -413,34 +468,6 @@ void QuantityEdit::showRepresentationContextMenu(
 QString QuantityEdit::cleanText() const
 {
      return m_valueSpin ? m_valueSpin->cleanText() : "";
-}
-
-double QuantityRepresentation::convert(double value,
-                                       const QString &from,
-                                       const QString &to) const
-{
-    const auto reps = representations();
-
-    const Representation *fromRep = nullptr;
-    const Representation *toRep = nullptr;
-
-    for (const auto &rep : reps)
-    {
-        if (rep.uiRep == from)
-            fromRep = &rep;
-
-        if (rep.uiRep == to)
-            toRep = &rep;
-    }
-
-    Q_ASSERT(fromRep != nullptr);
-    Q_ASSERT(toRep != nullptr);
-    Q_ASSERT(fromRep->canonicalRep == toRep->canonicalRep);
-
-    const double canonicalValue =
-        value * fromRep->ui2CanonicalScale;
-
-    return canonicalValue / toRep->ui2CanonicalScale;
 }
 
 QString QuantityEdit::debugString() const

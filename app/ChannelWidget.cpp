@@ -76,15 +76,6 @@ public:
                    "unsupported amplitude conversion");
         return value;
     }
-
-    bool convertible(const QString &from, const QString &to) const override
-    {
-        return
-            (from == "Vpp"  && to == "mVpp") ||
-            (from == "mVpp" && to == "Vpp")  ||
-            (from == "Vrms" && to == "mVrms") ||
-            (from == "mVrms" && to == "Vrms");
-    }
 };
 
 const AmplitudeRepresentation amplitudeQuantityRepresentation;
@@ -106,30 +97,6 @@ public:
     {
         return { "Vdc" };
     }
-
-    double convert(double value,
-                   const QString &from,
-                   const QString &to) const override
-    {
-        if (from == to)
-            return value;
-
-        if (from == "Vdc" && to == "mVdc")
-            return value * 1000.0;
-
-        if (from == "mVdc" && to == "Vdc")
-            return value / 1000.0;
-
-        Q_ASSERT_X(false, "OffsetRepresentation::convert",
-                   "unsupported offset conversion");
-        return value;
-    }
-
-    bool convertible(const QString &from, const QString &to) const override
-    {
-        return (from == "Vdc" && to == "mVdc") ||
-               (from == "mVdc" && to == "Vdc");
-    }
 };
 
 const OffsetRepresentation offsetRepresentation;
@@ -148,22 +115,6 @@ public:
     QString canonicalRepresentation() const override
     {
         return {"°"};
-    }
-
-    double convert(double value,
-                   const QString &from,
-                   const QString &to) const override
-    {
-        Q_ASSERT(from == "°");
-        Q_ASSERT(to == "°");
-        return value;
-    }
-
-    bool convertible(const QString &from, const QString &to) const override
-    {
-        Q_UNUSED(from);
-        Q_UNUSED(to);
-        return false;
     }
 };
 
@@ -190,85 +141,6 @@ public:
     {
         return { "Hz" };
     }
-
-    double convert(double value,
-                   const QString &from,
-                   const QString &to) const override
-    {
-        const auto reps = representations();
-
-        const auto findRep = [&reps](const QString &uiRep)
-            -> const QuantityRepresentation::Representation *
-        {
-            for (const auto &rep : reps) {
-                if (rep.uiRep == uiRep)
-                    return &rep;
-            }
-            return nullptr;
-        };
-
-        const auto *fromRep = findRep(from);
-        const auto *toRep = findRep(to);
-
-        Q_ASSERT(fromRep != nullptr);
-        Q_ASSERT(toRep != nullptr);
-
-        Q_ASSERT(fromRep->canonicalRep == toRep->canonicalRep);
-
-        const double canonicalValue =
-            value * fromRep->ui2CanonicalScale;
-
-        return canonicalValue / toRep->ui2CanonicalScale;
-    }
-
-#if 0
-    double convert(double value,
-                   const QString &from,
-                   const QString &to) const override
-    {
-        if (from == to)
-            return value;
-
-        // Convert via Hz.
-        double valueHz;
-
-        if (from == "MHz")
-            valueHz = value * 1'000'000.0;
-        else if (from == "kHz")
-            valueHz = value * 1'000.0;
-        else if (from == "Hz")
-            valueHz = value;
-        else if (from == "mHz")
-            valueHz = value * 0.001;
-        else {
-            Q_ASSERT(from == "uHz");
-            valueHz = value * 0.000'001;
-        }
-
-        if (to == "MHz")
-            return valueHz / 1'000'000.0;
-        if (to == "kHz")
-            return valueHz / 1'000.0;
-        if (to == "Hz")
-            return valueHz;
-        if (to == "mHz")
-            return valueHz / 0.001;
-
-        Q_ASSERT(to == "uHz");
-        return valueHz / 0.000'001;
-    }
-#endif
-
-    bool convertible(const QString &from,
-                     const QString &to) const override
-    {
-        Q_UNUSED(from);
-        Q_UNUSED(to);
-
-        // All frequency representations describe the same physical
-        // quantity, so every pair is convertible.
-        return true;
-    }
 };
 
 class PeriodRepresentation : public QuantityRepresentation
@@ -289,51 +161,7 @@ public:
     {
         return { "s" };
     }
-
-    double convert(double value,
-                   const QString &from,
-                   const QString &to) const override
-    {
-        if (from == to)
-            return value;
-
-        // Convert via seconds.
-        double valueSeconds;
-
-        if (from == "s")
-            valueSeconds = value;
-        else if (from == "ms")
-            valueSeconds = value * 0.001;
-        else if (from == "us")
-            valueSeconds = value * 0.000'001;
-        else {
-            Q_ASSERT(from == "ns");
-            valueSeconds = value * 0.000'000'001;
-        }
-
-        if (to == "s")
-            return valueSeconds;
-        if (to == "ms")
-            return valueSeconds / 0.001;
-        if (to == "us")
-            return valueSeconds / 0.000'001;
-
-        Q_ASSERT(to == "ns");
-        return valueSeconds / 0.000'000'001;
-    }
-
-    bool convertible(const QString &from,
-                     const QString &to) const override
-    {
-        Q_UNUSED(from);
-        Q_UNUSED(to);
-
-        // All period representations describe the same physical
-        // quantity, so every pair is convertible.
-        return true;
-    }
 };
-
 
 const FrequencyRepresentation frequencyQuantityRepresentation;
 const PeriodRepresentation periodQuantityRepresentation;
