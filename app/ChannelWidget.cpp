@@ -36,14 +36,15 @@ namespace       // anonymous namespace so all within are at file scope
 class AmplitudeRepresentation : public QuantityRepresentation
 {
 public:
-    std::vector<QString> representations() const override
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
     {
         return {
-            "Vpp",
-            "mVpp",
-            "Vrms",
-            "mVrms",
-            "dBm"
+            {"Vpp",   "Vpp",    1.0},
+            {"mVpp",  "Vpp",    0.001},
+            {"Vrms",  "Vrms",   1.0},
+            {"mVrms", "Vrms",   0.001},
+            {"dBm",   "dBm",    1.0}
         };
     }
 
@@ -92,9 +93,13 @@ const AmplitudeRepresentation amplitudeQuantityRepresentation;
 class OffsetRepresentation : public QuantityRepresentation
 {
 public:
-    std::vector<QString> representations() const override
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
     {
-        return {"Vdc", "mVdc"};
+        return {
+            {"Vdc",  "Vdc",  1.0},
+            {"mVdc",  "Vdc",  0.001}
+        };
     }
 
     QString canonicalRepresentation() const override
@@ -134,9 +139,10 @@ const OffsetRepresentation offsetRepresentation;
 class PhaseRepresentation : public QuantityRepresentation
 {
 public:
-    std::vector<QString> representations() const override
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
     {
-        return {"°"};
+        return { {"°", "°", 1.0} };
     }
 
     QString canonicalRepresentation() const override
@@ -168,14 +174,15 @@ const PhaseRepresentation phaseRepresentation;
 class FrequencyRepresentation : public QuantityRepresentation
 {
 public:
-    std::vector<QString> representations() const override
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
     {
         return {
-            "MHz",
-            "kHz",
-            "Hz",
-            "mHz",
-            "uHz"
+            {"Hz",  "Hz",  1.0},
+            {"kHz", "Hz", 1'000.0},
+            {"MHz", "Hz", 1'000'000.0},
+            {"mHz", "Hz", 0.001},
+            {"uHz", "Hz", 0.000'001}
         };
     }
 
@@ -184,6 +191,37 @@ public:
         return { "Hz" };
     }
 
+    double convert(double value,
+                   const QString &from,
+                   const QString &to) const override
+    {
+        const auto reps = representations();
+
+        const auto findRep = [&reps](const QString &uiRep)
+            -> const QuantityRepresentation::Representation *
+        {
+            for (const auto &rep : reps) {
+                if (rep.uiRep == uiRep)
+                    return &rep;
+            }
+            return nullptr;
+        };
+
+        const auto *fromRep = findRep(from);
+        const auto *toRep = findRep(to);
+
+        Q_ASSERT(fromRep != nullptr);
+        Q_ASSERT(toRep != nullptr);
+
+        Q_ASSERT(fromRep->canonicalRep == toRep->canonicalRep);
+
+        const double canonicalValue =
+            value * fromRep->ui2CanonicalScale;
+
+        return canonicalValue / toRep->ui2CanonicalScale;
+    }
+
+#if 0
     double convert(double value,
                    const QString &from,
                    const QString &to) const override
@@ -219,6 +257,7 @@ public:
         Q_ASSERT(to == "uHz");
         return valueHz / 0.000'001;
     }
+#endif
 
     bool convertible(const QString &from,
                      const QString &to) const override
@@ -235,13 +274,14 @@ public:
 class PeriodRepresentation : public QuantityRepresentation
 {
 public:
-    std::vector<QString> representations() const override
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
     {
         return {
-            "s",
-            "ms",
-            "us",
-            "ns"
+            {"s",  "s",  1.0},
+            {"ms", "s",  0.001},
+            {"us", "s",  0.000'001},
+            {"ns", "s",  0.000'000'001}
         };
     }
 

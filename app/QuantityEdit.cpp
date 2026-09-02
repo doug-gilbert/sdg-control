@@ -43,7 +43,8 @@ QuantityEdit::QuantityEdit(AppController *controller,
 
     if (representations.size() == 1)
     {
-        m_representationLabel = new QLabel(representations.front(), this);
+        m_representationLabel = new QLabel(representations.front().uiRep,
+                                           this);
         m_representationLabel->setObjectName("quantityRepresentationLabel");
         m_representationLabel->setSizePolicy(QSizePolicy::Preferred,
                                              QSizePolicy::Fixed);
@@ -59,7 +60,7 @@ QuantityEdit::QuantityEdit(AppController *controller,
                                             QComboBox::AdjustToContents);
 
         for (const auto &text : representations)
-            m_representationCombo->addItem(text);
+            m_representationCombo->addItem(text.uiRep);
     }
 
     auto *layout = new QHBoxLayout(this);
@@ -378,14 +379,14 @@ void QuantityEdit::showRepresentationContextMenu(
 
     for (const auto &to : m_representation.representations())
     {
-        if (to == from)
+        if (to.uiRep == from)
             continue;
 
-        if (!m_representation.convertible(from, to))
+        if (!m_representation.convertible(from, to.uiRep))
             continue;
 
         auto *action = menu.addAction(
-            QString("Convert %1 to %2").arg(from, to));
+            QString("Convert %1 to %2").arg(from, to.uiRep));
 
         connect(action,
                 &QAction::triggered,
@@ -396,10 +397,10 @@ void QuantityEdit::showRepresentationContextMenu(
                         convertedValue(
                             m_valueSpin->value(),
                             from,
-                            to);
+                            to.uiRep);
 
                     m_valueSpin->setValue(value);
-                    m_representationCombo->setCurrentText(to);
+                    m_representationCombo->setCurrentText(to.uiRep);
                 });
     }
 
@@ -412,6 +413,34 @@ void QuantityEdit::showRepresentationContextMenu(
 QString QuantityEdit::cleanText() const
 {
      return m_valueSpin ? m_valueSpin->cleanText() : "";
+}
+
+double QuantityRepresentation::convert(double value,
+                                       const QString &from,
+                                       const QString &to) const
+{
+    const auto reps = representations();
+
+    const Representation *fromRep = nullptr;
+    const Representation *toRep = nullptr;
+
+    for (const auto &rep : reps)
+    {
+        if (rep.uiRep == from)
+            fromRep = &rep;
+
+        if (rep.uiRep == to)
+            toRep = &rep;
+    }
+
+    Q_ASSERT(fromRep != nullptr);
+    Q_ASSERT(toRep != nullptr);
+    Q_ASSERT(fromRep->canonicalRep == toRep->canonicalRep);
+
+    const double canonicalValue =
+        value * fromRep->ui2CanonicalScale;
+
+    return canonicalValue / toRep->ui2CanonicalScale;
 }
 
 QString QuantityEdit::debugString() const

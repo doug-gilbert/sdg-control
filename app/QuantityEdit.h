@@ -16,17 +16,26 @@ class AppController;
 class QuantityRepresentation
 {
 public:
+    struct Representation
+    {
+        QString uiRep;
+        QString canonicalRep;
+        double ui2CanonicalScale;
+    };
+
     virtual ~QuantityRepresentation() = default;
 
-    virtual std::vector<QString> representations() const = 0;
+    virtual std::vector<Representation> representations() const = 0;
 
     // Returns which one of the representations is canonical (e.g. Hz or V)
     virtual QString canonicalRepresentation() const = 0;
 
     // Convert a value expressed in `from` representation to `to`.
+    // This function has a default implementation that may be overridden
+    // by sub-classes.
     virtual double convert(double value,
                            const QString &from,
-                           const QString &to) const = 0;
+                           const QString &to) const;
 
     virtual bool convertible(const QString &from,
                              const QString &to) const = 0;
