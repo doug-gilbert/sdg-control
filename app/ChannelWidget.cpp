@@ -521,10 +521,15 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                     << "final =" << final.value
                     << final.representation;
 
-                emit amplitudeChanged(channel, final.value,
+                emit amplitudeChanged(channel,
+                                     final.value,
+                                     final.representation);
+#if 0   // too soon for this
+                emit amplitudeChanged(channel,
+                                      amplitudeEdit->canonicalValue(),
                                       final.representation);
-
                 // Bridge to the existing amplitude/model code here.
+#endif
             });
 
     connect(offsetEdit,

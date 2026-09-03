@@ -77,11 +77,15 @@ public:
 
     bool isEditing() const { return m_editing; }
 
-    void setValue(double value, const QString &representation);
+    void setValue(double value, const QString &representation,
+                  bool make_dirty = true);
 
     Value value() const { return currentValue(); }
 
     double canonicalValue() const;
+
+    bool isDirty() const { return m_dirty; }
+    void clearDirty() { m_dirty = false; }
 
     // These setters and getters are forwarded to the spinBox (input field)
     void setSingleStep(double step);
@@ -109,6 +113,8 @@ public:
 
 signals:
     void editingStarted();
+
+    void representationChanged(const QString &representation);
 
     void committed(const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final);
@@ -142,4 +148,6 @@ private:
     Value m_originalValue{1.0, {}};
 
     bool m_editing = false;
+
+    bool m_dirty = false;
 };

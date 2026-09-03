@@ -48,7 +48,7 @@ private:
     bool debugFocus = false;
 
     bool immediateMode = true;
-    bool dirty = false;
+    bool m_dirty = false;
 
     FrontPanelWindow *frontPanelWindow = nullptr;
     QAction *frontPanelAction = nullptr;
@@ -86,6 +86,7 @@ private:
 
     void setInstrument(InstrumentType type);
     void setDirty(bool value);
+    bool isDirty() const;
 
     void updateWidgetsFromState();
     void updateChannelWidget(int channel, const ChannelState &state);

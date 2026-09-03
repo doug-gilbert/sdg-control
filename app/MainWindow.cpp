@@ -219,7 +219,7 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                 {
                     sendButton->show();
                     sdgDebug() << "enter Send mode";
-                    sendButton->setEnabled(dirty);
+                    sendButton->setEnabled(m_dirty);
                 }
             });
 
@@ -712,6 +712,8 @@ void MainWindow::refreshClicked()
         return;
     }
 
+    const bool wasDirty = isDirty();
+
     idEdit->setText(displayIdentification(generator->identification()));
 
     auto ch1 = generator->getChannelState(1);
@@ -721,6 +723,10 @@ void MainWindow::refreshClicked()
         sdgDebug() << Q_FUNC_INFO << ":ch1: " << ioErrorMsg;
         return;
     }
+    // Need to carry over userRepresentation from existing UI state
+    ch1.amplitude.userRepresentation =
+        pendingState[0].amplitude.userRepresentation;
+
     setChannelFields(1, *ch1Widget, ch1);
 
     auto ch2 = generator->getChannelState(2);
@@ -730,11 +736,19 @@ void MainWindow::refreshClicked()
         sdgDebug() << Q_FUNC_INFO << ":ch2: " << ioErrorMsg;
         return;
     }
+    // Need to carry over userRepresentation from existing UI state
+    ch2.amplitude.userRepresentation =
+        pendingState[1].amplitude.userRepresentation;
+
     setChannelFields(2, *ch2Widget, ch2);
 
     pendingState[0] = ch1;
     pendingState[1] = ch2;
 
+    if (wasDirty)
+    {
+        sdgDebug() << Q_FUNC_INFO << ">>> Refresh overwrote user data";
+    }
     setDirty(false);
 }
 
@@ -1076,10 +1090,15 @@ void MainWindow::setOutput(int channel, bool enabled)
 
 void MainWindow::setDirty(bool value)
 {
-    dirty = value;
+    m_dirty = value;
 
     if (!immediateMode)
-        sendButton->setEnabled(dirty);
+        sendButton->setEnabled(m_dirty);
+}
+
+bool MainWindow::isDirty() const
+{
+    return m_dirty;
 }
 
 void MainWindow::loadSettings()

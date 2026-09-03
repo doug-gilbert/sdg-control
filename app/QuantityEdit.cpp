@@ -153,6 +153,8 @@ QuantityEdit::QuantityEdit(AppController *controller,
 #else
                 Q_UNUSED(value);
 #endif
+                if (! m_dirty)
+                    m_dirty = true;
             });
 
     if (m_representationCombo)
@@ -166,6 +168,8 @@ QuantityEdit::QuantityEdit(AppController *controller,
                         << objectName()
                         << "ComboBox::currentTextChanged:"
                         << representationText;
+                    emit representationChanged(representationText);
+                    m_dirty = true;
                 });
     }
 }
@@ -182,7 +186,8 @@ QuantityEdit::Value QuantityEdit::currentValue() const
 
 void QuantityEdit::setValue(
     double value,
-    const QString &representation)
+    const QString &representation,
+    bool make_dirty)
 {
 sdgDebug() << Q_FUNC_INFO << " value=" << value;
     m_valueSpin->blockSignals(true);
@@ -209,6 +214,7 @@ sdgDebug() << Q_FUNC_INFO << " value=" << value;
 
     m_originalValue = currentValue();
     m_editing = false;
+    m_dirty = make_dirty;
 }
 
 
@@ -331,11 +337,12 @@ void QuantityEdit::focusOutEvent(QFocusEvent *event)
 
 double QuantityEdit::canonicalValue() const
 {
-    const Value current = currentValue();
+    const Value value = currentValue();
 
-    return convertedValue(current.value,
-                          current.representation,
-                          m_representation.canonicalRepresentation());
+    return m_representation.convert(
+        value.value,
+        value.representation,
+        m_representation.canonicalRepresentation());
 }
 
 // ctor sets this to 0.1
