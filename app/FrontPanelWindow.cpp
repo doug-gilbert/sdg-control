@@ -32,6 +32,7 @@ FrontPanelWindow::FrontPanelWindow(Instrument *a_instrument, QWidget *parent)
 
     screenLabel = new QLabel(this);
     screenLabel->setAlignment(Qt::AlignCenter);
+    screenLabel->setScaledContents(true);
 
     updateButton = new QPushButton("Update", this);
     toggleButton = new QPushButton("Toggle channel", this);
@@ -94,7 +95,6 @@ void FrontPanelWindow::updateScreen()
     {
         screenLabel->setPixmap(pixmap);
         screenLabel->setMinimumSize(pixmap.size());
-        adjustSize();
     }
     else
     {
