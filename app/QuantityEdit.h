@@ -80,6 +80,8 @@ public:
     void setValue(double value, const QString &representation,
                   bool make_dirty = true);
 
+    void setCanonicalValue(double value, bool make_dirty = false);
+
     Value value() const { return currentValue(); }
 
     double canonicalValue() const;

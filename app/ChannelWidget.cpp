@@ -691,7 +691,7 @@ void ChannelWidget::setWaveformState(const QString &waveform)
 
 void ChannelWidget::setFrequencyState(double frequency)
 {
-    frequencyEdit->setValue(frequency, "Hz");
+    frequencyEdit->setCanonicalValue(frequency);
 
     if (frequency > 0.0) {
         const double period = 1.0 / frequency;

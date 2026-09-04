@@ -217,6 +217,18 @@ sdgDebug() << Q_FUNC_INFO << " value=" << value;
     m_dirty = make_dirty;
 }
 
+void QuantityEdit::setCanonicalValue(double value, bool make_dirty)
+{
+    const QString representation = currentValue().representation;
+
+    const double displayValue =
+        m_representation.convert(
+            value,
+            m_representation.canonicalRepresentation(),
+            representation);
+
+    setValue(displayValue, representation, make_dirty);
+}
 
 void QuantityEdit::beginEditing()
 {
@@ -228,7 +240,6 @@ void QuantityEdit::beginEditing()
 
     emit editingStarted();
 }
-
 
 void QuantityEdit::commit()
 {
