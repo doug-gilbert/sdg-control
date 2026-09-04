@@ -230,6 +230,37 @@ void QuantityEdit::setCanonicalValue(double value, bool make_dirty)
     setValue(displayValue, representation, make_dirty);
 }
 
+void QuantityEdit::setRepresentation(const QString &representation)
+{
+    const Value current = currentValue();
+
+    if (current.representation == representation)
+        return;
+
+    const double value =
+        m_representation.convert(
+            current.value,
+            current.representation,
+            representation);
+
+    m_valueSpin->blockSignals(true);
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(true);
+
+    m_valueSpin->setValue(value);
+
+    if (m_representationCombo)
+        m_representationCombo->setCurrentText(representation);
+    else
+        m_representationLabel->setText(representation);
+
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(false);
+    m_valueSpin->blockSignals(false);
+
+    // Deliberately preserve m_originalValue, m_editing and m_dirty.
+}
+
 void QuantityEdit::beginEditing()
 {
     if (m_editing)
@@ -466,14 +497,7 @@ void QuantityEdit::showRepresentationContextMenu(
                 this,
                 [this, from, to]
                 {
-                    const double value =
-                        convertedValue(
-                            m_valueSpin->value(),
-                            from,
-                            to.uiRep);
-
-                    m_valueSpin->setValue(value);
-                    m_representationCombo->setCurrentText(to.uiRep);
+                    setRepresentation(to.uiRep);
                 });
     }
 
