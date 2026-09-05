@@ -145,14 +145,7 @@ QuantityEdit::QuantityEdit(AppController *controller,
             this,
             [this](double value)
             {
-#if 0
-                sdgDebug()
-                    << objectName()
-                    << "SpinBox::valueChanged:"
-                    << value;
-#else
                 Q_UNUSED(value);
-#endif
                 if (! m_dirty)
                     m_dirty = true;
             });
@@ -189,7 +182,6 @@ void QuantityEdit::setValue(
     const QString &representation,
     bool make_dirty)
 {
-sdgDebug() << Q_FUNC_INFO << " value=" << value;
     m_valueSpin->blockSignals(true);
     if (m_representationCombo)
         m_representationCombo->blockSignals(true);
@@ -237,6 +229,17 @@ void QuantityEdit::setRepresentation(const QString &representation)
     if (current.representation == representation)
         return;
 
+    if (!m_representation.convertible(current.representation,
+                                      representation))
+    {
+        sdgDebug() << Q_FUNC_INFO
+                   << " conversion rejected:"
+                   << current.value << current.representation
+                   << "->"
+                   << representation;
+        return;
+    }
+
     const double value =
         m_representation.convert(
             current.value,
@@ -259,6 +262,18 @@ void QuantityEdit::setRepresentation(const QString &representation)
     m_valueSpin->blockSignals(false);
 
     // Deliberately preserve m_originalValue, m_editing and m_dirty.
+}
+
+void QuantityEdit::showIfDirty(bool clearAnyway)
+{
+    if (clearAnyway)
+    {
+        m_valueSpin->edit()->deselect();
+        return;
+    }
+
+    if (m_dirty)
+        m_valueSpin->edit()->selectAll();
 }
 
 void QuantityEdit::beginEditing()
@@ -517,14 +532,16 @@ QString QuantityEdit::debugString() const
     const Value cval = currentValue();
 
     if (m_representationCombo)
-        return QString("current: [%1, %2]  orig: [%3, %4]  editing: %5")
+        return QString("objectName: %1 current: [%2, %3]  orig: [%4, %5]  editing: %6")
+                       .arg(objectName())
                        .arg(cval.value, 0, 'g', 6)
                        .arg(cval.representation)
                        .arg(m_originalValue.value, 0, 'g', 6)
                        .arg(m_originalValue.representation)
                        .arg(m_editing ? "true" : "false");
     else
-        return QString("current: %1  orig: %2  editing: %3")
+        return QString("objectName: %1  current: %2  orig: %3  editing: %4")
+                       .arg(objectName())
                        .arg(cval.value, 0, 'g', 6)
                        .arg(m_originalValue.value, 0, 'g', 6)
                        .arg(m_editing ? "true" : "false");

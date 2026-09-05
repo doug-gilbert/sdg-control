@@ -91,6 +91,10 @@ public:
     bool isDirty() const { return m_dirty; }
     void clearDirty() { m_dirty = false; }
 
+    // Select the value field if dirty. If clearAnyway is true,
+    // remove any selection regardless of dirty state.
+    void showIfDirty(bool clearAnyway = false);
+
     // These setters and getters are forwarded to the spinBox (input field)
     void setSingleStep(double step);
     double singleStep() const;

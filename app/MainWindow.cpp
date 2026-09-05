@@ -213,7 +213,7 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                 {
                     sendButton->hide();
                     sdgDebug() << "enter Immediate mode";
-                    setDirty(false);
+                    setDirty(false);     // legacy global flag
                 }
                 else
                 {
@@ -590,7 +590,7 @@ void MainWindow::setInstrument(InstrumentType type)
     ch2Widget->setControlsEnabled(false);
 
     pendingState = {};
-    setDirty(false);
+    setDirty(false);     // legacy global flag
 
     idEdit->setText("Not connected");
 }
@@ -664,29 +664,29 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
-    cwid.setWaveformState(ch.waveform);
-    cwid.setFrequencyState(ch.frequency);
-    cwid.setAmplitudeState(ch.amplitude);
-    cwid.setOffsetState(ch.offset);
-    cwid.setPhaseState(ch.phase);
-    cwid.setDutyState(ch.duty);
-    cwid.setRampSymmetryState(ch.rampSymmetry);
-    cwid.setPulseWidthState(ch.pulseWidth);
-    cwid.setPulseRiseState(ch.pulseRise);
-    cwid.setPulseFallState(ch.pulseFall);
-    cwid.setNoiseBandsetState(ch.noiseBandset);
-    cwid.setNoiseStdevState(ch.noiseStdev);
-    cwid.setNoiseMeanState(ch.noiseMean);
-    cwid.setNoiseBandwidthState(ch.noiseBandwidth);
-    cwid.setDcOffsetState(ch.dcOffset);
+    cwid.setWaveformState(ch.waveform, false);
+    cwid.setFrequencyState(ch.frequency, false);
+    cwid.setAmplitudeState(ch.amplitude, false);
+    cwid.setOffsetState(ch.offset, false);
+    cwid.setPhaseState(ch.phase, false);
+    cwid.setDutyState(ch.duty, false);
+    cwid.setRampSymmetryState(ch.rampSymmetry, false);
+    cwid.setPulseWidthState(ch.pulseWidth, false);
+    cwid.setPulseRiseState(ch.pulseRise, false);
+    cwid.setPulseFallState(ch.pulseFall, false);
+    cwid.setNoiseBandsetState(ch.noiseBandset, false);
+    cwid.setNoiseStdevState(ch.noiseStdev, false);
+    cwid.setNoiseMeanState(ch.noiseMean, false);
+    cwid.setNoiseBandwidthState(ch.noiseBandwidth, false);
+    cwid.setDcOffsetState(ch.dcOffset, false);
 
 // DC Precision is present in the SDG UI/firmware but is not currently
 // documented by Siglent and is not returned by BSWV?. Leave the field
 // in the application state/UI so it can be wired up if a future
 // firmware/SCPI implementation exposes it.
-    cwid.setDcPrecisionHighState(ch.dcPrecisionHigh);
+    cwid.setDcPrecisionHighState(ch.dcPrecisionHigh, false);
 
-    cwid.setOutputState(ch.output);
+    cwid.setOutputState(ch.output, false);
 
 #ifdef SDG_DEVELOPER_UI
     setChannelStatus(my_chan, cwid, ch);
@@ -749,7 +749,7 @@ void MainWindow::refreshClicked()
     {
         sdgDebug() << Q_FUNC_INFO << ">>> Refresh overwrote user data";
     }
-    setDirty(false);
+    setDirty(false);     // legacy global flag
 }
 
 // Connect replaces the existing pending settings with the state read from
@@ -818,11 +818,16 @@ void MainWindow::sendClicked()
     for (int channel = 1; channel <= 2; channel++)
     {
         const auto &state = pendingState.at(channel - 1);
-        ok &= generator->applyChannelState(channel, state);
+        ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+
+        bool local_ok = generator->applyChannelState(channel, state);
+        if (local_ok)
+            widget->clearAllDirty();
+        ok &= local_ok;
     }
 
     if (ok)
-        setDirty(false);
+        setDirty(false);        // global dirty flag, to be replaced
     else
         sdgDebug() << Q_FUNC_INFO
                    << "setting of at least one field failed";
@@ -864,14 +869,27 @@ void MainWindow::closeEvent(QCloseEvent *event)
     sdgDebug() << Q_FUNC_INFO << "finishing";
 }
 
+// This is a temporary solution. Want to move to something like
+//    void clearDirty(int channel, String objectName) where objectName
+// belongs to a sub-class of QuantityEdit.
+void MainWindow::clearDirty(int channel)
+{
+    ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+
+    widget->clearAllDirty();
+}
+
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
     pendingState[channel - 1].waveform = waveform;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
-        setDirty(true);
+        setDirty(true);     // global dirty flag, to be replaced
 
 }
 
@@ -880,7 +898,10 @@ void MainWindow::setFrequency(int channel, double value)
     pendingState[channel - 1].frequency = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -931,7 +952,10 @@ void MainWindow::setAmplitude(int channel, double value,
     ampState.userRepresentation = representation;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -953,7 +977,10 @@ void MainWindow::setOffset(int channel, double value,
         << "volts =" << volts;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -963,7 +990,10 @@ void MainWindow::setPhase(int channel, double value)
     pendingState[channel - 1].phase = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -973,7 +1003,10 @@ void MainWindow::setDuty(int channel, double value)
     pendingState[channel - 1].duty = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -983,7 +1016,10 @@ void MainWindow::setRampSymmetry(int channel, double value)
     pendingState[channel - 1].rampSymmetry = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -993,7 +1029,10 @@ void MainWindow::setPulseWidth(int channel, double value)
     pendingState[channel - 1].pulseWidth = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1003,7 +1042,10 @@ void MainWindow::setPulseRise(int channel, double value)
     pendingState[channel - 1].pulseRise = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1013,7 +1055,10 @@ void MainWindow::setPulseFall(int channel, double value)
     pendingState[channel - 1].pulseFall = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1023,7 +1068,10 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
     pendingState[channel - 1].noiseBandset = enabled;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1033,7 +1081,10 @@ void MainWindow::setNoiseStdev(int channel, double value)
     pendingState[channel - 1].noiseStdev = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1043,7 +1094,10 @@ void MainWindow::setNoiseMean(int channel, double value)
     pendingState[channel - 1].noiseMean = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1053,7 +1107,10 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
     pendingState[channel - 1].noiseBandwidth = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1063,7 +1120,10 @@ void MainWindow::setDcOffset(int channel, double value)
     pendingState[channel - 1].dcOffset = value;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1073,7 +1133,10 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
     pendingState[channel - 1].dcPrecisionHigh = enabled;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
@@ -1083,14 +1146,17 @@ void MainWindow::setOutput(int channel, bool enabled)
     pendingState[channel - 1].output.enabled = enabled;
 
     if (immediateMode)
+    {
         generator->applyChannelState(channel, pendingState[channel - 1]);
+        clearDirty(channel);
+    }
     else
         setDirty(true);
 }
 
 void MainWindow::setDirty(bool value)
 {
-    m_dirty = value;
+    m_dirty = value;    // global dirty flag to be replaced
 
     if (!immediateMode)
         sendButton->setEnabled(m_dirty);
@@ -1162,6 +1228,10 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 {
     ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
 
+    // accept the default second argument od each set*State() method, so
+    // that is makeDirty = true.
+    // This could be made more efficient by checking the prior value of
+    // each field and onlt setting dirty if the new value is different.
     widget->setWaveformState(state.waveform);
     widget->setFrequencyState(state.frequency);
     widget->setAmplitudeState(state.amplitude);

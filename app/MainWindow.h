@@ -53,6 +53,8 @@ private:
     FrontPanelWindow *frontPanelWindow = nullptr;
     QAction *frontPanelAction = nullptr;
 
+    // Channel is either 1 or 2. Take care when indexing this array with
+    // the channel number (i.e. need to use 'channel - 1' as the index.
     std::array<ChannelState, 2> pendingState;
 
     QCheckBox *immediateCheck;
@@ -110,6 +112,8 @@ private:
     void setDcPrecisionHigh(int channel, bool enabled);
 
     void setOutput(int channel, bool enabled);
+
+    void clearDirty(int channel);  // temporary, need per QuantityEdit call
 
     void createMenuBar();
 

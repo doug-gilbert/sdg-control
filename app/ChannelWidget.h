@@ -7,6 +7,9 @@
 #include <QWidget>
 #include <QString>
 
+#include <functional>
+
+
 class QLabel;
 class QCheckBox;
 class QDoubleSpinBox;
@@ -34,26 +37,34 @@ public:
     void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
     // Going from internal state (where Units may be normalized) to UI
-    void setWaveformState(const QString &waveform);
-    void setFrequencyState(double value);
-    void setAmplitudeState(const AmplitudeState &amplitud);
-    void setOffsetState(double value);
-    void setPhaseState(double value);
-    void setDutyState(double value);
-    void setRampSymmetryState(double value);
-    void setPulseWidthState(double value);
-    void setPulseRiseState(double value);
-    void setPulseFallState(double value);
-    void setNoiseBandsetState(bool enabled);
-    void setNoiseStdevState(double value);
-    void setNoiseMeanState(double value);
-    void setNoiseBandwidthState(double value);
-    void setDcOffsetState(double value);
-    void setDcPrecisionHighState(bool enabled);
+    void setWaveformState(const QString &waveform, bool makeDirty = true);
+    void setFrequencyState(double value, bool makeDirty = true);
+    void setAmplitudeState(const AmplitudeState &amplitud,
+                           bool makeDirty = true);
+    void setOffsetState(double value, bool makeDirty = true);
+    void setPhaseState(double value, bool makeDirty = true);
+    void setDutyState(double value, bool makeDirty = true);
+    void setRampSymmetryState(double value, bool makeDirty = true);
+    void setPulseWidthState(double value, bool makeDirty = true);
+    void setPulseRiseState(double value, bool makeDirty = true);
+    void setPulseFallState(double value, bool makeDirty = true);
+    void setNoiseBandsetState(bool enabled, bool makeDirty = true);
+    void setNoiseStdevState(double value, bool makeDirty = true);
+    void setNoiseMeanState(double value, bool makeDirty = true);
+    void setNoiseBandwidthState(double value, bool makeDirty = true);
+    void setDcOffsetState(double value, bool makeDirty = true);
+    void setDcPrecisionHighState(bool enabled, bool makeDirty = true);
 
-    void setOutputState(const OutputState &output);
+    void setOutputState(const OutputState &output, bool makeDirty = true);
 
     void setControlsEnabled(bool enabled);
+
+    void visitAllQuantityEdits(
+        const std::function<void(QuantityEdit *)> &visitor);
+
+    void clearAllDirty();
+
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 signals:
     void waveformChanged(int channel, const QString &waveform);

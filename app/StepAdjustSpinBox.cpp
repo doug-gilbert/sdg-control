@@ -154,10 +154,6 @@ QLineEdit *StepAdjustSpinBox::lineEditWidget() const
 // MenuBar Edit item
 void StepAdjustSpinBox::onSecondMSD_changed(bool checked)
 {
-#if 0
-sdgDebug() << objectName() << Q_FUNC_INFO << " checked="
-           << (checked ? "checked" : "UNchecked");
-#endif
     // the context menu(s) only exist when visible
     m_secondMSD = checked;
     setAdaptiveStepType(checked);

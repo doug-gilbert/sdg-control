@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QTimer>
 #include <QtGlobal>
+#include <QMenu>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -291,7 +292,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     frequencyEdit->setDecimals(6);
     frequencyEdit->setSingleStep(0.000'01);
     frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
-    frequencyEdit->setValue(1'000.0, "Hz");
+    frequencyEdit->setValue(1'000.0, "Hz", false);
 
     periodEdit = new QuantityEdit(m_controller, periodQuantityRepresentation,
                                   groupBox);
@@ -307,7 +308,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     periodEdit->setDecimals(6);
     periodEdit->setSingleStep(0.000'000'001);
     periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
-    periodEdit->setValue(0.001, "s");
+    periodEdit->setValue(0.001, "s", false);
 
     amplitudeEdit = new QuantityEdit(m_controller,
                                      amplitudeQuantityRepresentation,
@@ -489,7 +490,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 if (frequency > 0.0) {
                     const double period = 1.0 / frequency;
 
-                    periodEdit->setValue(period, "s");
+                    periodEdit->setValue(period, "s", false);
 
                     sdgDebug() << Q_FUNC_INFO
                                << "frequency=" << frequency << "Hz"
@@ -511,7 +512,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
             [this](const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final)
             {
-                sdgDebug() << objectName() << "Field contents:"
+                sdgDebug() << "Amplitude field contents:"
                            << amplitudeEdit->cleanText();
                 sdgDebug() << offsetEdit->debugString();
                 sdgDebug()
@@ -538,7 +539,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
             [this](const QuantityEdit::Value &,
                    const QuantityEdit::Value &final)
             {
-                sdgDebug() << objectName() << offsetEdit->debugString();
+                sdgDebug() << offsetEdit->debugString();
                 sdgDebug()
                     << objectName()
                     << "offset committed:"
@@ -556,7 +557,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                    const QuantityEdit::Value &final)
             {
                 Q_UNUSED(original);
-                sdgDebug() << objectName() << phaseSpin->debugString();
+                sdgDebug() << phaseSpin->debugString();
 
                 emit phaseChanged(this->channel, final.value);
             });
@@ -681,22 +682,23 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
 }
 
-void ChannelWidget::setWaveformState(const QString &waveform)
+void ChannelWidget::setWaveformState(const QString &waveform, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     waveformCombo->blockSignals(true);
     waveformCombo->setCurrentText(waveform);
     waveformCombo->blockSignals(false);
     updateControlVisibility();
 }
 
-void ChannelWidget::setFrequencyState(double frequency)
+void ChannelWidget::setFrequencyState(double frequency, bool makeDirty)
 {
     frequencyEdit->setCanonicalValue(frequency);
 
     if (frequency > 0.0) {
         const double period = 1.0 / frequency;
 
-        periodEdit->setValue(period, "s");
+        periodEdit->setValue(period, "s", makeDirty);
         sdgDebug() << Q_FUNC_INFO
                    << "frequency=" << frequency << "Hz"
                    << "period=" << period << "s";
@@ -709,7 +711,8 @@ void ChannelWidget::setFrequencyState(double frequency)
 }
 
 // Going from internal state (where voltages are normalized) to UI
-void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit)
+void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit,
+                                      bool makeDirty)
 {
     const QString & rep { amplit.userRepresentation };
 
@@ -718,68 +721,73 @@ void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit)
         double volts = amplit.getVpp();
         if (is_mV(rep))
             volts *= 1000.0;
-        amplitudeEdit->setValue(volts, rep);
+        amplitudeEdit->setValue(volts, rep, makeDirty);
     }
     else if (rep == "Vrms" || rep == "mVrms")
     {
         double volts = amplit.getVrms();
         if (is_mV(rep))
             volts *= 1000.0;
-        amplitudeEdit->setValue(volts, rep);
+        amplitudeEdit->setValue(volts, rep, makeDirty);
     }
     else if (rep == "dBm")
-        amplitudeEdit->setValue(amplit.get_dBm(), rep);
+        amplitudeEdit->setValue(amplit.get_dBm(), rep, makeDirty);
     else if (rep.isEmpty())   // this case: Initial refresh after connect
     {
         sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
-        amplitudeEdit->setValue(amplit.getVpp(), "Vpp");
+        amplitudeEdit->setValue(amplit.getVpp(), "Vpp", makeDirty);
     }
     else
         sdgDebug() << objectName() << Q_FUNC_INFO
                    << ">>> BAD representation: " << rep;
 }
 
-void ChannelWidget::setOffsetState(double offset)
+void ChannelWidget::setOffsetState(double offset, bool makeDirty)
 {
-    offsetEdit->setValue(offset, "Vdc");
+    offsetEdit->setValue(offset, "Vdc", makeDirty);
 }
 
-void ChannelWidget::setPhaseState(double value)
+void ChannelWidget::setPhaseState(double value, bool makeDirty)
 {
-    phaseSpin->setValue(value, "°");
+    phaseSpin->setValue(value, "°", makeDirty);
 }
 
-void ChannelWidget::setDutyState(double value)
+void ChannelWidget::setDutyState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     dutySpin->blockSignals(true);
     dutySpin->setValue(value);
     dutySpin->blockSignals(false);
 }
 
-void ChannelWidget::setRampSymmetryState(double percent)
+void ChannelWidget::setRampSymmetryState(double percent, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     rampSymmetrySpin->blockSignals(true);
     rampSymmetrySpin->setValue(percent);
     rampSymmetrySpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseWidthState(double value)
+void ChannelWidget::setPulseWidthState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     pulseWidthSpin->blockSignals(true);
     pulseWidthSpin->setValue(value);
     pulseWidthSpin->blockSignals(false);
     updatePulseDuty();
 }
 
-void ChannelWidget::setPulseRiseState(double value)
+void ChannelWidget::setPulseRiseState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     pulseRiseSpin->blockSignals(true);
     pulseRiseSpin->setValue(value * 1'000'000'000.0);
     pulseRiseSpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseFallState(double value)
+void ChannelWidget::setPulseFallState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     pulseFallSpin->blockSignals(true);
     pulseFallSpin->setValue(value * 1'000'000'000.0);
     pulseFallSpin->blockSignals(false);
@@ -801,11 +809,13 @@ void ChannelWidget::updatePulseDuty()
     const double duty =
         frequency * pulseWidthSpin->value() * 100.0;
 
+    // Do we need duty_orig to see if this was a change or not
     pulseDutySpin->setValue(duty);
 }
 
-void ChannelWidget::setNoiseBandsetState(bool enabled)
+void ChannelWidget::setNoiseBandsetState(bool enabled, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     noiseBandsetCheck->blockSignals(true);
     noiseBandsetCheck->setChecked(enabled);
     noiseBandsetCheck->blockSignals(false);
@@ -813,43 +823,49 @@ void ChannelWidget::setNoiseBandsetState(bool enabled)
     updateControlVisibility();
 }
 
-void ChannelWidget::setNoiseStdevState(double value)
+void ChannelWidget::setNoiseStdevState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     noiseStdevSpin->blockSignals(true);
     noiseStdevSpin->setValue(value);
     noiseStdevSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseMeanState(double value)
+void ChannelWidget::setNoiseMeanState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     noiseMeanSpin->blockSignals(true);
     noiseMeanSpin->setValue(value);
     noiseMeanSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseBandwidthState(double value)
+void ChannelWidget::setNoiseBandwidthState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     noiseBandwidthSpin->blockSignals(true);
     noiseBandwidthSpin->setValue(value);
     noiseBandwidthSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcOffsetState(double value)
+void ChannelWidget::setDcOffsetState(double value, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     dcOffsetSpin->blockSignals(true);
     dcOffsetSpin->setValue(value);
     dcOffsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcPrecisionHighState(bool enabled)
+void ChannelWidget::setDcPrecisionHighState(bool enabled, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     dcPrecisionHighCheck->blockSignals(true);
     dcPrecisionHighCheck->setChecked(enabled);
     dcPrecisionHighCheck->blockSignals(false);
 }
 
-void ChannelWidget::setOutputState(const OutputState &output)
+void ChannelWidget::setOutputState(const OutputState &output, bool makeDirty)
 {
+    Q_UNUSED(makeDirty);
     outputCheck->blockSignals(true);
     outputCheck->setChecked(output.enabled);
     outputCheck->blockSignals(false);
@@ -859,18 +875,6 @@ void ChannelWidget::setStatus(const QString &text)
 {
 #ifdef SDG_DEVELOPER_UI
     statusLabel->setText(text);
-
- sdgDebug()
-        << "CH" << channel
-        << "status size" << statusLabel->size()
-        << "status hint" << statusLabel->sizeHint()
-        << "status minHint" << statusLabel->minimumSizeHint()
-        << "group size" << groupBox->size()
-        << "group hint" << groupBox->sizeHint()
-        << "channel size" << size()
-        << "channel hint" << sizeHint()
-        << "amplitude size" << amplitudeEdit->size()
-        << "amplitude hint" << amplitudeEdit->sizeHint();
 #else
     Q_UNUSED(text);
 #endif
@@ -942,6 +946,57 @@ void ChannelWidget::updateControlVisibility()
 void ChannelWidget::setControlsEnabled(bool enabled)
 {
     groupBox->setEnabled(enabled);
+}
+
+void ChannelWidget::visitAllQuantityEdits(
+    const std::function<void(QuantityEdit *)> &visitor)
+{
+    visitor(frequencyEdit);
+    visitor(periodEdit);
+    visitor(amplitudeEdit);
+    visitor(offsetEdit);
+    visitor(phaseSpin);
+}
+
+void ChannelWidget::clearAllDirty()
+{
+    sdgDebug() << Q_FUNC_INFO;
+
+    visitAllQuantityEdits(
+        [](QuantityEdit *edit)
+        {
+            edit->clearDirty();
+        });
+}
+
+void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu menu(this);
+
+    QAction *showModified =
+        menu.addAction("Show all modified fields");
+
+    QAction *clearModified =
+        menu.addAction("Clear modified-field highlighting");
+
+    const QAction *action = menu.exec(event->globalPos());
+
+    if (action == showModified)
+    {
+        visitAllQuantityEdits(
+            [this](QuantityEdit *edit)
+            {
+                edit->showIfDirty();
+            });
+    }
+    else if (action == clearModified)
+    {
+        visitAllQuantityEdits(
+            [this](QuantityEdit *edit)
+            {
+                edit->showIfDirty(true);
+            });
+    }
 }
 
 void ChannelWidget::debugLayout() const

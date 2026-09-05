@@ -90,33 +90,51 @@ bool SDG2000X::setFrequency(int channel, double hz)
 
 bool SDG2000X::setAmplitude(int channel, const AmplitudeState &amp)
 {
-    QString cmd {};
-    const QString & rep { amp.userRepresentation };
-
     if (!scpi.isConnected())
         return false;
-    if (amp.v_ppValid && (rep == "Vpp" || rep == "mVpp"))
+
+    const ValueRepresentation vr = amp.valueRepresentation();
+
+    if (vr.representation == "Vpp")
     {
-        cmd = QString("%1:BSWV AMP,%2")
-              .arg(channelPrefix(channel))
-              .arg(QString::number(amp.getVpp(), 'f', 3));
+        const QString cmd =
+            QString("%1:BSWV AMP,%2")
+                .arg(channelPrefix(channel))
+                .arg(QString::number(vr.value, 'f', 3));
+
         return scpi.command(cmd);
     }
-    if (amp.v_rmsValid && (rep == "Vrms" || rep == "mVrms"))
+
+    if (vr.representation == "Vrms")
     {
-        cmd = QString("%1:BSWV AMPVRMS,%2")
-              .arg(channelPrefix(channel))
-              .arg(QString::number(amp.getVrms(), 'f', 6));
+        const QString cmd =
+            QString("%1:BSWV AMPVRMS,%2")
+                .arg(channelPrefix(channel))
+                .arg(QString::number(vr.value, 'f', 6));
+
         return scpi.command(cmd);
     }
-    if (amp.dBmValid && (rep == "dBm"))
+
+    if (vr.representation == "dBm")
     {
-        cmd = QString("%1:BSWV AMPDBM,%2")
-              .arg(channelPrefix(channel))
-              .arg(QString::number(amp.get_dBm(), 'f', 6));
+        const QString cmd =
+            QString("%1:BSWV AMPDBM,%2")
+                .arg(channelPrefix(channel))
+                .arg(QString::number(vr.value, 'f', 6));
+
         return scpi.command(cmd);
     }
-    sdgDebug() << Q_FUNC_INFO << "Channel=" << channel << ">>> Rep=" << rep;
+
+#if 0
+    sdgDebug() << Q_FUNC_INFO
+               << "Channel=" << channel
+               << ">>> No valid amplitude representation"
+               << "userRep=" << amp.userRepresentation
+               << "vppValid=" << amp.v_ppValid
+               << "vrmsValid=" << amp.v_rmsValid
+               << "dBmValid=" << amp.dBmValid;
+#endif
+
     return false;
 }
 

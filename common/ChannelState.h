@@ -53,7 +53,7 @@ struct AmplitudeState
                 return ValueRepresentation {v_rms, "Vrms"};
             if (userRepresentation == "dBm" && dBmValid)
                 return ValueRepresentation {dBm, "dBm"};
-            return ValueRepresentation {0.000'01, ""};
+            return ValueRepresentation {0.000'01, {}};
         }
         if (v_ppValid)     // fall backs, not ideal
             return ValueRepresentation {v_pp, "Vpp"};
@@ -62,7 +62,7 @@ struct AmplitudeState
         if (dBmValid)
             return ValueRepresentation {dBm, "dBm"};
         // things are not good, don't make it worse with an Amplitude of 0.0
-        return ValueRepresentation {0.000'01, ""};
+        return ValueRepresentation {0.000'01, {}};
     }
 
     QString userRepresentation;   // the Unit specified by user in the UI
