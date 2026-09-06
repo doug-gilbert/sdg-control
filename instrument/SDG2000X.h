@@ -43,29 +43,29 @@ public:
     // reset and set default values on the unit
     bool reset() override;
 
-    bool setWaveform(int channel, const QString& waveform);
-    bool setFrequency(int channel, double hz);
-    bool setAmplitude(int channel, const AmplitudeState &amplitude);
-    bool setOffset(int channel, double volts);
-    bool setPhase(int channel, double degrees);
-    bool setRampSymmetry(int channel, double percent);
-    bool setPulseWidth(int channel, double seconds);
-    bool setPulseRise(int channel, double seconds);
-    bool setPulseFall(int channel, double seconds);
-    bool setNoiseBandset(int channel, bool enabled);
-    bool setNoiseStdev(int channel, double stdev);
-    bool setNoiseMean(int channel, double mean);
-    bool setNoiseBandwidth(int channel, double freq);
-    bool setDcOffset(int channel, double value);
-    bool setDcPrecisionHigh(int channel, bool enabled);
-    bool setDuty(int channel, double percent);
+    bool setSdgWaveform(int channel, const QString& waveform);
+    bool setSdgFrequency(int channel, double hz);
+    bool setSdgAmplitude(int channel, const AmplitudeState &amplitude);
+    bool setSdgOffset(int channel, double volts);
+    bool setSdgPhase(int channel, double degrees);
+    bool setSdgRampSymmetry(int channel, double percent);
+    bool setSdgPulseWidth(int channel, double seconds);
+    bool setSdgPulseRise(int channel, double seconds);
+    bool setSdgPulseFall(int channel, double seconds);
+    bool setSdgNoiseBandset(int channel, bool enabled);
+    bool setSdgNoiseStdev(int channel, double stdev);
+    bool setSdgNoiseMean(int channel, double mean);
+    bool setSdgNoiseBandwidth(int channel, double freq);
+    bool setSdgDcOffset(int channel, double value);
+    bool setSdgDcPrecisionHigh(int channel, bool enabled);
+    bool setSdgDuty(int channel, double percent);
 
-    bool output(int channel, bool enabled);
+    bool setSdgOutput(int channel, bool enabled);
 
-    bool outputLoadPol(int channel, bool enabled, bool load50,
-                       bool polNormal);
+    bool setSdgOutputLoadPol(int channel, bool enabled, bool load50,
+                             bool polNormal);
 
-    bool outputBoth(bool enabled);
+    bool setSdgOutputBoth(bool enabled);
 
     bool invert(int channel, bool enabled);
 

@@ -34,28 +34,28 @@ public:
     explicit ChannelWidget(AppController *controller, int channel,
                            QWidget *parent = nullptr);
 
-    void setStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
+    void setUiStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
     // Going from internal state (where Units may be normalized) to UI
-    void setWaveformState(const QString &waveform, bool makeDirty = true);
-    void setFrequencyState(double value, bool makeDirty = true);
-    void setAmplitudeState(const AmplitudeState &amplitud,
-                           bool makeDirty = true);
-    void setOffsetState(double value, bool makeDirty = true);
-    void setPhaseState(double value, bool makeDirty = true);
-    void setDutyState(double value, bool makeDirty = true);
-    void setRampSymmetryState(double value, bool makeDirty = true);
-    void setPulseWidthState(double value, bool makeDirty = true);
-    void setPulseRiseState(double value, bool makeDirty = true);
-    void setPulseFallState(double value, bool makeDirty = true);
-    void setNoiseBandsetState(bool enabled, bool makeDirty = true);
-    void setNoiseStdevState(double value, bool makeDirty = true);
-    void setNoiseMeanState(double value, bool makeDirty = true);
-    void setNoiseBandwidthState(double value, bool makeDirty = true);
-    void setDcOffsetState(double value, bool makeDirty = true);
-    void setDcPrecisionHighState(bool enabled, bool makeDirty = true);
+    void setUiWaveform(const QString &waveform, bool makeDirty = true);
+    void setUiFrequency(double value, bool makeDirty = true);
+    void setUiAmplitude(const AmplitudeState &amplitud,
+                        bool makeDirty = true);
+    void setUiOffset(double value, bool makeDirty = true);
+    void setUiPhase(double value, bool makeDirty = true);
+    void setUiDuty(double value, bool makeDirty = true);
+    void setUiRampSymmetry(double value, bool makeDirty = true);
+    void setUiPulseWidth(double value, bool makeDirty = true);
+    void setUiPulseRise(double value, bool makeDirty = true);
+    void setUiPulseFall(double value, bool makeDirty = true);
+    void setUiNoiseBandset(bool enabled, bool makeDirty = true);
+    void setUiNoiseStdev(double value, bool makeDirty = true);
+    void setUiNoiseMean(double value, bool makeDirty = true);
+    void setUiNoiseBandwidth(double value, bool makeDirty = true);
+    void setUiDcOffset(double value, bool makeDirty = true);
+    void setUiDcPrecisionHigh(bool enabled, bool makeDirty = true);
 
-    void setOutputState(const OutputState &output, bool makeDirty = true);
+    void setUiOutput(const OutputState &output, bool makeDirty = true);
 
     void setControlsEnabled(bool enabled);
 
@@ -96,61 +96,84 @@ private:
 
     void debugLayout() const;
 
-    int channel;
+    int m_channel;
+
+    QPushButton *m_closeButton = nullptr;
 
     AppController *m_controller = nullptr;
 
-    QScrollArea *scrollArea = nullptr;
-    QWidget *scrollContents = nullptr;
+    QScrollArea *m_scrollArea = nullptr;
+    QWidget *m_scrollContents = nullptr;
 
-    QGroupBox *groupBox;
-    QFormLayout *formLayout;
+    QGroupBox *m_groupBox;
+    QFormLayout *m_formLayout;
 
 #ifdef SDG_DEVELOPER_UI
-    QLabel *statusLabel;
+    QLabel *m_statusLabel;
 #endif
 
-    QLabel *waveformLabel;
-    QLabel *frequencyLabel;
-    QLabel *periodLabel;
-    QLabel *amplitudeLabel;
-    QLabel *offsetLabel;
-    QLabel *phaseLabel;
-    QLabel *dutyLabel;
-    QLabel *rampSymmetryLabel;
-    QLabel *pulseWidthLabel;
-    QLabel *pulseRiseLabel;
-    QLabel *pulseFallLabel;
-    QLabel *pulseDutyLabel;
-    QLabel *noiseStdevLabel;
-    QLabel *noiseMeanLabel;
-    QLabel *noiseBandwidthLabel;
-    QLabel *noiseBandsetLabel;
-    QLabel *dcOffsetLabel;
-    QLabel *dcPrecisionHighLabel;
+    QLabel *m_waveformLabel;
+    QLabel *m_frequencyLabel;
+    QLabel *m_periodLabel;
+    QLabel *m_amplitudeLabel;
+    QLabel *m_offsetLabel;
+    QLabel *m_phaseLabel;
+    QLabel *m_dutyLabel;
+    QLabel *m_rampSymmetryLabel;
+    QLabel *m_pulseWidthLabel;
+    QLabel *m_pulseRiseLabel;
+    QLabel *m_pulseFallLabel;
+    QLabel *m_pulseDutyLabel;
+    QLabel *m_noiseStdevLabel;
+    QLabel *m_noiseMeanLabel;
+    QLabel *m_noiseBandwidthLabel;
+    QLabel *m_noiseBandsetLabel;
+    QLabel *m_dcOffsetLabel;
+    QLabel *m_dcPrecisionHighLabel;
 
-    QComboBox *waveformCombo;
-    QuantityEdit *frequencyEdit = nullptr;
-    QuantityEdit *periodEdit = nullptr;
-    QuantityEdit *amplitudeEdit = nullptr;
-    QuantityEdit *offsetEdit = nullptr;
-    QuantityEdit *phaseSpin = nullptr;
-    QDoubleSpinBox *dutySpin;
-    QDoubleSpinBox *rampSymmetrySpin;
-    QDoubleSpinBox *pulseWidthSpin;
-    QDoubleSpinBox *pulseRiseSpin;
-    QDoubleSpinBox *pulseFallSpin;
-    QDoubleSpinBox *pulseDutySpin;
-    QCheckBox *noiseBandsetCheck;
+    QComboBox *m_waveformCombo;
+    QuantityEdit *m_frequencyEdit = nullptr;
+    QuantityEdit *m_periodEdit = nullptr;
+    QuantityEdit *m_amplitudeEdit = nullptr;
+    QuantityEdit *m_offsetEdit = nullptr;
+    QuantityEdit *m_phaseEdit = nullptr;
+    QDoubleSpinBox *m_dutySpin;
+    QDoubleSpinBox *m_rampSymmetrySpin;
+    QDoubleSpinBox *m_pulseWidthSpin;
+    QDoubleSpinBox *m_pulseRiseSpin;
+    QDoubleSpinBox *m_pulseFallSpin;
+    QDoubleSpinBox *m_pulseDutySpin;
+    QCheckBox *m_noiseBandsetCheck;
+    QDoubleSpinBox *m_noiseStdevSpin;
+    QDoubleSpinBox *m_noiseMeanSpin;
+    QDoubleSpinBox *m_noiseBandwidthSpin;
+    QDoubleSpinBox *m_dcOffsetSpin;
+    QCheckBox *m_dcPrecisionHighCheck;
+    QCheckBox *m_outputCheck;
 
-    QDoubleSpinBox *noiseStdevSpin;
-    QDoubleSpinBox *noiseMeanSpin;
-    QDoubleSpinBox *noiseBandwidthSpin;
+    friend class MainWindow;    // allow access to each field's dirty flag
 
-    QDoubleSpinBox *dcOffsetSpin;
-    QCheckBox *dcPrecisionHighCheck;
+    // Accessors for fields based on QuantityEdit.
+    // MainWindow is the only intended caller.
+    QuantityEdit *frequencyEdit() const { return m_frequencyEdit; }
+    QuantityEdit *periodEdit() const { return m_periodEdit; }
+    QuantityEdit *amplitudeEdit() const { return m_amplitudeEdit; }
+    QuantityEdit *offsetEdit() const { return m_offsetEdit; }
+    QuantityEdit *phaseEdit() const { return m_phaseEdit; }
 
-    QCheckBox *outputCheck;
-
-    QPushButton *closeButton = nullptr;
+    // Not QuantityEdit based yet
+    QuantityEdit *waveformEdit() const { return nullptr; }
+    QuantityEdit *dutyEdit() const { return nullptr; }
+    QuantityEdit *rampSymmetryEdit() const { return nullptr; }
+    QuantityEdit *pulseWidthEdit() const { return nullptr; }
+    QuantityEdit *pulseRiseEdit() const { return nullptr; }
+    QuantityEdit *pulseFallEdit() const { return nullptr; }
+    QuantityEdit *pulseDutyEdit() const { return nullptr; }
+    QuantityEdit *noiseBandsetEdit() const { return nullptr; }
+    QuantityEdit *noiseStdevEdit() const { return nullptr; }
+    QuantityEdit *noiseMeanEdit() const { return nullptr; }
+    QuantityEdit *noiseBandwidthEdit() const { return nullptr; }
+    QuantityEdit *dcOffsetEdit() const { return nullptr; }
+    QuantityEdit *dcPrecisionHighEdit() const { return nullptr; }
+    QuantityEdit *outputEdit() const { return nullptr; }
 };

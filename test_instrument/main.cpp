@@ -28,7 +28,7 @@
 #include "debug.h"
 
 
-static const char * version_str = "0.90 20260826";
+static const char * version_str = "0.91 20260905";
 
 static const struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
 
     if (vb)
         qDebug() << " Turn both Output ON at same time";
-    generator.outputBoth(true);
+    generator.setSdgOutputBoth(true);
     generator.waitForOperationComplete(4000);
 
     QFile fname_before { "before.bmp" };
@@ -167,16 +167,16 @@ int main(int argc, char *argv[])
 
     sdgDebug() << generator.identification();
 
-    generator.setWaveform(1, "SQUARE");
-    generator.setFrequency(1, 2000);
+    generator.setSdgWaveform(1, "SQUARE");
+    generator.setSdgFrequency(1, 2000);
 
     AmplitudeState amp1 {};
     amp1.setAmplitudeVpp(2);
-    generator.setAmplitude(1, amp1);
-    generator.setOffset(1, 1);
+    generator.setSdgAmplitude(1, amp1);
+    generator.setSdgOffset(1, 1);
 
-    generator.setDuty(1, 90);
-    generator.output(1, true);
+    generator.setSdgDuty(1, 90);
+    generator.setSdgOutput(1, true);
 
 generator.getChannelState(1);
     // sleep(3);
@@ -210,8 +210,8 @@ generator.getChannelState(1);
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
 
-    bool ok = generator.outputLoadPol(1, true, /* load50= */ true,
-                                      /* polNormal */ true);
+    bool ok = generator.setSdgOutputLoadPol(1, true, /* load50= */ true,
+                                            /* polNormal */ true);
     sdgDebug() << "outputLoadPol --> " << ok;
 generator.getChannelState(1);
 
@@ -221,25 +221,25 @@ generator.getChannelState(1);
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
 
-    generator.output(1, true);
+    generator.setSdgOutput(1, true);
 
     printChannelState(generator, 1);
 
-    generator.setWaveform(2, "SINE");
-    generator.setFrequency(2, 1000);
+    generator.setSdgWaveform(2, "SINE");
+    generator.setSdgFrequency(2, 1000);
 
     AmplitudeState amp2 {};
     amp2.setAmplitudeVpp(2);
 
-    generator.setAmplitude(2, amp2);
-    generator.setOffset(2, 0);
+    generator.setSdgAmplitude(2, amp2);
+    generator.setSdgOffset(2, 0);
 #ifdef SDG_DEBUG
 sdgDebug() << "SCPI error:"
          << generator.getError();
 sdgDebug() << "CH2 immediate:"
          << generator.getChannelState(2).offset;
 #endif
-    generator.output(2, true);
+    generator.setSdgOutput(2, true);
 
     printChannelState(generator, 2);
 

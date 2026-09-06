@@ -60,7 +60,7 @@ QString SDG2000X::channelPrefix(int channel)
     return QString("C%1").arg(channel);
 }
 
-bool SDG2000X::setWaveform(int channel, const QString& waveform)
+bool SDG2000X::setSdgWaveform(int channel, const QString& waveform)
 {
     if (!scpi.isConnected())
         return false;
@@ -75,7 +75,7 @@ bool SDG2000X::setWaveform(int channel, const QString& waveform)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setFrequency(int channel, double hz)
+bool SDG2000X::setSdgFrequency(int channel, double hz)
 {
     if (!scpi.isConnected())
         return false;
@@ -88,7 +88,7 @@ bool SDG2000X::setFrequency(int channel, double hz)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setAmplitude(int channel, const AmplitudeState &amp)
+bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
 {
     if (!scpi.isConnected())
         return false;
@@ -138,7 +138,7 @@ bool SDG2000X::setAmplitude(int channel, const AmplitudeState &amp)
     return false;
 }
 
-bool SDG2000X::setOffset(int channel, double volts)
+bool SDG2000X::setSdgOffset(int channel, double volts)
 {
     if (!scpi.isConnected())
         return false;
@@ -151,7 +151,7 @@ bool SDG2000X::setOffset(int channel, double volts)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setPhase(int channel, double degrees)
+bool SDG2000X::setSdgPhase(int channel, double degrees)
 {
     if (!scpi.isConnected())
         return false;
@@ -164,7 +164,7 @@ bool SDG2000X::setPhase(int channel, double degrees)
     return scpi.command(cmd);
 }
 
-bool SDG2000X::setRampSymmetry(int channel, double percent)
+bool SDG2000X::setSdgRampSymmetry(int channel, double percent)
 {
     return scpi.command(
         QString("%1:BSWV SYM,%2")
@@ -172,7 +172,7 @@ bool SDG2000X::setRampSymmetry(int channel, double percent)
             .arg(percent, 0, 'f', 1));
 }
 
-bool SDG2000X::setPulseWidth(int channel, double seconds)
+bool SDG2000X::setSdgPulseWidth(int channel, double seconds)
 {
     return scpi.command(
         QString("%1:BSWV WIDTH,%2")
@@ -180,7 +180,7 @@ bool SDG2000X::setPulseWidth(int channel, double seconds)
             .arg(QString::number(seconds, 'g', 12)));
 }
 
-bool SDG2000X::setPulseRise(int channel, double seconds)
+bool SDG2000X::setSdgPulseRise(int channel, double seconds)
 {
     return scpi.command(
         QString("%1:BSWV RISE,%2")
@@ -188,7 +188,7 @@ bool SDG2000X::setPulseRise(int channel, double seconds)
             .arg(QString::number(seconds, 'g', 12)));
 }
 
-bool SDG2000X::setPulseFall(int channel, double seconds)
+bool SDG2000X::setSdgPulseFall(int channel, double seconds)
 {
     return scpi.command(
         QString("%1:BSWV FALL,%2")
@@ -196,7 +196,7 @@ bool SDG2000X::setPulseFall(int channel, double seconds)
             .arg(QString::number(seconds, 'g', 12)));
 }
 
-bool SDG2000X::setNoiseBandset(int channel, bool enabled)
+bool SDG2000X::setSdgNoiseBandset(int channel, bool enabled)
 {
     return scpi.command(
         QString("%1:BSWV BANDSTATE,%2")
@@ -204,7 +204,7 @@ bool SDG2000X::setNoiseBandset(int channel, bool enabled)
             .arg(enabled ? "ON" : "OFF"));
 }
 
-bool SDG2000X::setNoiseStdev(int channel, double volts)
+bool SDG2000X::setSdgNoiseStdev(int channel, double volts)
 {
     return scpi.command(
         QString("%1:BSWV STDEV,%2")
@@ -212,7 +212,7 @@ bool SDG2000X::setNoiseStdev(int channel, double volts)
             .arg(volts, 0, 'g', 12));
 }
 
-bool SDG2000X::setNoiseMean(int channel, double volts)
+bool SDG2000X::setSdgNoiseMean(int channel, double volts)
 {
     return scpi.command(
         QString("%1:BSWV MEAN,%2")
@@ -220,7 +220,7 @@ bool SDG2000X::setNoiseMean(int channel, double volts)
             .arg(volts, 0, 'g', 12));
 }
 
-bool SDG2000X::setNoiseBandwidth(int channel, double freq)
+bool SDG2000X::setSdgNoiseBandwidth(int channel, double freq)
 {
     return scpi.command(
         QString("%1:BSWV BANDWIDTH,%2")
@@ -228,7 +228,7 @@ bool SDG2000X::setNoiseBandwidth(int channel, double freq)
             .arg(freq, 0, 'g', 12));
 }
 
-bool SDG2000X::setDcOffset(int channel, double value)
+bool SDG2000X::setSdgDcOffset(int channel, double value)
 {
     return scpi.command(
         QString("%1:BSWV OFST,%2")
@@ -236,7 +236,7 @@ bool SDG2000X::setDcOffset(int channel, double value)
             .arg(value, 0, 'g', 4));
 }
 
-bool SDG2000X::setDcPrecisionHigh(int channel, bool enabled)
+bool SDG2000X::setSdgDcPrecisionHigh(int channel, bool enabled)
 {
 #if 0           // not defined in Prog. manual, not returned by SDG ??
     return scpi.command(
@@ -250,7 +250,7 @@ bool SDG2000X::setDcPrecisionHigh(int channel, bool enabled)
 #endif
 }
 
-bool SDG2000X::output(int channel, bool enabled)
+bool SDG2000X::setSdgOutput(int channel, bool enabled)
 {
     if (!scpi.isConnected())
         return false;
@@ -271,8 +271,8 @@ bool SDG2000X::output(int channel, bool enabled)
     return state && state->enabled == enabled;
 }
 
-bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
-                             bool polNormal)
+bool SDG2000X::setSdgOutputLoadPol(int channel, bool enabled, bool load50,
+                                   bool polNormal)
 {
     if (!scpi.isConnected())
         return false;
@@ -295,7 +295,7 @@ bool SDG2000X::outputLoadPol(int channel, bool enabled, bool load50,
     return state && state->enabled == enabled;
 }
 
-bool SDG2000X::outputBoth(bool enabled)
+bool SDG2000X::setSdgOutputBoth(bool enabled)
 {
     if (!scpi.isConnected())
         return false;
@@ -495,55 +495,55 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
 {
     bool ok = true;
 
-    ok &= setWaveform(channel, state.waveform);
+    ok &= setSdgWaveform(channel, state.waveform);
 
     if (state.waveform == "RAMP")
     {
-        ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
-        ok &= setOffset(channel, state.offset);
-        ok &= setPhase(channel, state.phase);
-        ok &= setRampSymmetry(channel, state.rampSymmetry);
+        ok &= setSdgFrequency(channel, state.frequency);
+        ok &= setSdgAmplitude(channel, state.amplitude);
+        ok &= setSdgOffset(channel, state.offset);
+        ok &= setSdgPhase(channel, state.phase);
+        ok &= setSdgRampSymmetry(channel, state.rampSymmetry);
     }
     else if (state.waveform == "PULSE")
     {
-        ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
-        ok &= setOffset(channel, state.offset);
-        ok &= setPhase(channel, state.phase);
+        ok &= setSdgFrequency(channel, state.frequency);
+        ok &= setSdgAmplitude(channel, state.amplitude);
+        ok &= setSdgOffset(channel, state.offset);
+        ok &= setSdgPhase(channel, state.phase);
 
-        ok &= setPulseWidth(channel, state.pulseWidth);
-        ok &= setPulseRise(channel, state.pulseRise);
-        ok &= setPulseFall(channel, state.pulseFall);
+        ok &= setSdgPulseWidth(channel, state.pulseWidth);
+        ok &= setSdgPulseRise(channel, state.pulseRise);
+        ok &= setSdgPulseFall(channel, state.pulseFall);
     }
     else if (state.waveform == "NOISE")
     {
-        ok &= setNoiseBandset(channel, state.noiseBandset);
-        ok &= setNoiseStdev(channel, state.noiseStdev);
-        ok &= setNoiseMean(channel, state.noiseMean);
+        ok &= setSdgNoiseBandset(channel, state.noiseBandset);
+        ok &= setSdgNoiseStdev(channel, state.noiseStdev);
+        ok &= setSdgNoiseMean(channel, state.noiseMean);
 
         if (state.noiseBandset)
-            ok &= setNoiseBandwidth(channel, state.noiseBandwidth);
+            ok &= setSdgNoiseBandwidth(channel, state.noiseBandwidth);
     }
     else if (state.waveform == "DC")
     {
-        ok &= setDcOffset(channel, state.dcOffset);
-        ok &= setDcPrecisionHigh(channel, state.dcPrecisionHigh);
+        ok &= setSdgDcOffset(channel, state.dcOffset);
+        ok &= setSdgDcPrecisionHigh(channel, state.dcPrecisionHigh);
     }
     else
     {
         // SINE, SQUARE, ARB, etc.
-        ok &= setFrequency(channel, state.frequency);
-        ok &= setAmplitude(channel, state.amplitude);
-        ok &= setOffset(channel, state.offset);
-        ok &= setPhase(channel, state.phase);
+        ok &= setSdgFrequency(channel, state.frequency);
+        ok &= setSdgAmplitude(channel, state.amplitude);
+        ok &= setSdgOffset(channel, state.offset);
+        ok &= setSdgPhase(channel, state.phase);
         if (state.waveform == "SQUARE")
-            ok &= setDuty(channel, state.duty);
+            ok &= setSdgDuty(channel, state.duty);
     }
 
     // Wait up to 5 seconds, could be connection lost
     ok &= waitForOperationComplete(5000);
-    ok &= output(channel, state.output.enabled);
+    ok &= setSdgOutput(channel, state.output.enabled);
 
     return ok;
 }
@@ -577,7 +577,7 @@ bool SDG2000X::reset()
     return waitForOperationComplete(5000);
 }
 
-bool SDG2000X::setDuty(int channel, double percent)
+bool SDG2000X::setSdgDuty(int channel, double percent)
 {
     if (percent < 0.0 || percent > 100.0) {
         sdgDebug() << Q_FUNC_INFO << "bad percentage:" << percent;

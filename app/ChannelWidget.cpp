@@ -176,19 +176,19 @@ class ChannelGroupBox : public QGroupBox
 public:
     using QGroupBox::QGroupBox;
 
-    QToolButton *closeButton = nullptr;
+    QToolButton *m_closeButton = nullptr;
 
 protected:
     void resizeEvent(QResizeEvent *event) override
     {
         QGroupBox::resizeEvent(event);
 
-        if (closeButton)
+        if (m_closeButton)
         {
-            closeButton->adjustSize();
+            m_closeButton->adjustSize();
 
-            closeButton->move(
-                width() - closeButton->width() - 4,
+            m_closeButton->move(
+                width() - m_closeButton->width() - 4,
                 1);
         }
     }
@@ -199,13 +199,13 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                              QWidget *parent)
     : QWidget(parent),
       m_controller(controller),
-      channel(my_channel)
+      m_channel(my_channel)
 {
     auto *outerLayout = new QVBoxLayout(this);
 
     auto *headerLayout = new QHBoxLayout;
 
-    const QString chOutStr(QString("CH%1 Output").arg(channel));
+    const QString chOutStr(QString("CH%1 Output").arg(m_channel));
 
     auto *titleLabel = new QLabel(chOutStr, this);
 
@@ -213,62 +213,62 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     font.setBold(true);
     titleLabel->setFont(font);
 
-    closeButton = new QPushButton("x", this);
-    closeButton->setFixedSize(28, 28);
-    closeButton->setToolTip("Hide channel");
+    m_closeButton = new QPushButton("x", this);
+    m_closeButton->setFixedSize(28, 28);
+    m_closeButton->setToolTip("Hide channel");
 
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch();
-    headerLayout->addWidget(closeButton);
+    headerLayout->addWidget(m_closeButton);
 
     outerLayout->addLayout(headerLayout);
 
-    scrollArea = new QScrollArea(this);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setHorizontalScrollBarPolicy(
+    m_scrollArea = new QScrollArea(this);
+    m_scrollArea->setWidgetResizable(true);
+    m_scrollArea->setHorizontalScrollBarPolicy(
         Qt::ScrollBarAlwaysOff);
-    scrollArea->setVerticalScrollBarPolicy(
+    m_scrollArea->setVerticalScrollBarPolicy(
         Qt::ScrollBarAsNeeded);
 
-    scrollContents = new QWidget;
-    scrollArea->setWidget(scrollContents);
+    m_scrollContents = new QWidget;
+    m_scrollArea->setWidget(m_scrollContents);
 
-    outerLayout->addWidget(scrollArea);
+    outerLayout->addWidget(m_scrollArea);
 
-    auto *scrollLayout = new QVBoxLayout(scrollContents);
+    auto *scrollLayout = new QVBoxLayout(m_scrollContents);
     scrollLayout->setContentsMargins(0, 0, 0, 0);
     scrollLayout->setAlignment(Qt::AlignTop);
     scrollLayout->setSizeConstraint(QLayout::SetMinimumSize);
 
-    groupBox = new QGroupBox(scrollContents);
-    groupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    formLayout = new QFormLayout(groupBox);
-    formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
+    m_groupBox = new QGroupBox(m_scrollContents);
+    m_groupBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_formLayout = new QFormLayout(m_groupBox);
+    m_formLayout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
-    scrollLayout->addWidget(groupBox);
+    scrollLayout->addWidget(m_groupBox);
 
 #ifdef SDG_DEVELOPER_UI
-    statusLabel = new QLabel(
-        QString("CH%1: --").arg(channel),
-        groupBox);
+    m_statusLabel = new QLabel(
+        QString("CH%1: --").arg(m_channel),
+        m_groupBox);
 
-    statusLabel->setWordWrap(true);
-    statusLabel->setSizePolicy(
+    m_statusLabel->setWordWrap(true);
+    m_statusLabel->setSizePolicy(
         QSizePolicy::Expanding,
         QSizePolicy::Preferred);
-    statusLabel->setTextInteractionFlags(
+    m_statusLabel->setTextInteractionFlags(
         Qt::TextSelectableByMouse |
         Qt::TextSelectableByKeyboard);
 
-    formLayout->addRow("Status:", statusLabel);
+    m_formLayout->addRow("Status:", m_statusLabel);
 #endif
 
-    outputCheck = new QCheckBox(chOutStr, groupBox);
-    outputCheck->setObjectName("outputCheck");
+    m_outputCheck = new QCheckBox(chOutStr, m_groupBox);
+    m_outputCheck->setObjectName("outputCheck");
 
-    waveformCombo = new QComboBox(groupBox);
+    m_waveformCombo = new QComboBox(m_groupBox);
 
-    waveformCombo->addItems({
+    m_waveformCombo->addItems({
         "SINE",
         "SQUARE",
         "RAMP",
@@ -278,206 +278,206 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         "ARB"
     });
 
-    frequencyEdit = new QuantityEdit(m_controller,
-                                frequencyQuantityRepresentation, groupBox);
+    m_frequencyEdit = new QuantityEdit(m_controller,
+                                frequencyQuantityRepresentation, m_groupBox);
 
-    frequencyEdit->setObjectName("frequencyEdit");
-    frequencyEdit->setToolTip(
+    m_frequencyEdit->setObjectName("frequencyEdit");
+    m_frequencyEdit->setToolTip(
         "Right click in the numeric field to modify\n"
         "the spinner step size");
-    frequencyEdit->setMinimumWidth(215);
-    frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
-                                 QSizePolicy::Fixed);
-    frequencyEdit->setRange(0.000'01, 120'000'000);
-    frequencyEdit->setDecimals(6);
-    frequencyEdit->setSingleStep(0.000'01);
-    frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
-    frequencyEdit->setValue(1'000.0, "Hz", false);
+    m_frequencyEdit->setMinimumWidth(215);
+    m_frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
+                                   QSizePolicy::Fixed);
+    m_frequencyEdit->setRange(0.000'01, 120'000'000);
+    m_frequencyEdit->setDecimals(6);
+    m_frequencyEdit->setSingleStep(0.000'01);
+    m_frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
+    m_frequencyEdit->setValue(1'000.0, "Hz", false);
 
-    periodEdit = new QuantityEdit(m_controller, periodQuantityRepresentation,
-                                  groupBox);
-    periodEdit->setObjectName("periodEdit");
-    periodEdit->setToolTip(
+    m_periodEdit = new QuantityEdit(m_controller,
+                                    periodQuantityRepresentation, m_groupBox);
+    m_periodEdit->setObjectName("periodEdit");
+    m_periodEdit->setToolTip(
         "Right click in the numeric field to modify\n"
         "the spinner step size");
 
-    periodEdit->setMinimumWidth(215);
-    periodEdit->setSizePolicy(QSizePolicy::Expanding,
-                              QSizePolicy::Fixed);
-    periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
-    periodEdit->setDecimals(6);
-    periodEdit->setSingleStep(0.000'000'001);
-    periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
-    periodEdit->setValue(0.001, "s", false);
+    m_periodEdit->setMinimumWidth(215);
+    m_periodEdit->setSizePolicy(QSizePolicy::Expanding,
+                                QSizePolicy::Fixed);
+    m_periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
+    m_periodEdit->setDecimals(6);
+    m_periodEdit->setSingleStep(0.000'000'001);
+    m_periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
+    m_periodEdit->setValue(0.001, "s", false);
 
-    amplitudeEdit = new QuantityEdit(m_controller,
-                                     amplitudeQuantityRepresentation,
-                                     groupBox);
-    amplitudeEdit->setObjectName("amplitudeEdit");
-    amplitudeEdit->setMinimumWidth(215);
-    amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
-                                 QSizePolicy::Fixed);
+    m_amplitudeEdit = new QuantityEdit(m_controller,
+                                       amplitudeQuantityRepresentation,
+                                       m_groupBox);
+    m_amplitudeEdit->setObjectName("amplitudeEdit");
+    m_amplitudeEdit->setMinimumWidth(215);
+    m_amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
+                                   QSizePolicy::Fixed);
 
-    offsetEdit = new QuantityEdit(m_controller, offsetRepresentation,
-                                  groupBox);
-    offsetEdit->setObjectName("offsetEdit");
-    offsetEdit->setMinimumWidth(215);
-    offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    m_offsetEdit = new QuantityEdit(m_controller, offsetRepresentation,
+                                    m_groupBox);
+    m_offsetEdit->setObjectName("offsetEdit");
+    m_offsetEdit->setMinimumWidth(215);
+    m_offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    phaseSpin = new QuantityEdit(m_controller, phaseRepresentation,
-                                 groupBox);
-    phaseSpin->setObjectName("phaseSpin");
-    phaseSpin->setRange(-360.0, 360.0);
-    phaseSpin->setDecimals(1);
-    phaseSpin->setSingleStep(1.0);
-    phaseSpin->setStepLimits(0.1, 100.0);
-    phaseSpin->setToolTip("Phase angle in degrees, from -360 to 360");
+    m_phaseEdit = new QuantityEdit(m_controller, phaseRepresentation,
+                                   m_groupBox);
+    m_phaseEdit->setObjectName("phaseSpin");
+    m_phaseEdit->setRange(-360.0, 360.0);
+    m_phaseEdit->setDecimals(1);
+    m_phaseEdit->setSingleStep(1.0);
+    m_phaseEdit->setStepLimits(0.1, 100.0);
+    m_phaseEdit->setToolTip("Phase angle in degrees, from -360 to 360");
 
-    dutySpin = new QDoubleSpinBox(groupBox);
-    dutySpin->setObjectName("dutySpin");
-    dutySpin->setRange(0.0, 100.0);
-    dutySpin->setDecimals(1);
-    dutySpin->setSingleStep(1.0);
-    dutySpin->setSuffix("%");
-    dutySpin->setKeyboardTracking(false);
+    m_dutySpin = new QDoubleSpinBox(m_groupBox);
+    m_dutySpin->setObjectName("dutySpin");
+    m_dutySpin->setRange(0.0, 100.0);
+    m_dutySpin->setDecimals(1);
+    m_dutySpin->setSingleStep(1.0);
+    m_dutySpin->setSuffix("%");
+    m_dutySpin->setKeyboardTracking(false);
 
-    rampSymmetrySpin = new QDoubleSpinBox(groupBox);
-    rampSymmetrySpin->setObjectName("rampSymmetrySpin");
-    rampSymmetrySpin->setRange(0.0, 100.0);
-    rampSymmetrySpin->setDecimals(1);
-    rampSymmetrySpin->setSingleStep(1.0);
-    rampSymmetrySpin->setSuffix(" %");
-    rampSymmetrySpin->setKeyboardTracking(false);
+    m_rampSymmetrySpin = new QDoubleSpinBox(m_groupBox);
+    m_rampSymmetrySpin->setObjectName("rampSymmetrySpin");
+    m_rampSymmetrySpin->setRange(0.0, 100.0);
+    m_rampSymmetrySpin->setDecimals(1);
+    m_rampSymmetrySpin->setSingleStep(1.0);
+    m_rampSymmetrySpin->setSuffix(" %");
+    m_rampSymmetrySpin->setKeyboardTracking(false);
 
-    pulseWidthSpin = new QDoubleSpinBox(groupBox);
-    pulseWidthSpin->setObjectName("pulseWidthSpin");
-    pulseWidthSpin->setRange(0.000'000'001, 1.0);
-    pulseWidthSpin->setDecimals(9);
-    pulseWidthSpin->setSingleStep(0.000'001);
-    pulseWidthSpin->setSuffix(" s");
-    pulseWidthSpin->setKeyboardTracking(false);
+    m_pulseWidthSpin = new QDoubleSpinBox(m_groupBox);
+    m_pulseWidthSpin->setObjectName("pulseWidthSpin");
+    m_pulseWidthSpin->setRange(0.000'000'001, 1.0);
+    m_pulseWidthSpin->setDecimals(9);
+    m_pulseWidthSpin->setSingleStep(0.000'001);
+    m_pulseWidthSpin->setSuffix(" s");
+    m_pulseWidthSpin->setKeyboardTracking(false);
 
-    pulseRiseSpin = new QDoubleSpinBox(groupBox);
-    pulseRiseSpin->setObjectName("pulseRiseSpin");
-    pulseRiseSpin->setRange(0.001, 1'000'000.0);
-    pulseRiseSpin->setDecimals(3);
-    pulseRiseSpin->setSingleStep(0.1);
-    pulseRiseSpin->setSuffix(" ns");
-    pulseRiseSpin->setKeyboardTracking(false);
+    m_pulseRiseSpin = new QDoubleSpinBox(m_groupBox);
+    m_pulseRiseSpin->setObjectName("pulseRiseSpin");
+    m_pulseRiseSpin->setRange(0.001, 1'000'000.0);
+    m_pulseRiseSpin->setDecimals(3);
+    m_pulseRiseSpin->setSingleStep(0.1);
+    m_pulseRiseSpin->setSuffix(" ns");
+    m_pulseRiseSpin->setKeyboardTracking(false);
 
-    pulseFallSpin = new QDoubleSpinBox(groupBox);
-    pulseFallSpin->setObjectName("pulseFallSpin");
-    pulseFallSpin->setRange(0.001, 1'000'000.0);
-    pulseFallSpin->setDecimals(3);
-    pulseFallSpin->setSingleStep(0.1);
-    pulseFallSpin->setSuffix(" ns");
-    pulseFallSpin->setKeyboardTracking(false);
+    m_pulseFallSpin = new QDoubleSpinBox(m_groupBox);
+    m_pulseFallSpin->setObjectName("pulseFallSpin");
+    m_pulseFallSpin->setRange(0.001, 1'000'000.0);
+    m_pulseFallSpin->setDecimals(3);
+    m_pulseFallSpin->setSingleStep(0.1);
+    m_pulseFallSpin->setSuffix(" ns");
+    m_pulseFallSpin->setKeyboardTracking(false);
 
-    pulseDutySpin = new QDoubleSpinBox(groupBox);
-    pulseDutySpin->setObjectName("pulseDutySpin");
-    pulseDutySpin->setRange(0.0, 100.0);
-    pulseDutySpin->setDecimals(3);
-    pulseDutySpin->setSuffix(" %");
-    pulseDutySpin->setReadOnly(true);
-    pulseDutySpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    pulseDutySpin->setFocusPolicy(Qt::NoFocus);
+    m_pulseDutySpin = new QDoubleSpinBox(m_groupBox);
+    m_pulseDutySpin->setObjectName("pulseDutySpin");
+    m_pulseDutySpin->setRange(0.0, 100.0);
+    m_pulseDutySpin->setDecimals(3);
+    m_pulseDutySpin->setSuffix(" %");
+    m_pulseDutySpin->setReadOnly(true);
+    m_pulseDutySpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    m_pulseDutySpin->setFocusPolicy(Qt::NoFocus);
 
-    noiseStdevSpin = new QDoubleSpinBox(groupBox);
-    noiseStdevSpin->setObjectName("noiseStdevSpin");
-    noiseStdevSpin->setRange(0.002, 10.0);
-    noiseStdevSpin->setDecimals(3);
-    noiseStdevSpin->setSingleStep(0.001);
-    noiseStdevSpin->setSuffix(" V");
-    noiseStdevSpin->setKeyboardTracking(false);
+    m_noiseStdevSpin = new QDoubleSpinBox(m_groupBox);
+    m_noiseStdevSpin->setObjectName("noiseStdevSpin");
+    m_noiseStdevSpin->setRange(0.002, 10.0);
+    m_noiseStdevSpin->setDecimals(3);
+    m_noiseStdevSpin->setSingleStep(0.001);
+    m_noiseStdevSpin->setSuffix(" V");
+    m_noiseStdevSpin->setKeyboardTracking(false);
 
-    noiseMeanSpin = new QDoubleSpinBox(groupBox);
-    noiseMeanSpin->setObjectName("noiseMeanSpin");
-    noiseMeanSpin->setRange(-10.0, 10.0);
-    noiseMeanSpin->setDecimals(3);
-    noiseMeanSpin->setSingleStep(0.001);
-    noiseMeanSpin->setSuffix(" V");
-    noiseMeanSpin->setKeyboardTracking(false);
+    m_noiseMeanSpin = new QDoubleSpinBox(m_groupBox);
+    m_noiseMeanSpin->setObjectName("noiseMeanSpin");
+    m_noiseMeanSpin->setRange(-10.0, 10.0);
+    m_noiseMeanSpin->setDecimals(3);
+    m_noiseMeanSpin->setSingleStep(0.001);
+    m_noiseMeanSpin->setSuffix(" V");
+    m_noiseMeanSpin->setKeyboardTracking(false);
 
-    noiseBandwidthSpin = new QDoubleSpinBox(groupBox);
-    noiseBandwidthSpin->setObjectName("noiseBandwidthSpin");
-    noiseBandwidthSpin->setRange(0.001, 120'000'000.0);
-    noiseBandwidthSpin->setDecimals(3);
-    noiseBandwidthSpin->setSingleStep(1.0);
-    noiseBandwidthSpin->setSuffix(" Hz");
-    noiseBandwidthSpin->setKeyboardTracking(false);
+    m_noiseBandwidthSpin = new QDoubleSpinBox(m_groupBox);
+    m_noiseBandwidthSpin->setObjectName("noiseBandwidthSpin");
+    m_noiseBandwidthSpin->setRange(0.001, 120'000'000.0);
+    m_noiseBandwidthSpin->setDecimals(3);
+    m_noiseBandwidthSpin->setSingleStep(1.0);
+    m_noiseBandwidthSpin->setSuffix(" Hz");
+    m_noiseBandwidthSpin->setKeyboardTracking(false);
 
-    noiseBandsetCheck = new QCheckBox(groupBox);
-    noiseBandsetCheck->setObjectName("noiseBandsetCheck");
-    noiseBandsetCheck->setText("On");
+    m_noiseBandsetCheck = new QCheckBox(m_groupBox);
+    m_noiseBandsetCheck->setObjectName("noiseBandsetCheck");
+    m_noiseBandsetCheck->setText("On");
 
-    dcOffsetSpin = new QDoubleSpinBox(groupBox);
-    dcOffsetSpin->setObjectName("dcOffsetSpin");
-    dcOffsetSpin->setRange(-10.000'0, 10.000'0);
-    dcOffsetSpin->setDecimals(4);
-    dcOffsetSpin->setSingleStep(1.0);
-    dcOffsetSpin->setSuffix(" V");
-    dcOffsetSpin->setKeyboardTracking(false);
+    m_dcOffsetSpin = new QDoubleSpinBox(m_groupBox);
+    m_dcOffsetSpin->setObjectName("dcOffsetSpin");
+    m_dcOffsetSpin->setRange(-10.000'0, 10.000'0);
+    m_dcOffsetSpin->setDecimals(4);
+    m_dcOffsetSpin->setSingleStep(1.0);
+    m_dcOffsetSpin->setSuffix(" V");
+    m_dcOffsetSpin->setKeyboardTracking(false);
 
-    dcPrecisionHighCheck = new QCheckBox(groupBox);
-    dcPrecisionHighCheck->setObjectName("dcPrecisionHighCheck");
-    dcPrecisionHighCheck->setText("High");
+    m_dcPrecisionHighCheck = new QCheckBox(m_groupBox);
+    m_dcPrecisionHighCheck->setObjectName("dcPrecisionHighCheck");
+    m_dcPrecisionHighCheck->setText("High");
 
     // Create widgets and labels
-    waveformLabel = new QLabel("Waveform:", groupBox);
-    frequencyLabel = new QLabel("Frequency:", groupBox);
-    periodLabel = new QLabel("Period:", groupBox);
-    amplitudeLabel = new QLabel("Amplitude:", groupBox);
-    offsetLabel = new QLabel("Offset:", groupBox);
-    phaseLabel = new QLabel("Phase:", groupBox);
-    dutyLabel = new QLabel("Duty:", groupBox);
-    rampSymmetryLabel = new QLabel("Ramp symmetry:", groupBox);
-    pulseWidthLabel = new QLabel("Pulse Width:", groupBox);
-    pulseRiseLabel = new QLabel("Pulse Rise:", groupBox);
-    pulseFallLabel = new QLabel("Pulse Fall:", groupBox);
-    pulseDutyLabel = new QLabel("Pulse Duty:", groupBox);
-    noiseStdevLabel = new QLabel("Noise Stdev:", groupBox);
-    noiseMeanLabel = new QLabel("Noise Mean:", groupBox);
-    noiseBandwidthLabel = new QLabel("Bandwidth:", groupBox);
-    noiseBandsetLabel = new QLabel("Bandset:", groupBox);
-    dcOffsetLabel = new QLabel("DC Offset:", groupBox);
-    dcPrecisionHighLabel = new QLabel("DC Precision:", groupBox);
+    m_waveformLabel = new QLabel("Waveform:", m_groupBox);
+    m_frequencyLabel = new QLabel("Frequency:", m_groupBox);
+    m_periodLabel = new QLabel("Period:", m_groupBox);
+    m_amplitudeLabel = new QLabel("Amplitude:", m_groupBox);
+    m_offsetLabel = new QLabel("Offset:", m_groupBox);
+    m_phaseLabel = new QLabel("Phase:", m_groupBox);
+    m_dutyLabel = new QLabel("Duty:", m_groupBox);
+    m_rampSymmetryLabel = new QLabel("Ramp symmetry:", m_groupBox);
+    m_pulseWidthLabel = new QLabel("Pulse Width:", m_groupBox);
+    m_pulseRiseLabel = new QLabel("Pulse Rise:", m_groupBox);
+    m_pulseFallLabel = new QLabel("Pulse Fall:", m_groupBox);
+    m_pulseDutyLabel = new QLabel("Pulse Duty:", m_groupBox);
+    m_noiseStdevLabel = new QLabel("Noise Stdev:", m_groupBox);
+    m_noiseMeanLabel = new QLabel("Noise Mean:", m_groupBox);
+    m_noiseBandwidthLabel = new QLabel("Bandwidth:", m_groupBox);
+    m_noiseBandsetLabel = new QLabel("Bandset:", m_groupBox);
+    m_dcOffsetLabel = new QLabel("DC Offset:", m_groupBox);
+    m_dcPrecisionHighLabel = new QLabel("DC Precision:", m_groupBox);
 
     updateControlVisibility();
 
     // Add labels and related fields to form (which is in a groupbox)
-    formLayout->addRow(waveformLabel, waveformCombo);
-    formLayout->addRow(frequencyLabel, frequencyEdit);
-    formLayout->addRow(periodLabel, periodEdit);
-    formLayout->addRow(amplitudeLabel, amplitudeEdit);
-    formLayout->addRow(offsetLabel, offsetEdit);
-    formLayout->addRow(phaseLabel, phaseSpin);
-    formLayout->addRow(dutyLabel, dutySpin);
-    formLayout->addRow(rampSymmetryLabel, rampSymmetrySpin);
-    formLayout->addRow(pulseWidthLabel, pulseWidthSpin);
-    formLayout->addRow(pulseRiseLabel, pulseRiseSpin);
-    formLayout->addRow(pulseFallLabel, pulseFallSpin);
-    formLayout->addRow(pulseDutyLabel, pulseDutySpin);
-    formLayout->addRow(noiseBandsetLabel, noiseBandsetCheck);
-    formLayout->addRow(noiseStdevLabel, noiseStdevSpin);
-    formLayout->addRow(noiseMeanLabel, noiseMeanSpin);
-    formLayout->addRow(noiseBandwidthLabel, noiseBandwidthSpin);
-    formLayout->addRow(dcOffsetLabel, dcOffsetSpin);
-    formLayout->addRow(dcPrecisionHighLabel, dcPrecisionHighCheck);
+    m_formLayout->addRow(m_waveformLabel, m_waveformCombo);
+    m_formLayout->addRow(m_frequencyLabel, m_frequencyEdit);
+    m_formLayout->addRow(m_periodLabel, m_periodEdit);
+    m_formLayout->addRow(m_amplitudeLabel, m_amplitudeEdit);
+    m_formLayout->addRow(m_offsetLabel, m_offsetEdit);
+    m_formLayout->addRow(m_phaseLabel, m_phaseEdit);
+    m_formLayout->addRow(m_dutyLabel, m_dutySpin);
+    m_formLayout->addRow(m_rampSymmetryLabel, m_rampSymmetrySpin);
+    m_formLayout->addRow(m_pulseWidthLabel, m_pulseWidthSpin);
+    m_formLayout->addRow(m_pulseRiseLabel, m_pulseRiseSpin);
+    m_formLayout->addRow(m_pulseFallLabel, m_pulseFallSpin);
+    m_formLayout->addRow(m_pulseDutyLabel, m_pulseDutySpin);
+    m_formLayout->addRow(m_noiseBandsetLabel, m_noiseBandsetCheck);
+    m_formLayout->addRow(m_noiseStdevLabel, m_noiseStdevSpin);
+    m_formLayout->addRow(m_noiseMeanLabel, m_noiseMeanSpin);
+    m_formLayout->addRow(m_noiseBandwidthLabel, m_noiseBandwidthSpin);
+    m_formLayout->addRow(m_dcOffsetLabel, m_dcOffsetSpin);
+    m_formLayout->addRow(m_dcPrecisionHighLabel, m_dcPrecisionHighCheck);
 
-    formLayout->addRow(outputCheck);
+    m_formLayout->addRow(m_outputCheck);
 
     // updateControlVisibility() call is _after_ the connect() calls
 
-    connect(waveformCombo,
+    connect(m_waveformCombo,
             &QComboBox::currentTextChanged,
             this,
             [this](const QString &waveform)
             {
                 updateControlVisibility();
-                emit waveformChanged(this->channel, waveform);
+                emit waveformChanged(this->m_channel, waveform);
             });
 
-    connect(frequencyEdit,
+    connect(m_frequencyEdit,
             &QuantityEdit::committed,
             this,
             [this](const QuantityEdit::Value &,
@@ -485,12 +485,12 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
             {
                 Q_UNUSED(final);
 
-                const double frequency = frequencyEdit->canonicalValue();
+                const double frequency = m_frequencyEdit->canonicalValue();
 
                 if (frequency > 0.0) {
                     const double period = 1.0 / frequency;
 
-                    periodEdit->setValue(period, "s", false);
+                    m_periodEdit->setValue(period, "s", false);
 
                     sdgDebug() << Q_FUNC_INFO
                                << "frequency=" << frequency << "Hz"
@@ -503,18 +503,18 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 }
 
                 updatePulseDuty();
-                emit frequencyChanged(this->channel, frequency);
+                emit frequencyChanged(this->m_channel, frequency);
             });
 
-    connect(amplitudeEdit,
+    connect(m_amplitudeEdit,
             &QuantityEdit::committed,
             this,
             [this](const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final)
             {
                 sdgDebug() << "Amplitude field contents:"
-                           << amplitudeEdit->cleanText();
-                sdgDebug() << offsetEdit->debugString();
+                           << m_amplitudeEdit->cleanText();
+                sdgDebug() << m_offsetEdit->debugString();
                 sdgDebug()
                     << "amplitude committed:"
                     << "original =" << original.value
@@ -522,63 +522,63 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                     << "final =" << final.value
                     << final.representation;
 
-                emit amplitudeChanged(channel,
+                emit amplitudeChanged(m_channel,
                                      final.value,
                                      final.representation);
 #if 0   // too soon for this
-                emit amplitudeChanged(channel,
-                                      amplitudeEdit->canonicalValue(),
+                emit amplitudeChanged(m_channel,
+                                      m_amplitudeEdit->canonicalValue(),
                                       final.representation);
                 // Bridge to the existing amplitude/model code here.
 #endif
             });
 
-    connect(offsetEdit,
+    connect(m_offsetEdit,
             &QuantityEdit::committed,
             this,
             [this](const QuantityEdit::Value &,
                    const QuantityEdit::Value &final)
             {
-                sdgDebug() << offsetEdit->debugString();
+                sdgDebug() << m_offsetEdit->debugString();
                 sdgDebug()
                     << objectName()
                     << "offset committed:"
                     << "value =" << final.value
                     << "representation =" << final.representation;
 
-                emit offsetChanged(channel, final.value,
+                emit offsetChanged(m_channel, final.value,
                                    final.representation);
             });
 
-    connect(phaseSpin,
+    connect(m_phaseEdit,
             &QuantityEdit::committed,
             this,
             [this](const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final)
             {
                 Q_UNUSED(original);
-                sdgDebug() << phaseSpin->debugString();
+                sdgDebug() << m_phaseEdit->debugString();
 
-                emit phaseChanged(this->channel, final.value);
+                emit phaseChanged(this->m_channel, final.value);
             });
 
-    connect(dutySpin,
+    connect(m_dutySpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
             {
-                emit dutyChanged(this->channel, value);
+                emit dutyChanged(this->m_channel, value);
             });
 
-    connect(rampSymmetrySpin,
+    connect(m_rampSymmetrySpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
             {
-                emit rampSymmetryChanged(this->channel, value);
+                emit rampSymmetryChanged(this->m_channel, value);
             });
 
-    connect(pulseWidthSpin,
+    connect(m_pulseWidthSpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
@@ -586,95 +586,95 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 updatePulseDuty();
 
                 emit pulseWidthChanged(
-                    this->channel,
+                    this->m_channel,
                     value);
             });
 
-    connect(pulseRiseSpin,
+    connect(m_pulseRiseSpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
             {
                 emit pulseRiseChanged(
-                    this->channel,
+                    this->m_channel,
                     value / 1'000'000'000.0);
             });
 
-    connect(pulseFallSpin,
+    connect(m_pulseFallSpin,
             QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             this,
             [this](double value)
             {
                 emit pulseFallChanged(
-                    this->channel,
+                    this->m_channel,
                     value / 1'000'000'000.0);
             });
 
-    connect(noiseBandsetCheck,
+    connect(m_noiseBandsetCheck,
             &QCheckBox::toggled,
             this,
             [this](bool enabled)
             {
                 updateControlVisibility();
-                emit noiseBandsetChanged(channel, enabled);
+                emit noiseBandsetChanged(m_channel, enabled);
             });
 
-    connect(noiseStdevSpin,
+    connect(m_noiseStdevSpin,
             &QDoubleSpinBox::valueChanged,
             this,
             [this](double value)
             {
-                emit noiseStdevChanged(channel, value);
+                emit noiseStdevChanged(m_channel, value);
             });
 
-    connect(noiseMeanSpin,
+    connect(m_noiseMeanSpin,
             &QDoubleSpinBox::valueChanged,
             this,
             [this](double value)
             {
-                emit noiseMeanChanged(channel, value);
+                emit noiseMeanChanged(m_channel, value);
             });
 
-    connect(noiseBandwidthSpin,
+    connect(m_noiseBandwidthSpin,
             &QDoubleSpinBox::valueChanged,
             this,
             [this](double value)
             {
-                emit noiseBandwidthChanged(channel, value);
+                emit noiseBandwidthChanged(m_channel, value);
             });
 
-    connect(dcOffsetSpin,
+    connect(m_dcOffsetSpin,
             &QDoubleSpinBox::valueChanged,
             this,
             [this](double value)
             {
-                emit dcOffsetChanged(channel, value);
+                emit dcOffsetChanged(m_channel, value);
             });
 
-    connect(dcPrecisionHighCheck,
+    connect(m_dcPrecisionHighCheck,
             &QCheckBox::toggled,
             this,
             [this](bool enabled)
             {
-                emit dcPrecisionHighChanged(channel, enabled);
+                emit dcPrecisionHighChanged(m_channel, enabled);
             });
 
 
-    connect(outputCheck,
+    connect(m_outputCheck,
             &QCheckBox::toggled,
             this,
             [this](bool enabled)
             {
-                emit outputChanged(this->channel, enabled);
+                emit outputChanged(this->m_channel, enabled);
             });
 
-    connect(closeButton,
+    connect(m_closeButton,
             &QPushButton::clicked,
             this,
             [this]()
             {
-                sdgDebug() << "Close clicked for channel" << channel;
-                emit hideRequested(channel);
+                sdgDebug() << "Close clicked for channel" << m_channel;
+                emit hideRequested(m_channel);
             });
 
     // This sets initial visibilty (whether or not fields are shown)
@@ -682,23 +682,23 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
 }
 
-void ChannelWidget::setWaveformState(const QString &waveform, bool makeDirty)
+void ChannelWidget::setUiWaveform(const QString &waveform, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    waveformCombo->blockSignals(true);
-    waveformCombo->setCurrentText(waveform);
-    waveformCombo->blockSignals(false);
+    m_waveformCombo->blockSignals(true);
+    m_waveformCombo->setCurrentText(waveform);
+    m_waveformCombo->blockSignals(false);
     updateControlVisibility();
 }
 
-void ChannelWidget::setFrequencyState(double frequency, bool makeDirty)
+void ChannelWidget::setUiFrequency(double frequency, bool makeDirty)
 {
-    frequencyEdit->setCanonicalValue(frequency);
+    m_frequencyEdit->setCanonicalValue(frequency);
 
     if (frequency > 0.0) {
         const double period = 1.0 / frequency;
 
-        periodEdit->setValue(period, "s", makeDirty);
+        m_periodEdit->setValue(period, "s", makeDirty);
         sdgDebug() << Q_FUNC_INFO
                    << "frequency=" << frequency << "Hz"
                    << "period=" << period << "s";
@@ -711,8 +711,8 @@ void ChannelWidget::setFrequencyState(double frequency, bool makeDirty)
 }
 
 // Going from internal state (where voltages are normalized) to UI
-void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit,
-                                      bool makeDirty)
+void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit,
+                                   bool makeDirty)
 {
     const QString & rep { amplit.userRepresentation };
 
@@ -721,160 +721,160 @@ void ChannelWidget::setAmplitudeState(const AmplitudeState &amplit,
         double volts = amplit.getVpp();
         if (is_mV(rep))
             volts *= 1000.0;
-        amplitudeEdit->setValue(volts, rep, makeDirty);
+        m_amplitudeEdit->setValue(volts, rep, makeDirty);
     }
     else if (rep == "Vrms" || rep == "mVrms")
     {
         double volts = amplit.getVrms();
         if (is_mV(rep))
             volts *= 1000.0;
-        amplitudeEdit->setValue(volts, rep, makeDirty);
+        m_amplitudeEdit->setValue(volts, rep, makeDirty);
     }
     else if (rep == "dBm")
-        amplitudeEdit->setValue(amplit.get_dBm(), rep, makeDirty);
+        m_amplitudeEdit->setValue(amplit.get_dBm(), rep, makeDirty);
     else if (rep.isEmpty())   // this case: Initial refresh after connect
     {
         sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
-        amplitudeEdit->setValue(amplit.getVpp(), "Vpp", makeDirty);
+        m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp", makeDirty);
     }
     else
         sdgDebug() << objectName() << Q_FUNC_INFO
                    << ">>> BAD representation: " << rep;
 }
 
-void ChannelWidget::setOffsetState(double offset, bool makeDirty)
+void ChannelWidget::setUiOffset(double offset, bool makeDirty)
 {
-    offsetEdit->setValue(offset, "Vdc", makeDirty);
+    m_offsetEdit->setValue(offset, "Vdc", makeDirty);
 }
 
-void ChannelWidget::setPhaseState(double value, bool makeDirty)
+void ChannelWidget::setUiPhase(double value, bool makeDirty)
 {
-    phaseSpin->setValue(value, "°", makeDirty);
+    m_phaseEdit->setValue(value, "°", makeDirty);
 }
 
-void ChannelWidget::setDutyState(double value, bool makeDirty)
+void ChannelWidget::setUiDuty(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    dutySpin->blockSignals(true);
-    dutySpin->setValue(value);
-    dutySpin->blockSignals(false);
+    m_dutySpin->blockSignals(true);
+    m_dutySpin->setValue(value);
+    m_dutySpin->blockSignals(false);
 }
 
-void ChannelWidget::setRampSymmetryState(double percent, bool makeDirty)
+void ChannelWidget::setUiRampSymmetry(double percent, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    rampSymmetrySpin->blockSignals(true);
-    rampSymmetrySpin->setValue(percent);
-    rampSymmetrySpin->blockSignals(false);
+    m_rampSymmetrySpin->blockSignals(true);
+    m_rampSymmetrySpin->setValue(percent);
+    m_rampSymmetrySpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseWidthState(double value, bool makeDirty)
+void ChannelWidget::setUiPulseWidth(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    pulseWidthSpin->blockSignals(true);
-    pulseWidthSpin->setValue(value);
-    pulseWidthSpin->blockSignals(false);
+    m_pulseWidthSpin->blockSignals(true);
+    m_pulseWidthSpin->setValue(value);
+    m_pulseWidthSpin->blockSignals(false);
     updatePulseDuty();
 }
 
-void ChannelWidget::setPulseRiseState(double value, bool makeDirty)
+void ChannelWidget::setUiPulseRise(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    pulseRiseSpin->blockSignals(true);
-    pulseRiseSpin->setValue(value * 1'000'000'000.0);
-    pulseRiseSpin->blockSignals(false);
+    m_pulseRiseSpin->blockSignals(true);
+    m_pulseRiseSpin->setValue(value * 1'000'000'000.0);
+    m_pulseRiseSpin->blockSignals(false);
 }
 
-void ChannelWidget::setPulseFallState(double value, bool makeDirty)
+void ChannelWidget::setUiPulseFall(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    pulseFallSpin->blockSignals(true);
-    pulseFallSpin->setValue(value * 1'000'000'000.0);
-    pulseFallSpin->blockSignals(false);
+    m_pulseFallSpin->blockSignals(true);
+    m_pulseFallSpin->setValue(value * 1'000'000'000.0);
+    m_pulseFallSpin->blockSignals(false);
 }
 
 void ChannelWidget::updatePulseDuty()
 {
-    if (waveformCombo->currentText() != "PULSE")
+    if (m_waveformCombo->currentText() != "PULSE")
         return;
 
-    const double frequency = frequencyEdit->canonicalValue();
+    const double frequency = m_frequencyEdit->canonicalValue();
 
     if (frequency <= 0.0)
     {
-        pulseDutySpin->setValue(0.0);
+        m_pulseDutySpin->setValue(0.0);
         return;
     }
 
     const double duty =
-        frequency * pulseWidthSpin->value() * 100.0;
+        frequency * m_pulseWidthSpin->value() * 100.0;
 
     // Do we need duty_orig to see if this was a change or not
-    pulseDutySpin->setValue(duty);
+    m_pulseDutySpin->setValue(duty);
 }
 
-void ChannelWidget::setNoiseBandsetState(bool enabled, bool makeDirty)
+void ChannelWidget::setUiNoiseBandset(bool enabled, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    noiseBandsetCheck->blockSignals(true);
-    noiseBandsetCheck->setChecked(enabled);
-    noiseBandsetCheck->blockSignals(false);
+    m_noiseBandsetCheck->blockSignals(true);
+    m_noiseBandsetCheck->setChecked(enabled);
+    m_noiseBandsetCheck->blockSignals(false);
 
     updateControlVisibility();
 }
 
-void ChannelWidget::setNoiseStdevState(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseStdev(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    noiseStdevSpin->blockSignals(true);
-    noiseStdevSpin->setValue(value);
-    noiseStdevSpin->blockSignals(false);
+    m_noiseStdevSpin->blockSignals(true);
+    m_noiseStdevSpin->setValue(value);
+    m_noiseStdevSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseMeanState(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseMean(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    noiseMeanSpin->blockSignals(true);
-    noiseMeanSpin->setValue(value);
-    noiseMeanSpin->blockSignals(false);
+    m_noiseMeanSpin->blockSignals(true);
+    m_noiseMeanSpin->setValue(value);
+    m_noiseMeanSpin->blockSignals(false);
 }
 
-void ChannelWidget::setNoiseBandwidthState(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseBandwidth(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    noiseBandwidthSpin->blockSignals(true);
-    noiseBandwidthSpin->setValue(value);
-    noiseBandwidthSpin->blockSignals(false);
+    m_noiseBandwidthSpin->blockSignals(true);
+    m_noiseBandwidthSpin->setValue(value);
+    m_noiseBandwidthSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcOffsetState(double value, bool makeDirty)
+void ChannelWidget::setUiDcOffset(double value, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    dcOffsetSpin->blockSignals(true);
-    dcOffsetSpin->setValue(value);
-    dcOffsetSpin->blockSignals(false);
+    m_dcOffsetSpin->blockSignals(true);
+    m_dcOffsetSpin->setValue(value);
+    m_dcOffsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setDcPrecisionHighState(bool enabled, bool makeDirty)
+void ChannelWidget::setUiDcPrecisionHigh(bool enabled, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    dcPrecisionHighCheck->blockSignals(true);
-    dcPrecisionHighCheck->setChecked(enabled);
-    dcPrecisionHighCheck->blockSignals(false);
+    m_dcPrecisionHighCheck->blockSignals(true);
+    m_dcPrecisionHighCheck->setChecked(enabled);
+    m_dcPrecisionHighCheck->blockSignals(false);
 }
 
-void ChannelWidget::setOutputState(const OutputState &output, bool makeDirty)
+void ChannelWidget::setUiOutput(const OutputState &output, bool makeDirty)
 {
     Q_UNUSED(makeDirty);
-    outputCheck->blockSignals(true);
-    outputCheck->setChecked(output.enabled);
-    outputCheck->blockSignals(false);
+    m_outputCheck->blockSignals(true);
+    m_outputCheck->setChecked(output.enabled);
+    m_outputCheck->blockSignals(false);
 }
 
-void ChannelWidget::setStatus(const QString &text)
+void ChannelWidget::setUiStatus(const QString &text)
 {
 #ifdef SDG_DEVELOPER_UI
-    statusLabel->setText(text);
+    m_statusLabel->setText(text);
 #else
     Q_UNUSED(text);
 #endif
@@ -882,7 +882,7 @@ void ChannelWidget::setStatus(const QString &text)
 
 void ChannelWidget::updateControlVisibility()
 {
-    const QString waveform = waveformCombo->currentText();
+    const QString waveform = m_waveformCombo->currentText();
 
     const bool showSquare = (waveform == "SQUARE");
     const bool showSymmetry = (waveform == "RAMP");
@@ -891,71 +891,71 @@ void ChannelWidget::updateControlVisibility()
     const bool showDC = (waveform == "DC");
     const bool showStandardControls = !showNoise && !showDC;
 
-    frequencyLabel->setVisible(showStandardControls);
-    frequencyEdit->setVisible(showStandardControls);
+    m_frequencyLabel->setVisible(showStandardControls);
+    m_frequencyEdit->setVisible(showStandardControls);
 
-    amplitudeLabel->setVisible(showStandardControls);
-    amplitudeEdit->setVisible(showStandardControls);
+    m_amplitudeLabel->setVisible(showStandardControls);
+    m_amplitudeEdit->setVisible(showStandardControls);
 
-    offsetLabel->setVisible(showStandardControls);
-    offsetEdit->setVisible(showStandardControls);
+    m_offsetLabel->setVisible(showStandardControls);
+    m_offsetEdit->setVisible(showStandardControls);
 
-    phaseLabel->setVisible(showStandardControls);
-    phaseSpin->setVisible(showStandardControls);
+    m_phaseLabel->setVisible(showStandardControls);
+    m_phaseEdit->setVisible(showStandardControls);
 
-    dutyLabel->setVisible(showSquare);
-    dutySpin->setVisible(showSquare);
+    m_dutyLabel->setVisible(showSquare);
+    m_dutySpin->setVisible(showSquare);
 
-    rampSymmetryLabel->setVisible(showSymmetry);
-    rampSymmetrySpin->setVisible(showSymmetry);
+    m_rampSymmetryLabel->setVisible(showSymmetry);
+    m_rampSymmetrySpin->setVisible(showSymmetry);
 
-    pulseWidthLabel->setVisible(showPulse);
-    pulseWidthSpin->setVisible(showPulse);
+    m_pulseWidthLabel->setVisible(showPulse);
+    m_pulseWidthSpin->setVisible(showPulse);
 
-    pulseRiseLabel->setVisible(showPulse);
-    pulseRiseSpin->setVisible(showPulse);
+    m_pulseRiseLabel->setVisible(showPulse);
+    m_pulseRiseSpin->setVisible(showPulse);
 
-    pulseFallLabel->setVisible(showPulse);
-    pulseFallSpin->setVisible(showPulse);
+    m_pulseFallLabel->setVisible(showPulse);
+    m_pulseFallSpin->setVisible(showPulse);
 
-    pulseDutyLabel->setVisible(showPulse);
-    pulseDutySpin->setVisible(showPulse);
+    m_pulseDutyLabel->setVisible(showPulse);
+    m_pulseDutySpin->setVisible(showPulse);
 
     const bool showNoiseBandwidth =
-        showNoise && noiseBandsetCheck->isChecked();
+        showNoise && m_noiseBandsetCheck->isChecked();
 
-    noiseBandsetLabel->setVisible(showNoise);
-    noiseBandsetCheck->setVisible(showNoise);
+    m_noiseBandsetLabel->setVisible(showNoise);
+    m_noiseBandsetCheck->setVisible(showNoise);
 
-    noiseStdevLabel->setVisible(showNoise);
-    noiseStdevSpin->setVisible(showNoise);
+    m_noiseStdevLabel->setVisible(showNoise);
+    m_noiseStdevSpin->setVisible(showNoise);
 
-    noiseMeanLabel->setVisible(showNoise);
-    noiseMeanSpin->setVisible(showNoise);
+    m_noiseMeanLabel->setVisible(showNoise);
+    m_noiseMeanSpin->setVisible(showNoise);
 
-    noiseBandwidthLabel->setVisible(showNoiseBandwidth);
-    noiseBandwidthSpin->setVisible(showNoiseBandwidth);
+    m_noiseBandwidthLabel->setVisible(showNoiseBandwidth);
+    m_noiseBandwidthSpin->setVisible(showNoiseBandwidth);
 
-    dcOffsetLabel->setVisible(showDC);
-    dcOffsetSpin->setVisible(showDC);
+    m_dcOffsetLabel->setVisible(showDC);
+    m_dcOffsetSpin->setVisible(showDC);
 
-    dcPrecisionHighLabel->setVisible(showDC);
-    dcPrecisionHighCheck->setVisible(showDC);
+    m_dcPrecisionHighLabel->setVisible(showDC);
+    m_dcPrecisionHighCheck->setVisible(showDC);
 }
 
 void ChannelWidget::setControlsEnabled(bool enabled)
 {
-    groupBox->setEnabled(enabled);
+    m_groupBox->setEnabled(enabled);
 }
 
 void ChannelWidget::visitAllQuantityEdits(
     const std::function<void(QuantityEdit *)> &visitor)
 {
-    visitor(frequencyEdit);
-    visitor(periodEdit);
-    visitor(amplitudeEdit);
-    visitor(offsetEdit);
-    visitor(phaseSpin);
+    visitor(m_frequencyEdit);
+    visitor(m_periodEdit);
+    visitor(m_amplitudeEdit);
+    visitor(m_offsetEdit);
+    visitor(m_phaseEdit);
 }
 
 void ChannelWidget::clearAllDirty()
@@ -1002,13 +1002,13 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
 void ChannelWidget::debugLayout() const
 {
     sdgDebug()
-        << "CH" << channel
+        << "CH" << m_channel
         << "widget" << size()
         << "hint" << sizeHint()
         << "minHint" << minimumSizeHint()
-        << "group" << groupBox->size()
-        << "groupHint" << groupBox->sizeHint()
-        << "ampEdit" << amplitudeEdit->size()
-        << "ampEditHint" << amplitudeEdit->sizeHint()
-        << "ampMinHint" << amplitudeEdit->minimumSizeHint();
+        << "group" << m_groupBox->size()
+        << "groupHint" << m_groupBox->sizeHint()
+        << "ampEdit" << m_amplitudeEdit->size()
+        << "ampEditHint" << m_amplitudeEdit->sizeHint()
+        << "ampMinHint" << m_amplitudeEdit->minimumSizeHint();
 }

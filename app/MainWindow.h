@@ -45,43 +45,43 @@ private slots:  // 'slots' Qt6 keyword not needed with modern connects()s
     void saveSettings();
 
 private:
-    bool debugFocus = false;
+    bool m_debugFocus = false;
 
-    bool immediateMode = true;
+    bool m_immediateMode = true;
     bool m_dirty = false;
 
-    FrontPanelWindow *frontPanelWindow = nullptr;
-    QAction *frontPanelAction = nullptr;
+    FrontPanelWindow *m_frontPanelWindow = nullptr;
+    QAction *m_frontPanelAction = nullptr;
 
     // Channel is either 1 or 2. Take care when indexing this array with
     // the channel number (i.e. need to use 'channel - 1' as the index.
-    std::array<ChannelState, 2> pendingState;
+    std::array<ChannelState, 2> m_pendingState;
 
-    QCheckBox *immediateCheck;
-    QPushButton *sendButton;
+    QCheckBox *m_immediateCheck;
+    QPushButton *m_sendButton;
 
-    QLineEdit *ipEdit;
-    QPushButton *connectButton;
-    QPushButton *disconnectButton;
-    QPushButton *refreshButton;
-    QComboBox *instrumentCombo;
+    QLineEdit *m_ipaddrEdit;
+    QPushButton *m_connectButton;
+    QPushButton *m_disconnectButton;
+    QPushButton *m_refreshButton;
+    QComboBox *m_instrumentCombo;
 
-    QLineEdit *idEdit;
+    QLineEdit *m_connectionStateEdit;
 
-    QAction *resetAction;
-    QAction *adaptiveDecimalStepAction;
+    QAction *m_resetAction;
+    QAction *m_adaptiveDecimalStepAction;
 
-    QAction *showChannel1Action;
-    QAction *showChannel2Action;
+    QAction *m_showChannel1Action;
+    QAction *m_showChannel2Action;
 
-    ChannelWidget *ch1Widget;
-    ChannelWidget *ch2Widget;
+    ChannelWidget *m_ch1Widget;
+    ChannelWidget *m_ch2Widget;
 
-    Instrument *generator = nullptr;
+    Instrument *m_generator = nullptr;
 
     AppController *m_controller = nullptr;
 
-    const CLI_options &cli_options;
+    const CLI_options &m_cli_options;
 
     void createFrontPanelWindow();
     void updateFrontPanelAction();

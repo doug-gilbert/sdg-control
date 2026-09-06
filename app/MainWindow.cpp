@@ -34,6 +34,7 @@
 #include "InstrumentFactory.h"
 #include "SettingsIO.h"
 #include "ChannelWidget.h"
+#include "QuantityEdit.h"
 #include "AppController.h"
 #include "cli_options.h"
 
@@ -42,7 +43,7 @@
 
 MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     : QMainWindow(parent),
-      cli_options(cli_opts),
+      m_cli_options(cli_opts),
       m_controller(new AppController(this))
 {
     setWindowTitle("SDG Control");
@@ -59,13 +60,13 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     instrumentLabel->setToolTip(
         "The Instrument is a Siglent SDG2000X series function generator");
 
-    instrumentCombo = new QComboBox(central);
-    instrumentCombo->addItem("Simulator");
-    instrumentCombo->addItem("Siglent SDG2000X");
-    instrumentCombo->setToolTip(
+    m_instrumentCombo = new QComboBox(central);
+    m_instrumentCombo->addItem("Simulator");
+    m_instrumentCombo->addItem("Siglent SDG2000X");
+    m_instrumentCombo->setToolTip(
         "The Simulator is a dummy backend so no real SDG2000X is needed");
 
-    connect(instrumentCombo,
+    connect(m_instrumentCombo,
             &QComboBox::currentIndexChanged,
             this,
             [this](int index)
@@ -85,57 +86,57 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     auto *hostLabel = new QLabel("Host / IP:", central);
 
     QSettings settings("sdg-control", "sdg-control");
-    ipEdit = new QLineEdit(
+    m_ipaddrEdit = new QLineEdit(
         settings.value("host", "sdg2000x").toString(),
         central);
-    ipEdit->setObjectName("ipEdit");
+    m_ipaddrEdit->setObjectName("ipaddrEdit");
 
-    connectButton = new QPushButton("Connect", central);
-    connectButton->setObjectName("connectButton");
-    connectButton->setToolTip(
+    m_connectButton = new QPushButton("Connect", central);
+    m_connectButton->setObjectName("connectButton");
+    m_connectButton->setToolTip(
         "Try to connect to the given Host/IP or the simulator");
-    disconnectButton = new QPushButton("Disconnect", central);
-    disconnectButton->setObjectName("disconnectButton");
-    disconnectButton->setToolTip(
+    m_disconnectButton = new QPushButton("Disconnect", central);
+    m_disconnectButton->setObjectName("disconnectButton");
+    m_disconnectButton->setToolTip(
         "Disconnect from either a Host/IP or the simulator");
-    disconnectButton->setEnabled(false);
+    m_disconnectButton->setEnabled(false);
 
-    immediateCheck = new QCheckBox("Immediate updates", central);
-    immediateCheck->setObjectName("immediateCheck");
-    immediateCheck->setChecked(true);
-    immediateCheck->setToolTip(
+    m_immediateCheck = new QCheckBox("Immediate updates", central);
+    m_immediateCheck->setObjectName("immediateCheck");
+    m_immediateCheck->setChecked(true);
+    m_immediateCheck->setToolTip(
         "When Checked: changes are sent to the function generator\n"
         "when editing of each field is complete.\n"
         "When Unchecked: changes are sent when Send button is pressed.");
 
-    sendButton = new QPushButton("Send", central);
-    sendButton->setObjectName("sendButton");
-    sendButton->hide();
-    sendButton->setEnabled(false);
-    sendButton->setToolTip(
+    m_sendButton = new QPushButton("Send", central);
+    m_sendButton->setObjectName("sendButton");
+    m_sendButton->hide();
+    m_sendButton->setEnabled(false);
+    m_sendButton->setToolTip(
         "Send all pending changes to the connected function generator.");
 
     auto *modeLayout = new QHBoxLayout;
 
-    modeLayout->addWidget(immediateCheck);
+    modeLayout->addWidget(m_immediateCheck);
     modeLayout->addStretch();
-    modeLayout->addWidget(sendButton);
+    modeLayout->addWidget(m_sendButton);
 
     layout->addLayout(modeLayout);
 
     connectionLayout->addWidget(instrumentLabel);
-    connectionLayout->addWidget(instrumentCombo);
+    connectionLayout->addWidget(m_instrumentCombo);
     connectionLayout->addWidget(hostLabel);
-    connectionLayout->addWidget(ipEdit);
-    connectionLayout->addWidget(connectButton);
-    connectionLayout->addWidget(disconnectButton);
+    connectionLayout->addWidget(m_ipaddrEdit);
+    connectionLayout->addWidget(m_connectButton);
+    connectionLayout->addWidget(m_disconnectButton);
 
     layout->addLayout(connectionLayout);
 
-    idEdit = new QLineEdit(central);
-    idEdit->setReadOnly(true);
-    idEdit->setFocusPolicy(Qt::NoFocus);
-    idEdit->setText("Not connected");
+    m_connectionStateEdit = new QLineEdit(central);
+    m_connectionStateEdit->setReadOnly(true);
+    m_connectionStateEdit->setFocusPolicy(Qt::NoFocus);
+    m_connectionStateEdit->setText("Not connected");
 
 #if 0
     // QLabel can be made selectable, but QLineEdit(read-only) was chosen
@@ -145,26 +146,26 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                                      Qt::TextSelectableByKeyboard);
 #endif
 
-    ch1Widget = new ChannelWidget(m_controller, 1, central);
-    ch2Widget = new ChannelWidget(m_controller, 2, central);
+    m_ch1Widget = new ChannelWidget(m_controller, 1, central);
+    m_ch2Widget = new ChannelWidget(m_controller, 2, central);
 
-    refreshButton = new QPushButton("Refresh", central);
-    refreshButton->setObjectName("refreshButton");
-    refreshButton->setEnabled(false);
-    refreshButton->setToolTip(
+    m_refreshButton = new QPushButton("Refresh", central);
+    m_refreshButton->setObjectName("refreshButton");
+    m_refreshButton->setEnabled(false);
+    m_refreshButton->setToolTip(
         "Read the current settings from the function generator.\n"
         "Any unsent changes are discarded.");
 
-    layout->addWidget(idEdit);
+    layout->addWidget(m_connectionStateEdit);
 
     auto *channelLayout = new QHBoxLayout;
 
-    channelLayout->addWidget(ch1Widget);
-    channelLayout->addWidget(ch2Widget);
+    channelLayout->addWidget(m_ch1Widget);
+    channelLayout->addWidget(m_ch2Widget);
 
     layout->addLayout(channelLayout);
 
-    layout->addWidget(refreshButton);
+    layout->addWidget(m_refreshButton);
 
     auto *frame = new QFrame(this);
 
@@ -202,24 +203,24 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     setInstrument(InstrumentType::Simulator);
 
-    connect(immediateCheck,
+    connect(m_immediateCheck,
             &QCheckBox::toggled,
             this,
             [this](bool checked)
             {
-                immediateMode = checked;
+                m_immediateMode = checked;
 
                 if (checked)
                 {
-                    sendButton->hide();
+                    m_sendButton->hide();
                     sdgDebug() << "enter Immediate mode";
                     setDirty(false);     // legacy global flag
                 }
                 else
                 {
-                    sendButton->show();
+                    m_sendButton->show();
                     sdgDebug() << "enter Send mode";
-                    sendButton->setEnabled(m_dirty);
+                    m_sendButton->setEnabled(m_dirty);
                 }
             });
 
@@ -228,8 +229,8 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     auto connectChannelWidgets =
         [this](auto signal, auto setter)
         {
-            connect(ch1Widget, signal, this, setter);
-            connect(ch2Widget, signal, this, setter);
+            connect(m_ch1Widget, signal, this, setter);
+            connect(m_ch2Widget, signal, this, setter);
         };
 
     connectChannelWidgets(
@@ -356,22 +357,22 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
             setOutput(channel, enabled);
         });
 
-    connect(connectButton,
+    connect(m_connectButton,
             &QPushButton::clicked,
             this,
             &MainWindow::connectClicked);
 
-    connect(disconnectButton,
+    connect(m_disconnectButton,
             &QPushButton::clicked,
             this,
             &MainWindow::disconnectClicked);
 
-    connect(refreshButton,
+    connect(m_refreshButton,
             &QPushButton::clicked,
             this,
             &MainWindow::refreshClicked);
 
-    connect(sendButton,
+    connect(m_sendButton,
             &QPushButton::clicked,
             this,
             &MainWindow::sendClicked);
@@ -407,27 +408,27 @@ void MainWindow::createMenuBar()
 
     QMenu *editMenu = menuBar()->addMenu("&Edit");
 
-    resetAction = editMenu->addAction("Reset and set defaults");
-    adaptiveDecimalStepAction = editMenu->addAction("Spin second MS digit");
-    adaptiveDecimalStepAction->setCheckable(true);
-    adaptiveDecimalStepAction->setChecked(false);
-    adaptiveDecimalStepAction->setEnabled(false);
-    // adaptiveDecimalStepAction->setStatusTip(<string>); // but no Status bar
-    adaptiveDecimalStepAction->setToolTip(
+    m_resetAction = editMenu->addAction("Reset and set defaults");
+    m_adaptiveDecimalStepAction = editMenu->addAction("Spin second MS digit");
+    m_adaptiveDecimalStepAction->setCheckable(true);
+    m_adaptiveDecimalStepAction->setChecked(false);
+    m_adaptiveDecimalStepAction->setEnabled(false);
+    // m_adaptiveDecimalStepAction->setStatusTip(<str>); // but no Status bar
+    m_adaptiveDecimalStepAction->setToolTip(
         "In Adaptive decimal step mode the\n"
         "second Most Significant Digit spins");
 
-    connect(resetAction,
+    connect(m_resetAction,
             &QAction::triggered,
             this,
             [this]()
             {
                 sdgDebug() << "Reset requested";
-                if (generator && generator->reset())
+                if (m_generator && m_generator->reset())
                     refreshClicked();
             });
 
-    connect(adaptiveDecimalStepAction,
+    connect(m_adaptiveDecimalStepAction,
             &QAction::toggled,
             this,
             [this](bool checked)
@@ -437,83 +438,83 @@ void MainWindow::createMenuBar()
 
     auto *viewMenu = menuBar()->addMenu("&View");
 
-    showChannel1Action = viewMenu->addAction("Show Channel 1");
-    showChannel1Action->setCheckable(true);
+    m_showChannel1Action = viewMenu->addAction("Show Channel 1");
+    m_showChannel1Action->setCheckable(true);
     // Assume at startup, both Channels are visible
-    showChannel1Action->setChecked(true);
+    m_showChannel1Action->setChecked(true);
     // At this point the widgets have not yet been shown, so isVisible()
     // cannot be used to initialize these actions.
     // Needs a connect(viewMenu, QMenu::hovered, ...) for toolTip to work
-    showChannel1Action->setToolTip(
+    m_showChannel1Action->setToolTip(
         "Remove Channel 1 from this UI leaving more\n"
         "screen 'real estate' for Channel 2");
 
-    showChannel2Action = viewMenu->addAction("Show Channel 2");
-    showChannel2Action->setCheckable(true);
-    showChannel2Action->setChecked(true);
-    showChannel2Action->setToolTip(
+    m_showChannel2Action = viewMenu->addAction("Show Channel 2");
+    m_showChannel2Action->setCheckable(true);
+    m_showChannel2Action->setChecked(true);
+    m_showChannel2Action->setToolTip(
         "Remove Channel 2 from this UI leaving more\n"
         "screen 'real estate' for Channel 1");
 
-    frontPanelAction = viewMenu->addAction("Show front panel");
-    frontPanelAction->setCheckable(true);
-    frontPanelAction->setEnabled(false);
-    frontPanelAction->setToolTip(
+    m_frontPanelAction = viewMenu->addAction("Show front panel");
+    m_frontPanelAction->setCheckable(true);
+    m_frontPanelAction->setEnabled(false);
+    m_frontPanelAction->setToolTip(
         "Fetch SDG2000X's screen as a bmp and render it");
 
-    connect(ch1Widget,
+    connect(m_ch1Widget,
             &ChannelWidget::hideRequested,
             this,
             [this](int)
             {
-                ch1Widget->hide();
-                showChannel1Action->setChecked(false);
+                m_ch1Widget->hide();
+                m_showChannel1Action->setChecked(false);
             });
 
-    connect(ch2Widget,
+    connect(m_ch2Widget,
             &ChannelWidget::hideRequested,
             this,
             [this](int)
             {
-                ch2Widget->hide();
-                showChannel2Action->setChecked(false);
+                m_ch2Widget->hide();
+                m_showChannel2Action->setChecked(false);
             });
 
-    connect(showChannel1Action,
+    connect(m_showChannel1Action,
             &QAction::toggled,
             this,
             [this](bool checked)
             {
-                ch1Widget->setVisible(checked);
+                m_ch1Widget->setVisible(checked);
             });
 
-    connect(showChannel2Action,
+    connect(m_showChannel2Action,
             &QAction::toggled,
             this,
             [this](bool checked)
             {
-                ch2Widget->setVisible(checked);
+                m_ch2Widget->setVisible(checked);
             });
 
-    connect(frontPanelAction,
+    connect(m_frontPanelAction,
             &QAction::toggled,
             this,
             [this](bool checked)
             {
                 if (checked)
                 {
-                    if (!frontPanelWindow)
+                    if (!m_frontPanelWindow)
                         createFrontPanelWindow();
 
-                    frontPanelWindow->show();
-                    frontPanelWindow->raise();
-                    frontPanelWindow->activateWindow();
-                    frontPanelWindow->updateScreen();
+                    m_frontPanelWindow->show();
+                    m_frontPanelWindow->raise();
+                    m_frontPanelWindow->activateWindow();
+                    m_frontPanelWindow->updateScreen();
                 }
                 else
                 {
-                    if (frontPanelWindow)
-                        frontPanelWindow->hide();
+                    if (m_frontPanelWindow)
+                        m_frontPanelWindow->hide();
                 }
             });
 
@@ -561,38 +562,38 @@ void MainWindow::createMenuBar()
 MainWindow::~MainWindow()
 {
     sdgDebug() << Q_FUNC_INFO << "starting";
-    delete frontPanelWindow;
-    delete generator;
+    delete m_frontPanelWindow;
+    delete m_generator;
 }
 
 void MainWindow::setInstrument(InstrumentType type)
 {
-    if (generator)
+    if (m_generator)
     {
-        if (generator->isConnected())
-            generator->disconnect();
+        if (m_generator->isConnected())
+            m_generator->disconnect();
 
-        delete generator;
+        delete m_generator;
     }
 
-    generator = createInstrument(type, this);
+    m_generator = createInstrument(type, this);
 
-    connect(generator,
+    connect(m_generator,
             &Instrument::disconnected,
             this,
             &MainWindow::connectionLost);
 
-    connectButton->setEnabled(true);
-    disconnectButton->setEnabled(false);
-    refreshButton->setEnabled(false);
+    m_connectButton->setEnabled(true);
+    m_disconnectButton->setEnabled(false);
+    m_refreshButton->setEnabled(false);
 
-    ch1Widget->setControlsEnabled(false);
-    ch2Widget->setControlsEnabled(false);
+    m_ch1Widget->setControlsEnabled(false);
+    m_ch2Widget->setControlsEnabled(false);
 
-    pendingState = {};
+    m_pendingState = {};
     setDirty(false);     // legacy global flag
 
-    idEdit->setText("Not connected");
+    m_connectionStateEdit->setText("Not connected");
 }
 
 QString MainWindow::displayIdentification(const QString &idn) const
@@ -627,34 +628,34 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
         .arg(ch.phase, 0, 'f', 1);
 
     if (ch.waveform == "RAMP")
-        cwid.setStatus( QString("%1  Sym %2  Output %3")
+        cwid.setUiStatus( QString("%1  Sym %2  Output %3")
             .arg(common)
             .arg(ch.rampSymmetry)
             .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "DC")
-        cwid.setStatus( QString("%1  DC_OFST %2  Output %3")
+        cwid.setUiStatus( QString("%1  DC_OFST %2  Output %3")
             .arg(common)
             .arg(ch.dcOffset)
             .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "PULSE")
-        cwid.setStatus( QString("%1  Width %2  Rise %3  Fall %4  Output %5")
+        cwid.setUiStatus( QString("%1  Width %2  Rise %3  Fall %4  Output %5")
             .arg(common)
             .arg(ch.pulseWidth)
             .arg(ch.pulseRise)
             .arg(ch.pulseFall)
             .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (ch.waveform == "SQUARE")
-        cwid.setStatus( QString("%1  Duty %2 Output %3")
+        cwid.setUiStatus( QString("%1  Duty %2 Output %3")
             .arg(common)
             .arg(ch.duty)
             .arg(ch.output.enabled ? "ON" : "OFF"));
     else if (my_chan == 1 && ch.waveform == "SINE")
-        cwid.setStatus( QString("%1  Output %2  %3")
+        cwid.setUiStatus( QString("%1  Output %2  %3")
             .arg(common)
             .arg(ch.output.enabled ? "ON" : "OFF")
             .arg(BUILD_TIME));
     else
-        cwid.setStatus( QString("%1  Output %2")
+        cwid.setUiStatus( QString("%1  Output %2")
             .arg(common)
             .arg(ch.output.enabled ? "ON" : "OFF"));
 }
@@ -664,29 +665,29 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
-    cwid.setWaveformState(ch.waveform, false);
-    cwid.setFrequencyState(ch.frequency, false);
-    cwid.setAmplitudeState(ch.amplitude, false);
-    cwid.setOffsetState(ch.offset, false);
-    cwid.setPhaseState(ch.phase, false);
-    cwid.setDutyState(ch.duty, false);
-    cwid.setRampSymmetryState(ch.rampSymmetry, false);
-    cwid.setPulseWidthState(ch.pulseWidth, false);
-    cwid.setPulseRiseState(ch.pulseRise, false);
-    cwid.setPulseFallState(ch.pulseFall, false);
-    cwid.setNoiseBandsetState(ch.noiseBandset, false);
-    cwid.setNoiseStdevState(ch.noiseStdev, false);
-    cwid.setNoiseMeanState(ch.noiseMean, false);
-    cwid.setNoiseBandwidthState(ch.noiseBandwidth, false);
-    cwid.setDcOffsetState(ch.dcOffset, false);
+    cwid.setUiWaveform(ch.waveform, false);
+    cwid.setUiFrequency(ch.frequency, false);
+    cwid.setUiAmplitude(ch.amplitude, false);
+    cwid.setUiOffset(ch.offset, false);
+    cwid.setUiPhase(ch.phase, false);
+    cwid.setUiDuty(ch.duty, false);
+    cwid.setUiRampSymmetry(ch.rampSymmetry, false);
+    cwid.setUiPulseWidth(ch.pulseWidth, false);
+    cwid.setUiPulseRise(ch.pulseRise, false);
+    cwid.setUiPulseFall(ch.pulseFall, false);
+    cwid.setUiNoiseBandset(ch.noiseBandset, false);
+    cwid.setUiNoiseStdev(ch.noiseStdev, false);
+    cwid.setUiNoiseMean(ch.noiseMean, false);
+    cwid.setUiNoiseBandwidth(ch.noiseBandwidth, false);
+    cwid.setUiDcOffset(ch.dcOffset, false);
 
 // DC Precision is present in the SDG UI/firmware but is not currently
 // documented by Siglent and is not returned by BSWV?. Leave the field
 // in the application state/UI so it can be wired up if a future
 // firmware/SCPI implementation exposes it.
-    cwid.setDcPrecisionHighState(ch.dcPrecisionHigh, false);
+    cwid.setUiDcPrecisionHigh(ch.dcPrecisionHigh, false);
 
-    cwid.setOutputState(ch.output, false);
+    cwid.setUiOutput(ch.output, false);
 
 #ifdef SDG_DEVELOPER_UI
     setChannelStatus(my_chan, cwid, ch);
@@ -706,17 +707,18 @@ void MainWindow::refreshClicked()
 
     constexpr const char *ioErrorMsg = "WRITE or READ error";
 
-    if (!generator->isConnected())
+    if (!m_generator->isConnected())
     {
-        idEdit->setText("Not connected");
+        m_connectionStateEdit->setText("Not connected");
         return;
     }
 
     const bool wasDirty = isDirty();
 
-    idEdit->setText(displayIdentification(generator->identification()));
+    m_connectionStateEdit->setText(
+               displayIdentification(m_generator->identification()));
 
-    auto ch1 = generator->getChannelState(1);
+    auto ch1 = m_generator->getChannelState(1);
 
     if (haveIOError(ch1))
     {
@@ -725,11 +727,11 @@ void MainWindow::refreshClicked()
     }
     // Need to carry over userRepresentation from existing UI state
     ch1.amplitude.userRepresentation =
-        pendingState[0].amplitude.userRepresentation;
+        m_pendingState[0].amplitude.userRepresentation;
 
-    setChannelFields(1, *ch1Widget, ch1);
+    setChannelFields(1, *m_ch1Widget, ch1);
 
-    auto ch2 = generator->getChannelState(2);
+    auto ch2 = m_generator->getChannelState(2);
 
     if (haveIOError(ch2))
     {
@@ -738,12 +740,12 @@ void MainWindow::refreshClicked()
     }
     // Need to carry over userRepresentation from existing UI state
     ch2.amplitude.userRepresentation =
-        pendingState[1].amplitude.userRepresentation;
+        m_pendingState[1].amplitude.userRepresentation;
 
-    setChannelFields(2, *ch2Widget, ch2);
+    setChannelFields(2, *m_ch2Widget, ch2);
 
-    pendingState[0] = ch1;
-    pendingState[1] = ch2;
+    m_pendingState[0] = ch1;
+    m_pendingState[1] = ch2;
 
     if (wasDirty)
     {
@@ -757,52 +759,52 @@ void MainWindow::refreshClicked()
 void MainWindow::connectClicked()
 {
     sdgDebug() << Q_FUNC_INFO ;
-    if (!generator->connectTo(ipEdit->text()))
+    if (!m_generator->connectTo(m_ipaddrEdit->text()))
     {
-        idEdit->setText("Connection failed: " +
-                        generator->getConnectionError());
+        m_connectionStateEdit->setText("Connection failed: " +
+                                       m_generator->getConnectionError());
 
-        ch1Widget->setControlsEnabled(false);
-        ch2Widget->setControlsEnabled(false);
+        m_ch1Widget->setControlsEnabled(false);
+        m_ch2Widget->setControlsEnabled(false);
 
         return;
     }
-    ch1Widget->setControlsEnabled(true);
-    ch2Widget->setControlsEnabled(true);
-    refreshButton->setEnabled(true);
+    m_ch1Widget->setControlsEnabled(true);
+    m_ch2Widget->setControlsEnabled(true);
+    m_refreshButton->setEnabled(true);
 
     QSettings settings("sdg-control", "sdg-control");
-    settings.setValue("host", ipEdit->text());
+    settings.setValue("host", m_ipaddrEdit->text());
 
-    idEdit->setText(generator->identification());
+    m_connectionStateEdit->setText(m_generator->identification());
 
-    connectButton->setEnabled(false);
-    disconnectButton->setEnabled(true);
+    m_connectButton->setEnabled(false);
+    m_disconnectButton->setEnabled(true);
 
-    adaptiveDecimalStepAction->setEnabled(true);
+    m_adaptiveDecimalStepAction->setEnabled(true);
 
     refreshClicked();
-    instrumentCombo->setEnabled(false);
+    m_instrumentCombo->setEnabled(false);
     updateFrontPanelAction();
 }
 
 void MainWindow::disconnectClicked()
 {
     sdgDebug() << Q_FUNC_INFO ;
-    generator->disconnect();
+    m_generator->disconnect();
 
-    connectButton->setEnabled(true);
-    disconnectButton->setEnabled(false);
-    refreshButton->setEnabled(false);
+    m_connectButton->setEnabled(true);
+    m_disconnectButton->setEnabled(false);
+    m_refreshButton->setEnabled(false);
 
-    adaptiveDecimalStepAction->setEnabled(false);
+    m_adaptiveDecimalStepAction->setEnabled(false);
 
-    ch1Widget->setControlsEnabled(false);
-    ch2Widget->setControlsEnabled(false);
+    m_ch1Widget->setControlsEnabled(false);
+    m_ch2Widget->setControlsEnabled(false);
 
-    // idEdit->clear();
-    idEdit->setText("Disconnected");
-    instrumentCombo->setEnabled(true);
+    // m_connectionStateEdit->clear();
+    m_connectionStateEdit->setText("Disconnected");
+    m_instrumentCombo->setEnabled(true);
     updateFrontPanelAction();
 }
 
@@ -812,15 +814,15 @@ void MainWindow::sendClicked()
 
     sdgDebug() << Q_FUNC_INFO;
 
-    if (!generator->isConnected())
+    if (!m_generator->isConnected())
         return;
 
     for (int channel = 1; channel <= 2; channel++)
     {
-        const auto &state = pendingState.at(channel - 1);
-        ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+        const auto &state = m_pendingState.at(channel - 1);
+        ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
-        bool local_ok = generator->applyChannelState(channel, state);
+        bool local_ok = m_generator->applyChannelState(channel, state);
         if (local_ok)
             widget->clearAllDirty();
         ok &= local_ok;
@@ -838,16 +840,16 @@ void MainWindow::connectionLost()
 {
     sdgDebug() << Q_FUNC_INFO;
 
-    idEdit->setText("Connection lost");
+    m_connectionStateEdit->setText("Connection lost");
 
-    disconnectButton->setEnabled(false);
-    connectButton->setEnabled(true);
-    refreshButton->setEnabled(false);
+    m_disconnectButton->setEnabled(false);
+    m_connectButton->setEnabled(true);
+    m_refreshButton->setEnabled(false);
 
-    ch1Widget->setControlsEnabled(false);
-    ch2Widget->setControlsEnabled(false);
+    m_ch1Widget->setControlsEnabled(false);
+    m_ch2Widget->setControlsEnabled(false);
 
-    instrumentCombo->setEnabled(true);
+    m_instrumentCombo->setEnabled(true);
 
     updateFrontPanelAction();
 }
@@ -856,14 +858,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
 {
     sdgDebug() << Q_FUNC_INFO << "starting";
 
-    if (generator && generator->isConnected())
+    if (m_generator && m_generator->isConnected())
     {
-        generator->disconnect();
+        m_generator->disconnect();
     }
-    if (frontPanelWindow)
+    if (m_frontPanelWindow)
     {
         sdgDebug() << __PRETTY_FUNCTION__ << "closing frontPanelWindow";
-        frontPanelWindow->close();
+        m_frontPanelWindow->close();
     }
     event->accept();
     sdgDebug() << Q_FUNC_INFO << "finishing";
@@ -874,18 +876,18 @@ void MainWindow::closeEvent(QCloseEvent *event)
 // belongs to a sub-class of QuantityEdit.
 void MainWindow::clearDirty(int channel)
 {
-    ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+    ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
     widget->clearAllDirty();
 }
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
-    pendingState[channel - 1].waveform = waveform;
+    m_pendingState[channel - 1].waveform = waveform;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -895,11 +897,11 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
 
 void MainWindow::setFrequency(int channel, double value)
 {
-    pendingState[channel - 1].frequency = value;
+    m_pendingState[channel - 1].frequency = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -909,7 +911,7 @@ void MainWindow::setFrequency(int channel, double value)
 void MainWindow::setAmplitude(int channel, double value,
                               const QString &representation)
 {
-    AmplitudeState & ampState = pendingState[channel - 1].amplitude;
+    AmplitudeState & ampState = m_pendingState[channel - 1].amplitude;
 
     sdgDebug() << Q_FUNC_INFO << "value =" << value
                << "representation =" << representation;
@@ -951,9 +953,20 @@ void MainWindow::setAmplitude(int channel, double value,
     }
     ampState.userRepresentation = representation;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
+
+        if (widget) {
+            QuantityEdit *qe = widget->amplitudeEdit();
+
+            if (qe) {
+                qe->clearDirty();
+                return;
+            }
+        }
+        // fall-through: clear all dirty flags in a channel
         clearDirty(channel);
     }
     else
@@ -968,7 +981,7 @@ void MainWindow::setOffset(int channel, double value,
     if (representation == "mVdc")
         volts *= 0.001;
 
-    pendingState[channel - 1].offset = volts;
+    m_pendingState[channel - 1].offset = volts;
 
     sdgDebug()
         << "setOffset:"
@@ -976,9 +989,9 @@ void MainWindow::setOffset(int channel, double value,
         << "representation =" << representation
         << "volts =" << volts;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -987,11 +1000,11 @@ void MainWindow::setOffset(int channel, double value,
 
 void MainWindow::setPhase(int channel, double value)
 {
-    pendingState[channel - 1].phase = value;
+    m_pendingState[channel - 1].phase = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1000,11 +1013,11 @@ void MainWindow::setPhase(int channel, double value)
 
 void MainWindow::setDuty(int channel, double value)
 {
-    pendingState[channel - 1].duty = value;
+    m_pendingState[channel - 1].duty = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1013,11 +1026,11 @@ void MainWindow::setDuty(int channel, double value)
 
 void MainWindow::setRampSymmetry(int channel, double value)
 {
-    pendingState[channel - 1].rampSymmetry = value;
+    m_pendingState[channel - 1].rampSymmetry = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1026,11 +1039,11 @@ void MainWindow::setRampSymmetry(int channel, double value)
 
 void MainWindow::setPulseWidth(int channel, double value)
 {
-    pendingState[channel - 1].pulseWidth = value;
+    m_pendingState[channel - 1].pulseWidth = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1039,11 +1052,11 @@ void MainWindow::setPulseWidth(int channel, double value)
 
 void MainWindow::setPulseRise(int channel, double value)
 {
-    pendingState[channel - 1].pulseRise = value;
+    m_pendingState[channel - 1].pulseRise = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1052,11 +1065,11 @@ void MainWindow::setPulseRise(int channel, double value)
 
 void MainWindow::setPulseFall(int channel, double value)
 {
-    pendingState[channel - 1].pulseFall = value;
+    m_pendingState[channel - 1].pulseFall = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1065,11 +1078,11 @@ void MainWindow::setPulseFall(int channel, double value)
 
 void MainWindow::setNoiseBandset(int channel, bool enabled)
 {
-    pendingState[channel - 1].noiseBandset = enabled;
+    m_pendingState[channel - 1].noiseBandset = enabled;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1078,11 +1091,11 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
 
 void MainWindow::setNoiseStdev(int channel, double value)
 {
-    pendingState[channel - 1].noiseStdev = value;
+    m_pendingState[channel - 1].noiseStdev = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1091,11 +1104,11 @@ void MainWindow::setNoiseStdev(int channel, double value)
 
 void MainWindow::setNoiseMean(int channel, double value)
 {
-    pendingState[channel - 1].noiseMean = value;
+    m_pendingState[channel - 1].noiseMean = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1104,11 +1117,11 @@ void MainWindow::setNoiseMean(int channel, double value)
 
 void MainWindow::setNoiseBandwidth(int channel, double value)
 {
-    pendingState[channel - 1].noiseBandwidth = value;
+    m_pendingState[channel - 1].noiseBandwidth = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1117,11 +1130,11 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
 
 void MainWindow::setDcOffset(int channel, double value)
 {
-    pendingState[channel - 1].dcOffset = value;
+    m_pendingState[channel - 1].dcOffset = value;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1130,11 +1143,11 @@ void MainWindow::setDcOffset(int channel, double value)
 
 void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 {
-    pendingState[channel - 1].dcPrecisionHigh = enabled;
+    m_pendingState[channel - 1].dcPrecisionHigh = enabled;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1143,11 +1156,11 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 
 void MainWindow::setOutput(int channel, bool enabled)
 {
-    pendingState[channel - 1].output.enabled = enabled;
+    m_pendingState[channel - 1].output.enabled = enabled;
 
-    if (immediateMode)
+    if (m_immediateMode)
     {
-        generator->applyChannelState(channel, pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
         clearDirty(channel);
     }
     else
@@ -1158,8 +1171,8 @@ void MainWindow::setDirty(bool value)
 {
     m_dirty = value;    // global dirty flag to be replaced
 
-    if (!immediateMode)
-        sendButton->setEnabled(m_dirty);
+    if (!m_immediateMode)
+        m_sendButton->setEnabled(m_dirty);
 }
 
 bool MainWindow::isDirty() const
@@ -1190,7 +1203,7 @@ void MainWindow::loadSettings()
         return;
     }
 
-    pendingState = loadedState;
+    m_pendingState = loadedState;
 
     updateWidgetsFromState();
 
@@ -1214,82 +1227,82 @@ void MainWindow::saveSettings()
     if (!fileName.endsWith(".json", Qt::CaseInsensitive))
         fileName += ".json";
 
-    SettingsIO::save(fileName, pendingState);
+    SettingsIO::save(fileName, m_pendingState);
 }
 
 void MainWindow::updateWidgetsFromState()
 {
-    updateChannelWidget(1, pendingState.at(0));
-    updateChannelWidget(2, pendingState.at(1));
+    updateChannelWidget(1, m_pendingState.at(0));
+    updateChannelWidget(2, m_pendingState.at(1));
 }
 
 // This method is only invoked during Load Settings (from JSON) file
 void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 {
-    ChannelWidget *widget = (channel == 1) ? ch1Widget : ch2Widget;
+    ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
     // accept the default second argument od each set*State() method, so
     // that is makeDirty = true.
     // This could be made more efficient by checking the prior value of
     // each field and onlt setting dirty if the new value is different.
-    widget->setWaveformState(state.waveform);
-    widget->setFrequencyState(state.frequency);
-    widget->setAmplitudeState(state.amplitude);
-    widget->setOffsetState(state.offset);
-    widget->setPhaseState(state.phase);
-    widget->setDutyState(state.duty);
-    widget->setRampSymmetryState(state.rampSymmetry);
-    widget->setPulseWidthState(state.pulseWidth);
-    widget->setPulseRiseState(state.pulseRise);
-    widget->setPulseFallState(state.pulseFall);
-    widget->setNoiseBandsetState(state.noiseBandset);
-    widget->setNoiseStdevState(state.noiseStdev);
-    widget->setNoiseMeanState(state.noiseMean);
-    widget->setNoiseBandwidthState(state.noiseBandwidth);
-    widget->setDcOffsetState(state.dcOffset);
-    widget->setDcPrecisionHighState(state.dcPrecisionHigh);
+    widget->setUiWaveform(state.waveform);
+    widget->setUiFrequency(state.frequency);
+    widget->setUiAmplitude(state.amplitude);
+    widget->setUiOffset(state.offset);
+    widget->setUiPhase(state.phase);
+    widget->setUiDuty(state.duty);
+    widget->setUiRampSymmetry(state.rampSymmetry);
+    widget->setUiPulseWidth(state.pulseWidth);
+    widget->setUiPulseRise(state.pulseRise);
+    widget->setUiPulseFall(state.pulseFall);
+    widget->setUiNoiseBandset(state.noiseBandset);
+    widget->setUiNoiseStdev(state.noiseStdev);
+    widget->setUiNoiseMean(state.noiseMean);
+    widget->setUiNoiseBandwidth(state.noiseBandwidth);
+    widget->setUiDcOffset(state.dcOffset);
+    widget->setUiDcPrecisionHigh(state.dcPrecisionHigh);
 
-    widget->setOutputState(state.output);
+    widget->setUiOutput(state.output);
 }
 
 void MainWindow::createFrontPanelWindow()
 {
-    if (frontPanelWindow)
+    if (m_frontPanelWindow)
         return;
 
-    frontPanelWindow = new FrontPanelWindow(generator);
+    m_frontPanelWindow = new FrontPanelWindow(m_generator);
 
-    connect(frontPanelWindow,
+    connect(m_frontPanelWindow,
             &FrontPanelWindow::windowClosed,
             this,
             [this]()
             {
-                frontPanelAction->setChecked(false);
+                m_frontPanelAction->setChecked(false);
                 updateFrontPanelAction();
             });
 
-    connect(frontPanelWindow,
+    connect(m_frontPanelWindow,
             &QObject::destroyed,
             this,
             [this]()
             {
-                frontPanelWindow = nullptr;
+                m_frontPanelWindow = nullptr;
             });
 }
 
 void MainWindow::updateFrontPanelAction()
 {
     const bool connected =
-        generator &&
-        generator->hasFrontPanel() &&
-        generator->isConnected();
+        m_generator &&
+        m_generator->hasFrontPanel() &&
+        m_generator->isConnected();
 
     const bool canHide =
-        frontPanelWindow &&
-        frontPanelAction->isChecked();
+        m_frontPanelWindow &&
+        m_frontPanelAction->isChecked();
 
-    frontPanelAction->setEnabled(connected || canHide);
+    m_frontPanelAction->setEnabled(connected || canHide);
 
-    if (frontPanelWindow)
-        frontPanelWindow->setInstrumentConnected(connected);
+    if (m_frontPanelWindow)
+        m_frontPanelWindow->setInstrumentConnected(connected);
 }
