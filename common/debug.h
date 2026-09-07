@@ -16,27 +16,19 @@ inline QDebug sdgDebug()
            << QDateTime::currentDateTime().toString("HH:mm:ss.zzz");
 }
 
+// Quiet version. So no leading date-time stamp
 inline QDebug qsdgDebug()
 {
-    return qDebug().noquote() ;
+    return qDebug().noquote();
 }
+
+// QDebug() is crippled, it automatically appends a trailing NL (new line:
+// linefeed LF) character whether or not it is wanted. There is NO way to
+// disable this stupid behaviour in Qt6. QTestStream is not copyable, fail.
+
 #else
 
 #define sdgDebug() if (true) {} else qDebug()
+#define qsdgDebug() if (true) {} else qDebug()
 
-#endif
-
-/* First attempt below using a macro. Replaced with inline function above */
-#if 0
-#ifdef SDG_DEBUG
-
-#define SDG_LOG \
-    qDebug().noquote() \
-        << QDateTime::currentDateTime().toString("HH:mm:ss.zzz")
-
-#else
-
-#define SDG_LOG if (false) qDebug()
-
-#endif
 #endif

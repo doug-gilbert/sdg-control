@@ -2,9 +2,12 @@
 #include <QCommandLineParser>
 
 #include <vector>
+
+#ifndef MSVC
 #include <stdio.h>      // for freopen()
 #include <fcntl.h>
-#include <unistd.h>
+#include <unistd.h>     // needed for dup2( ,STDERR_FILENO) and close()
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -18,9 +21,10 @@
 
 #include "MainWindow.h"
 #include "cli_options.h"
-
-#include "my_getopt.h"
 #include "debug.h"
+
+#ifndef MSVC	// goes down until just before main() starts
+#include "my_getopt.h"
 
 // As getopt_long() checks argv/argc first, we need a list (array) of
 // options that getopt_long() should ignore. Those ignored options (and
@@ -67,7 +71,8 @@ static void usage(void)
         "\nUsage of options processed before Qt processes them:\n"
         " sdg-control  [--help] [--help-all] [--qt-help] "
         "[--stderr=FN]\n"
-        "              [--verbose] [--version]\n"
+        "              [--verbose] [--version]";
+    qsdgDebug() <<
         "  where:\n"
         "    --help|-h          print out usage message\n"
         "    --help-all|-H      forwards --help-all to QtApplication\n"
@@ -81,14 +86,15 @@ static void usage(void)
         "SDG2000X\nseries of function generators. The User Interface (UI) "
         "is based on the\nQt(6) application framework and follows Qt "
         "conventions rather than copying\nthe front panel of the instrument "
-        "and duplicating its UI.\n"
-        ;
+        "and duplicating its UI.\n";
 }
+#endif        // end of NOT MSVC
 
 int main(int argc, char *argv[])
 {
     CLI_options cli_options;
 
+#ifndef MSVC      // all ther way down to and including QAplication
     // Arguments that will be given to getopt_long().
     std::vector<char *> appArgs;
     appArgs.push_back(argv[0]);  // argv[0] is name of app
@@ -206,6 +212,9 @@ int main(int argc, char *argv[])
     // Now construct QApplication using ONLY the arguments Qt should see.
     int qtArgc = static_cast<int>(qtArgs.size()) - 1;
     QApplication app(qtArgc, qtArgs.data());
+#else
+    QApplication app(argc, argv);
+#endif
 
     QCommandLineParser parser;
     parser.setApplicationDescription("SDG2000X control");
