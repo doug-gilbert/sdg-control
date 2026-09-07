@@ -3,6 +3,22 @@
 #include <QString>
 #include <QDebug>
 
+#include <tuple>        // for struct ChannelDirtyState below
+
+
+// This header (ChannelState.h) currently has no corresponding
+// implementation/body (i.e. there is no ChannelState.cpp yet). The
+// structs/classes in this header are (in appearance order):
+//       ValueRepresentation
+//       AmplitudeState
+//       ChannelState
+//       ChannelDirtyState
+//       CombinedChannelState
+//
+// Generally speaking, the above list is ordered from the lowest-level
+// abstraction to the highest level abstraction. Currently the MainWindow
+// singleton holds one instance of struct CombinedChannelState per channel.
+
 
 struct ValueRepresentation
 {
@@ -115,3 +131,103 @@ inline QDebug operator<<(QDebug debug, const OutputState &output)
           << " }";
     return debug;
 }
+
+// Trying hard to state this list of dirty flags once and only once
+#define CHANNEL_DIRTY_FIELDS(X) \
+    X(waveform)                 \
+    X(frequency)                \
+    X(amplitude)                \
+    X(offset)                   \
+    X(phase)                    \
+    X(duty)                     \
+    X(rampSymmetry)             \
+    X(pulseWidth)               \
+    X(pulseRise)                \
+    X(pulseFall)                \
+    X(noiseBandset)             \
+    X(noiseStdev)               \
+    X(noiseMean)                \
+    X(noiseBandwidth)           \
+    X(dcOffset)                 \
+    X(dcPrecisionHigh)          \
+    X(output)
+
+struct ChannelDirtyState
+{
+// Generate fields, the first one should be: 'bool m_waveform = fale;'
+#define DECLARE_FIELD(name) bool m_##name = false;
+    CHANNEL_DIRTY_FIELDS(DECLARE_FIELD)
+#undef DECLARE_FIELD
+
+    struct Field
+    {
+        const char *name;
+        bool ChannelDirtyState::*member;
+    };
+
+// Make a C array of Field_s the first of which is:
+//      { waveform, &ChannelDirtyState::, waveform},
+#define MAKE_FIELD(name) { #name, &ChannelDirtyState::m_##name },
+
+    inline static constexpr Field fields[] = {
+        CHANNEL_DIRTY_FIELDS(MAKE_FIELD)
+    };
+
+#undef MAKE_FIELD
+
+    void setAll()
+    {
+        for (const auto &field : fields)
+            this->*field.member = true;
+    }
+
+    void clearAll()
+    {
+        for (const auto &field : fields)
+            this->*field.member = false;
+    }
+
+    bool areAnySet() const
+    {
+        for (const auto &field : fields)
+            if (this->*field.member)
+                return true;
+        return false;
+    }
+
+    bool areAnyClear() const
+    {
+        for (const auto &field : fields)
+            if (!(this->*field.member))
+                return true;
+        return false;
+    }
+
+    QString debugStr() const
+    {
+        QString str;
+        int k = 0;
+
+        for (const auto &field : fields)
+        {
+            str += field.name;
+            str += '=';
+            str += QString::number(this->*field.member);
+            if (++k == 5)
+            {
+                str += "\n ";
+                k = 0;
+            }
+            else
+                str += ' ';
+        }
+        if (k > 0)
+            str += '\n';
+        return str;
+    }
+};
+
+struct CombinedChannelState {
+    struct ChannelState      m_channelState;
+    struct ChannelDirtyState m_channelDirtyState;
+};

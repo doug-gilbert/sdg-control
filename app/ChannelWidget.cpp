@@ -984,7 +984,7 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
     if (action == showModified)
     {
         visitAllQuantityEdits(
-            [this](QuantityEdit *edit)
+            [](QuantityEdit *edit)
             {
                 edit->showIfDirty();
             });
@@ -992,7 +992,7 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
     else if (action == clearModified)
     {
         visitAllQuantityEdits(
-            [this](QuantityEdit *edit)
+            [](QuantityEdit *edit)
             {
                 edit->showIfDirty(true);
             });

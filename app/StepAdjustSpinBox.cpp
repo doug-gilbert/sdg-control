@@ -111,6 +111,8 @@ StepAdjustSpinBox::StepAdjustSpinBox(AppController *controller,
             defaultStepAct->setEnabled(singleStep() != m_defaultStep);
         }
 
+        emit contextMenuAboutToShow(menu);
+
         menu->exec(lineEdit()->mapToGlobal(pos));
         delete menu;  // Note the context menu is destroyed on losing focus
     });

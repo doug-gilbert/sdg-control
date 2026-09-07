@@ -79,7 +79,7 @@ bool QuantityRepresentation::convertible(const QString &from,
 }
 
 
-// Start of QuantityEdit mehods
+// Start of QuantityEdit methods
 QuantityEdit::QuantityEdit(AppController *controller,
                            const QuantityRepresentation &representation,
                            QWidget *parent)
@@ -138,7 +138,7 @@ QuantityEdit::QuantityEdit(AppController *controller,
     if (m_representationCombo)
         m_representationCombo->installEventFilter(this);
 
-    // this is needed even though (without sdgDebug()) it does not see to
+    // this is needed even though (without sdgDebug()) it does not seem to
     // do anything useful. Qt6 magic.
     connect(m_valueSpin,
             &QDoubleSpinBox::valueChanged,
@@ -165,6 +165,22 @@ QuantityEdit::QuantityEdit(AppController *controller,
                     m_dirty = true;
                 });
     }
+    // triggered if right click over double SpinBox (numeric input) field
+    connect(m_valueSpin,
+            &StepAdjustSpinBox::contextMenuAboutToShow,
+            this,
+            [this](QMenu *menu)
+            {
+                menu->addSeparator();
+
+                auto *finish = menu->addAction("Finish editing",
+                                                this,
+                                                [this] {
+                                                    commit();
+                                                });
+                finish->setEnabled(m_dirty);
+            });
+
 }
 
 QuantityEdit::Value QuantityEdit::currentValue() const

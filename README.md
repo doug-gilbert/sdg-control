@@ -9,7 +9,8 @@ SPDX-License-Identifier: BSD-2-Clause
 
 ## Supported instruments
 
-The following Siglent SDG2000X series generators are supported:
+The following Siglent SDG2000X series "function/arbitrary waveform
+generators" are supported:
 
 |  Model   | Maximum frequency |
 |----------|-------------------|
@@ -55,7 +56,7 @@ it is built using native Qt6 widgets and layouts.
 
 > **Note:** Recent SDG2000X firmware includes a webserver that presents a
 > virtual front panel. That might be ideal for remote control by mobile
-> phones, as they have screen sizes similar to this generator.
+> phones, as they have screen sizes similar to this function generator.
 
 Desktop systems, laptops and tablets provide considerably more screen space
 than the generator's front-panel display. This space allows related controls
@@ -73,9 +74,9 @@ instruments in the future.
 
 ## Requirements
 
-- Qt 6
-- CMake
-- C++17 compatible compiler
+- Qt 6  (built with cersion 6.10.2)
+- CMake (version 3.16 or later)
+- C++17 compatible compiler, or later
 
 Using Ubuntu (a Debian based Linux distribution) these installs are
 suggested:
@@ -168,4 +169,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-08-20
+Last updated: 2026-09-06

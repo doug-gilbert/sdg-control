@@ -54,8 +54,9 @@ private:
     QAction *m_frontPanelAction = nullptr;
 
     // Channel is either 1 or 2. Take care when indexing this array with
-    // the channel number (i.e. need to use 'channel - 1' as the index.
-    std::array<ChannelState, 2> m_pendingState;
+    // the channel number (i.e. need to use 'channel - 1' as the index
+    // since array indexing is origin 0.
+    std::array<CombinedChannelState, 2> m_pendingState;
 
     QCheckBox *m_immediateCheck;
     QPushButton *m_sendButton;
@@ -118,4 +119,9 @@ private:
     void createMenuBar();
 
     QString displayIdentification(const QString &idn) const;
+
+    // Access functions for components of m_pendingState. As long as an
+    // instance of this class exists, the returned pointer will be valid.
+    ChannelState *pendingChannelState(int channel);
+    ChannelDirtyState *pendingChannelDirtyState(int channel);
 };

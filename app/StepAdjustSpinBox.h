@@ -39,6 +39,9 @@ public:
 
     QLineEdit *lineEditWidget() const;
 
+signals:
+    void contextMenuAboutToShow(QMenu *);
+
 public slots:
     void onSecondMSD_changed(bool checked);
 

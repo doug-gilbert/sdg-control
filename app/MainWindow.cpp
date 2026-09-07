@@ -566,6 +566,17 @@ MainWindow::~MainWindow()
     delete m_generator;
 }
 
+ChannelState *MainWindow::pendingChannelState(int channel)
+{
+    // channel argument should be 1 or 2, if otherwise use channel 2
+    return &m_pendingState[(channel == 1) ? 0 : 1].m_channelState;
+}
+
+ChannelDirtyState *MainWindow::pendingChannelDirtyState(int channel)
+{
+    return &m_pendingState[(channel == 1) ? 0 : 1].m_channelDirtyState;
+}
+
 void MainWindow::setInstrument(InstrumentType type)
 {
     if (m_generator)
@@ -727,7 +738,7 @@ void MainWindow::refreshClicked()
     }
     // Need to carry over userRepresentation from existing UI state
     ch1.amplitude.userRepresentation =
-        m_pendingState[0].amplitude.userRepresentation;
+        pendingChannelState(1)->amplitude.userRepresentation;
 
     setChannelFields(1, *m_ch1Widget, ch1);
 
@@ -740,12 +751,12 @@ void MainWindow::refreshClicked()
     }
     // Need to carry over userRepresentation from existing UI state
     ch2.amplitude.userRepresentation =
-        m_pendingState[1].amplitude.userRepresentation;
+        pendingChannelState(2)->amplitude.userRepresentation;
 
     setChannelFields(2, *m_ch2Widget, ch2);
 
-    m_pendingState[0] = ch1;
-    m_pendingState[1] = ch2;
+    *pendingChannelState(1) = ch1;
+    *pendingChannelState(2) = ch2;
 
     if (wasDirty)
     {
@@ -819,10 +830,12 @@ void MainWindow::sendClicked()
 
     for (int channel = 1; channel <= 2; channel++)
     {
-        const auto &state = m_pendingState.at(channel - 1);
+        const auto state = pendingChannelState(channel);
         ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
-        bool local_ok = m_generator->applyChannelState(channel, state);
+sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n"
+           << pendingChannelDirtyState(channel)->debugStr();
+        bool local_ok = m_generator->applyChannelState(channel, *state);
         if (local_ok)
             widget->clearAllDirty();
         ok &= local_ok;
@@ -883,11 +896,12 @@ void MainWindow::clearDirty(int channel)
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
-    m_pendingState[channel - 1].waveform = waveform;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->waveform = waveform;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -897,11 +911,12 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
 
 void MainWindow::setFrequency(int channel, double value)
 {
-    m_pendingState[channel - 1].frequency = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->frequency = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -911,7 +926,8 @@ void MainWindow::setFrequency(int channel, double value)
 void MainWindow::setAmplitude(int channel, double value,
                               const QString &representation)
 {
-    AmplitudeState & ampState = m_pendingState[channel - 1].amplitude;
+    auto pendingState = pendingChannelState(channel);
+    AmplitudeState & ampState = pendingState->amplitude;
 
     sdgDebug() << Q_FUNC_INFO << "value =" << value
                << "representation =" << representation;
@@ -955,7 +971,7 @@ void MainWindow::setAmplitude(int channel, double value,
 
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
         if (widget) {
@@ -976,12 +992,14 @@ void MainWindow::setAmplitude(int channel, double value,
 void MainWindow::setOffset(int channel, double value,
                            const QString &representation)
 {
+    auto pendingState = pendingChannelState(channel);
     double volts = value;
 
+    // Normalize to the unit of Volts
     if (representation == "mVdc")
         volts *= 0.001;
 
-    m_pendingState[channel - 1].offset = volts;
+    pendingState->offset = volts;
 
     sdgDebug()
         << "setOffset:"
@@ -991,7 +1009,7 @@ void MainWindow::setOffset(int channel, double value,
 
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1000,11 +1018,12 @@ void MainWindow::setOffset(int channel, double value,
 
 void MainWindow::setPhase(int channel, double value)
 {
-    m_pendingState[channel - 1].phase = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->phase = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1013,11 +1032,12 @@ void MainWindow::setPhase(int channel, double value)
 
 void MainWindow::setDuty(int channel, double value)
 {
-    m_pendingState[channel - 1].duty = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->duty = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1026,11 +1046,12 @@ void MainWindow::setDuty(int channel, double value)
 
 void MainWindow::setRampSymmetry(int channel, double value)
 {
-    m_pendingState[channel - 1].rampSymmetry = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->rampSymmetry = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1039,11 +1060,12 @@ void MainWindow::setRampSymmetry(int channel, double value)
 
 void MainWindow::setPulseWidth(int channel, double value)
 {
-    m_pendingState[channel - 1].pulseWidth = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->pulseWidth = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1052,11 +1074,12 @@ void MainWindow::setPulseWidth(int channel, double value)
 
 void MainWindow::setPulseRise(int channel, double value)
 {
-    m_pendingState[channel - 1].pulseRise = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->pulseRise = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1065,11 +1088,12 @@ void MainWindow::setPulseRise(int channel, double value)
 
 void MainWindow::setPulseFall(int channel, double value)
 {
-    m_pendingState[channel - 1].pulseFall = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->pulseFall = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1078,11 +1102,12 @@ void MainWindow::setPulseFall(int channel, double value)
 
 void MainWindow::setNoiseBandset(int channel, bool enabled)
 {
-    m_pendingState[channel - 1].noiseBandset = enabled;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->noiseBandset = enabled;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1091,11 +1116,12 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
 
 void MainWindow::setNoiseStdev(int channel, double value)
 {
-    m_pendingState[channel - 1].noiseStdev = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->noiseStdev = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1104,11 +1130,12 @@ void MainWindow::setNoiseStdev(int channel, double value)
 
 void MainWindow::setNoiseMean(int channel, double value)
 {
-    m_pendingState[channel - 1].noiseMean = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->noiseMean = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1117,11 +1144,12 @@ void MainWindow::setNoiseMean(int channel, double value)
 
 void MainWindow::setNoiseBandwidth(int channel, double value)
 {
-    m_pendingState[channel - 1].noiseBandwidth = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->noiseBandwidth = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1130,11 +1158,12 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
 
 void MainWindow::setDcOffset(int channel, double value)
 {
-    m_pendingState[channel - 1].dcOffset = value;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->dcOffset = value;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1143,11 +1172,12 @@ void MainWindow::setDcOffset(int channel, double value)
 
 void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 {
-    m_pendingState[channel - 1].dcPrecisionHigh = enabled;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->dcPrecisionHigh = enabled;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1156,11 +1186,12 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 
 void MainWindow::setOutput(int channel, bool enabled)
 {
-    m_pendingState[channel - 1].output.enabled = enabled;
+    auto pendingState = pendingChannelState(channel);
 
+    pendingState->output.enabled = enabled;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, m_pendingState[channel - 1]);
+        m_generator->applyChannelState(channel, *pendingState);
         clearDirty(channel);
     }
     else
@@ -1203,7 +1234,11 @@ void MainWindow::loadSettings()
         return;
     }
 
-    m_pendingState = loadedState;
+    *pendingChannelState(1) = loadedState[0];
+    pendingChannelDirtyState(1)->setAll();
+    *pendingChannelState(2) = loadedState[1];
+    pendingChannelDirtyState(2)->setAll();
+    // m_pendingState = loadedState;
 
     updateWidgetsFromState();
 
@@ -1227,13 +1262,18 @@ void MainWindow::saveSettings()
     if (!fileName.endsWith(".json", Qt::CaseInsensitive))
         fileName += ".json";
 
-    SettingsIO::save(fileName, m_pendingState);
+    std::array<ChannelState, 2> stateToSave;
+
+    stateToSave[0] = *pendingChannelState(1);
+    stateToSave[1] = *pendingChannelState(2);
+
+    SettingsIO::save(fileName, stateToSave);
 }
 
 void MainWindow::updateWidgetsFromState()
 {
-    updateChannelWidget(1, m_pendingState.at(0));
-    updateChannelWidget(2, m_pendingState.at(1));
+    updateChannelWidget(1, *pendingChannelState(1));
+    updateChannelWidget(2, *pendingChannelState(2));
 }
 
 // This method is only invoked during Load Settings (from JSON) file
