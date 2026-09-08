@@ -897,16 +897,18 @@ void MainWindow::clearDirty(int channel)
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->waveform = waveform;
+    dirtyState->m_waveform = true;
     if (m_immediateMode)
     {
+        // applyChannelState() needs to pass dirtyState as well
         m_generator->applyChannelState(channel, *pendingState);
-        clearDirty(channel);
+        clearDirty(channel);        // temporary hack, need to revisit
     }
     else
         setSettingsDirty(true);     // global dirty flag, to be replaced
-
 }
 
 void MainWindow::setFrequency(int channel, double value)
