@@ -951,6 +951,7 @@ void MainWindow::setAmplitude(int channel, double value,
 {
     auto pendingState = pendingChannelState(channel);
     AmplitudeState & ampState = pendingState->amplitude;
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     sdgDebug() << Q_FUNC_INFO << "value =" << value
                << "representation =" << representation;
@@ -992,6 +993,7 @@ void MainWindow::setAmplitude(int channel, double value,
     }
     ampState.userRepresentation = representation;
 
+    dirtyState->m_amplitude = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1016,6 +1018,7 @@ void MainWindow::setOffset(int channel, double value,
                            const QString &representation)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
     double volts = value;
 
     // Normalize to the unit of Volts
@@ -1030,6 +1033,7 @@ void MainWindow::setOffset(int channel, double value,
         << "representation =" << representation
         << "volts =" << volts;
 
+    dirtyState->m_offset = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1042,8 +1046,10 @@ void MainWindow::setOffset(int channel, double value,
 void MainWindow::setPhase(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->phase = value;
+    dirtyState->m_phase = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
