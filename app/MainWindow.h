@@ -96,6 +96,7 @@ private:
 
     void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
+    void setPeriod(int channel, double value);
     void setAmplitude(int channel, double value,
                       const QString &representation);
     void setOffset(int channel, double value, const QString &representation);

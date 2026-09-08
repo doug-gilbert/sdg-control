@@ -248,6 +248,13 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
         });
 
     connectChannelWidgets(
+        &ChannelWidget::periodChanged,
+        [this](int channel, double value)
+        {
+            setPeriod(channel, value);
+        });
+
+    connectChannelWidgets(
         &ChannelWidget::amplitudeChanged,
         [this](int channel,
                double value,
@@ -914,8 +921,10 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
 void MainWindow::setFrequency(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->frequency = value;
+    dirtyState->m_frequency = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -923,6 +932,18 @@ void MainWindow::setFrequency(int channel, double value)
     }
     else
         setSettingsDirty(true);
+}
+
+// Note that the Period field exists on the UI side (calling this method
+// when changes to it are completed) but on the instrument side it is
+// represented by its reciprocal placed in the Frequency holder.
+void MainWindow::setPeriod(int channel, double value)
+{
+    if (value > 0.0)
+        setFrequency(channel, 1.0 / value);
+    else
+        sdgDebug() << Q_FUNC_INFO << "<< WILD period=" << value
+                   << " chan=" << channel << " >>";
 }
 
 void MainWindow::setAmplitude(int channel, double value,

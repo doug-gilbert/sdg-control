@@ -69,6 +69,7 @@ public:
 signals:
     void waveformChanged(int channel, const QString &waveform);
     void frequencyChanged(int channel, double value);
+    void periodChanged(int channel, double value);
     void amplitudeChanged(int channel, double value,
                           const QString &representation);
     void offsetChanged(int channel, double value,

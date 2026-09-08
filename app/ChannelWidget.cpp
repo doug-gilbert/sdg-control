@@ -506,6 +506,34 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit frequencyChanged(this->m_channel, frequency);
             });
 
+    connect(m_periodEdit,
+            &QuantityEdit::committed,
+            this,
+            [this](const QuantityEdit::Value &,
+                   const QuantityEdit::Value &final)
+            {
+                Q_UNUSED(final);
+
+                const double period = m_periodEdit->canonicalValue();
+
+                if (period > 0.0) {
+                    const double frequency = 1.0 / period;
+
+                    m_frequencyEdit->setValue(frequency, "Hz", false);
+
+                    sdgDebug() << Q_FUNC_INFO
+                               << "period=" << period << "s"
+                               << "frequency=" << frequency << "Hz";
+                }
+                else {
+                    sdgDebug() << Q_FUNC_INFO
+                               <<  "<< WILD period=" << period << "s >>";
+                }
+
+                updatePulseDuty();
+                emit periodChanged(this->m_channel, period);
+            });
+
     connect(m_amplitudeEdit,
             &QuantityEdit::committed,
             this,
