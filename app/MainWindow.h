@@ -48,7 +48,7 @@ private:
     bool m_debugFocus = false;
 
     bool m_immediateMode = true;
-    bool m_dirty = false;
+    bool m_settingsDirty = false;
 
     FrontPanelWindow *m_frontPanelWindow = nullptr;
     QAction *m_frontPanelAction = nullptr;
@@ -56,7 +56,7 @@ private:
     // Channel is either 1 or 2. Take care when indexing this array with
     // the channel number (i.e. need to use 'channel - 1' as the index
     // since array indexing is origin 0.
-    std::array<CombinedChannelState, 2> m_pendingState;
+    std::array<PendingChannelState, 2> m_pendingState;
 
     QCheckBox *m_immediateCheck;
     QPushButton *m_sendButton;
@@ -88,8 +88,8 @@ private:
     void updateFrontPanelAction();
 
     void setInstrument(InstrumentType type);
-    void setDirty(bool value);
-    bool isDirty() const;
+    void setSettingsDirty(bool value);
+    bool areSettingsDirty() const;
 
     void updateWidgetsFromState();
     void updateChannelWidget(int channel, const ChannelState &state);

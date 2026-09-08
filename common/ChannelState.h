@@ -13,11 +13,11 @@
 //       AmplitudeState
 //       ChannelState
 //       ChannelDirtyState
-//       CombinedChannelState
+//       PendingChannelState
 //
 // Generally speaking, the above list is ordered from the lowest-level
 // abstraction to the highest level abstraction. Currently the MainWindow
-// singleton holds one instance of struct CombinedChannelState per channel.
+// singleton holds one instance of struct PendingChannelState per channel.
 
 
 struct ValueRepresentation
@@ -227,7 +227,7 @@ struct ChannelDirtyState
     }
 };
 
-struct CombinedChannelState {
+struct PendingChannelState {
     struct ChannelState      m_channelState;
     struct ChannelDirtyState m_channelDirtyState;
 };

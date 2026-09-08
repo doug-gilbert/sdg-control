@@ -214,13 +214,13 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                 {
                     m_sendButton->hide();
                     sdgDebug() << "enter Immediate mode";
-                    setDirty(false);     // legacy global flag
+                    setSettingsDirty(false);     // legacy global flag
                 }
                 else
                 {
                     m_sendButton->show();
                     sdgDebug() << "enter Send mode";
-                    m_sendButton->setEnabled(m_dirty);
+                    m_sendButton->setEnabled(m_settingsDirty);
                 }
             });
 
@@ -602,7 +602,7 @@ void MainWindow::setInstrument(InstrumentType type)
     m_ch2Widget->setControlsEnabled(false);
 
     m_pendingState = {};
-    setDirty(false);     // legacy global flag
+    setSettingsDirty(false);     // legacy global flag
 
     m_connectionStateEdit->setText("Not connected");
 }
@@ -724,7 +724,7 @@ void MainWindow::refreshClicked()
         return;
     }
 
-    const bool wasDirty = isDirty();
+    const bool wasDirty = areSettingsDirty();
 
     m_connectionStateEdit->setText(
                displayIdentification(m_generator->identification()));
@@ -762,7 +762,7 @@ void MainWindow::refreshClicked()
     {
         sdgDebug() << Q_FUNC_INFO << ">>> Refresh overwrote user data";
     }
-    setDirty(false);     // legacy global flag
+    setSettingsDirty(false);     // legacy global flag
 }
 
 // Connect replaces the existing pending settings with the state read from
@@ -842,7 +842,7 @@ sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n"
     }
 
     if (ok)
-        setDirty(false);        // global dirty flag, to be replaced
+        setSettingsDirty(false);        // global dirty flag, to be replaced
     else
         sdgDebug() << Q_FUNC_INFO
                    << "setting of at least one field failed";
@@ -905,7 +905,7 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
         clearDirty(channel);
     }
     else
-        setDirty(true);     // global dirty flag, to be replaced
+        setSettingsDirty(true);     // global dirty flag, to be replaced
 
 }
 
@@ -920,7 +920,7 @@ void MainWindow::setFrequency(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setAmplitude(int channel, double value,
@@ -986,7 +986,7 @@ void MainWindow::setAmplitude(int channel, double value,
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setOffset(int channel, double value,
@@ -1013,7 +1013,7 @@ void MainWindow::setOffset(int channel, double value,
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setPhase(int channel, double value)
@@ -1027,7 +1027,7 @@ void MainWindow::setPhase(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setDuty(int channel, double value)
@@ -1041,7 +1041,7 @@ void MainWindow::setDuty(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setRampSymmetry(int channel, double value)
@@ -1055,7 +1055,7 @@ void MainWindow::setRampSymmetry(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setPulseWidth(int channel, double value)
@@ -1069,7 +1069,7 @@ void MainWindow::setPulseWidth(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setPulseRise(int channel, double value)
@@ -1083,7 +1083,7 @@ void MainWindow::setPulseRise(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setPulseFall(int channel, double value)
@@ -1097,7 +1097,7 @@ void MainWindow::setPulseFall(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setNoiseBandset(int channel, bool enabled)
@@ -1111,7 +1111,7 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setNoiseStdev(int channel, double value)
@@ -1125,7 +1125,7 @@ void MainWindow::setNoiseStdev(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setNoiseMean(int channel, double value)
@@ -1139,7 +1139,7 @@ void MainWindow::setNoiseMean(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setNoiseBandwidth(int channel, double value)
@@ -1153,7 +1153,7 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setDcOffset(int channel, double value)
@@ -1167,7 +1167,7 @@ void MainWindow::setDcOffset(int channel, double value)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
@@ -1181,7 +1181,7 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
 void MainWindow::setOutput(int channel, bool enabled)
@@ -1195,20 +1195,20 @@ void MainWindow::setOutput(int channel, bool enabled)
         clearDirty(channel);
     }
     else
-        setDirty(true);
+        setSettingsDirty(true);
 }
 
-void MainWindow::setDirty(bool value)
+void MainWindow::setSettingsDirty(bool value)
 {
-    m_dirty = value;    // global dirty flag to be replaced
+    m_settingsDirty = value;    // global dirty flag to be replaced
 
     if (!m_immediateMode)
-        m_sendButton->setEnabled(m_dirty);
+        m_sendButton->setEnabled(m_settingsDirty);
 }
 
-bool MainWindow::isDirty() const
+bool MainWindow::areSettingsDirty() const
 {
-    return m_dirty;
+    return m_settingsDirty;
 }
 
 void MainWindow::loadSettings()
@@ -1242,7 +1242,7 @@ void MainWindow::loadSettings()
 
     updateWidgetsFromState();
 
-    setDirty(true);
+    setSettingsDirty(true);
 }
 
 void MainWindow::saveSettings()
