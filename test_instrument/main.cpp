@@ -85,7 +85,6 @@ static QByteArray getFPWindow(QFile & file, SDG2000X &generator)
 
 int main(int argc, char *argv[])
 {
-    bool verbose_given = false;
     int vb = 0;
     char c;
     const char * device_name = nullptr;
@@ -108,7 +107,6 @@ int main(int argc, char *argv[])
             qDebug() << "test of --test= option, argument given" << optarg;
             break;
         case 'v':
-            verbose_given = true;
             ++vb;
             break;
         case 'V':
