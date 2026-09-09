@@ -884,7 +884,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     if (m_frontPanelWindow)
     {
-        sdgDebug() << __PRETTY_FUNCTION__ << "closing frontPanelWindow";
+        // __PRETTY_FUNCTION__ is a GCC extension, best not to use
+        // sdgDebug() << __PRETTY_FUNCTION__ << "closing frontPanelWindow";
+        sdgDebug() << "closing frontPanelWindow";
         m_frontPanelWindow->close();
     }
     event->accept();
