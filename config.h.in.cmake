@@ -33,6 +33,11 @@
 #cmakedefine HAVE_SETMODE 1
 #cmakedefine HAVE__SETMODE 1
 
+#cmakedefine COMP_GCC 1
+#cmakedefine COMP_CLANG 1
+#cmakedefine COMP_MSVC 1
+#cmakedefine COMP_UNKNOWN 1
+
 #cmakedefine SDG_DEBUG 1
 #cmakedefine SDG_DEVELOPER_UI 1
 

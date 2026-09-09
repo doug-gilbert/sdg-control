@@ -3,12 +3,6 @@
 
 #include <vector>
 
-#ifndef MSVC
-#include <stdio.h>      // for freopen()
-#include <fcntl.h>
-#include <unistd.h>     // needed for dup2( ,STDERR_FILENO) and close()
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #else
@@ -17,13 +11,22 @@
 #endif
 #endif
 
+// _MSC_VER is the MSVC compiler provided define. Try and use COMP_MSVC which
+// should be defined in config.h when using MSVC. That assumes that the top
+// level CMakeLists.txt compiler detection code is working as intended.
+#ifndef COMP_MSVC
+#include <stdio.h>      // for freopen()
+#include <fcntl.h>
+#include <unistd.h>     // needed for dup2( ,STDERR_FILENO) and close()
+#endif
+
 /* Include config.h _before_ any local includes in case they need it */
 
 #include "MainWindow.h"
 #include "cli_options.h"
 #include "debug.h"
 
-#ifndef MSVC	// goes down until just before main() starts
+#ifndef COMP_MSVC	// goes down until just before main() starts
 #include "my_getopt.h"
 
 // As getopt_long() checks argv/argc first, we need a list (array) of
@@ -88,13 +91,13 @@ static void usage(void)
         "conventions rather than copying\nthe front panel of the instrument "
         "and duplicating its UI.\n";
 }
-#endif        // end of NOT MSVC
+#endif        // end of NOT COMP_MSVC
 
 int main(int argc, char *argv[])
 {
     CLI_options cli_options;
 
-#ifndef MSVC      // all ther way down to and including QAplication
+#ifndef COMP_MSVC      // all ther way down to and including QAplication
     // Arguments that will be given to getopt_long().
     std::vector<char *> appArgs;
     appArgs.push_back(argv[0]);  // argv[0] is name of app
