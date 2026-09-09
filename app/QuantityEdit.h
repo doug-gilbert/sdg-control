@@ -116,6 +116,9 @@ public:
     // spaces as well as any prefix or suffix
     QString cleanText() const;
 
+    void setCanonicalRange(double minimum, double maximum)
+            { m_canonicalMinimum = minimum; m_canonicalMaximum = maximum; }
+
     // Yields current and original state of this widget as a QString
     QString debugString() const;
 
@@ -142,6 +145,9 @@ private:
     double convertedValue(double value, const QString &from,
                           const QString &to) const;
 
+    // sub-classes may override this simple implementation
+    virtual bool checkCanonicalRange();
+
     void showRepresentationContextMenu(const QPoint &globalPos);
 
     AppController *m_controller = nullptr;
@@ -154,6 +160,10 @@ private:
     const QuantityRepresentation &m_representation;
 
     Value m_originalValue{1.0, {}};
+
+    // checked when leaving the QuantityEdit field
+    double m_canonicalMinimum = 0.000'000'001;
+    double m_canonicalMaximum = 1'000'000'000;
 
     bool m_editing = false;
 

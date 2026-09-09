@@ -543,6 +543,13 @@ QString QuantityEdit::cleanText() const
      return m_valueSpin ? m_valueSpin->cleanText() : "";
 }
 
+bool QuantityEdit::checkCanonicalRange()
+{
+    double c_value = canonicalValue();
+
+    return c_value >= m_canonicalMinimum && c_value <= m_canonicalMaximum;
+}
+
 QString QuantityEdit::debugString() const
 {
     const Value cval = currentValue();

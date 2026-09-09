@@ -288,7 +288,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_frequencyEdit->setMinimumWidth(215);
     m_frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
                                    QSizePolicy::Fixed);
-    m_frequencyEdit->setRange(0.000'01, 120'000'000);
+    // m_frequencyEdit->setRange(0.000'01, 120'000'000);
     m_frequencyEdit->setDecimals(6);
     m_frequencyEdit->setSingleStep(0.000'01);
     m_frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
@@ -304,7 +304,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_periodEdit->setMinimumWidth(215);
     m_periodEdit->setSizePolicy(QSizePolicy::Expanding,
                                 QSizePolicy::Fixed);
-    m_periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
+    // m_periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
     m_periodEdit->setDecimals(6);
     m_periodEdit->setSingleStep(0.000'000'001);
     m_periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
@@ -327,7 +327,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_phaseEdit = new QuantityEdit(m_controller, phaseRepresentation,
                                    m_groupBox);
     m_phaseEdit->setObjectName("phaseSpin");
-    m_phaseEdit->setRange(-360.0, 360.0);
+    m_phaseEdit->setCanonicalRange(-360.0, 360.0);
     m_phaseEdit->setDecimals(1);
     m_phaseEdit->setSingleStep(1.0);
     m_phaseEdit->setStepLimits(0.1, 100.0);
