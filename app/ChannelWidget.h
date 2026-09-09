@@ -138,7 +138,7 @@ private:
     QuantityEdit *m_amplitudeEdit = nullptr;
     QuantityEdit *m_offsetEdit = nullptr;
     QuantityEdit *m_phaseEdit = nullptr;
-    QDoubleSpinBox *m_dutySpin;
+    QuantityEdit *m_dutyEdit = nullptr;
     QDoubleSpinBox *m_rampSymmetrySpin;
     QDoubleSpinBox *m_pulseWidthSpin;
     QDoubleSpinBox *m_pulseRiseSpin;
@@ -161,10 +161,10 @@ private:
     QuantityEdit *amplitudeEdit() const { return m_amplitudeEdit; }
     QuantityEdit *offsetEdit() const { return m_offsetEdit; }
     QuantityEdit *phaseEdit() const { return m_phaseEdit; }
+    QuantityEdit *dutyEdit() const { return m_dutyEdit; }
 
     // Not QuantityEdit based yet
     QuantityEdit *waveformEdit() const { return nullptr; }
-    QuantityEdit *dutyEdit() const { return nullptr; }
     QuantityEdit *rampSymmetryEdit() const { return nullptr; }
     QuantityEdit *pulseWidthEdit() const { return nullptr; }
     QuantityEdit *pulseRiseEdit() const { return nullptr; }

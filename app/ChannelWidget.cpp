@@ -121,6 +121,25 @@ public:
 
 const PhaseRepresentation phaseRepresentation;
 
+// Start of Duty section
+
+class DutyRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return { {"%", "%", 1.0} };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return {"°"};
+    }
+};
+
+const DutyRepresentation dutyRepresentation;
+
 // Start of Frequency/Period section
 
 class FrequencyRepresentation : public QuantityRepresentation
@@ -326,20 +345,23 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_phaseEdit = new QuantityEdit(m_controller, phaseRepresentation,
                                    m_groupBox);
-    m_phaseEdit->setObjectName("phaseSpin");
-    m_phaseEdit->setCanonicalRange(-360.0, 360.0);
+    m_phaseEdit->setObjectName("phaseEdit");
+    // No comboBox so we can call setrange() directly
+    m_phaseEdit->setRange(-360.0, 360.0);
     m_phaseEdit->setDecimals(1);
     m_phaseEdit->setSingleStep(1.0);
     m_phaseEdit->setStepLimits(0.1, 100.0);
     m_phaseEdit->setToolTip("Phase angle in degrees, from -360 to 360");
 
-    m_dutySpin = new QDoubleSpinBox(m_groupBox);
-    m_dutySpin->setObjectName("dutySpin");
-    m_dutySpin->setRange(0.0, 100.0);
-    m_dutySpin->setDecimals(1);
-    m_dutySpin->setSingleStep(1.0);
-    m_dutySpin->setSuffix("%");
-    m_dutySpin->setKeyboardTracking(false);
+    m_dutyEdit = new QuantityEdit(m_controller, dutyRepresentation,
+                                  m_groupBox);
+    m_dutyEdit->setObjectName("dutyEdit");
+    // No comboBox so we can call setrange() directly
+    m_dutyEdit->setRange(0.0, 100.0);
+    m_dutyEdit->setDecimals(1);
+    m_dutyEdit->setSingleStep(1.0);
+    m_dutyEdit->setStepLimits(0.1, 10.0);
+    m_dutyEdit->setToolTip("Duty cycle, 50% means same duration high and low");
 
     m_rampSymmetrySpin = new QDoubleSpinBox(m_groupBox);
     m_rampSymmetrySpin->setObjectName("rampSymmetrySpin");
@@ -451,7 +473,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_formLayout->addRow(m_amplitudeLabel, m_amplitudeEdit);
     m_formLayout->addRow(m_offsetLabel, m_offsetEdit);
     m_formLayout->addRow(m_phaseLabel, m_phaseEdit);
-    m_formLayout->addRow(m_dutyLabel, m_dutySpin);
+    m_formLayout->addRow(m_dutyLabel, m_dutyEdit);
     m_formLayout->addRow(m_rampSymmetryLabel, m_rampSymmetrySpin);
     m_formLayout->addRow(m_pulseWidthLabel, m_pulseWidthSpin);
     m_formLayout->addRow(m_pulseRiseLabel, m_pulseRiseSpin);
@@ -590,12 +612,16 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit phaseChanged(this->m_channel, final.value);
             });
 
-    connect(m_dutySpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_dutyEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit dutyChanged(this->m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_dutyEdit->debugString();
+
+                emit dutyChanged(this->m_channel, final.value);
             });
 
     connect(m_rampSymmetrySpin,
@@ -782,10 +808,7 @@ void ChannelWidget::setUiPhase(double value, bool makeDirty)
 
 void ChannelWidget::setUiDuty(double value, bool makeDirty)
 {
-    Q_UNUSED(makeDirty);
-    m_dutySpin->blockSignals(true);
-    m_dutySpin->setValue(value);
-    m_dutySpin->blockSignals(false);
+    m_dutyEdit->setValue(value, "%", makeDirty);
 }
 
 void ChannelWidget::setUiRampSymmetry(double percent, bool makeDirty)
@@ -932,7 +955,7 @@ void ChannelWidget::updateControlVisibility()
     m_phaseEdit->setVisible(showStandardControls);
 
     m_dutyLabel->setVisible(showSquare);
-    m_dutySpin->setVisible(showSquare);
+    m_dutyEdit->setVisible(showSquare);
 
     m_rampSymmetryLabel->setVisible(showSymmetry);
     m_rampSymmetrySpin->setVisible(showSymmetry);
@@ -984,6 +1007,7 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_amplitudeEdit);
     visitor(m_offsetEdit);
     visitor(m_phaseEdit);
+    visitor(m_dutyEdit);
 }
 
 void ChannelWidget::clearAllDirty()

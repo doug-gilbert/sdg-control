@@ -1062,8 +1062,10 @@ void MainWindow::setPhase(int channel, double value)
 void MainWindow::setDuty(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->duty = value;
+    dirtyState->m_duty = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
