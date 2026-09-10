@@ -22,8 +22,8 @@ class QScrollArea;
 class StepAdjustSpinBox;
 class QuantityEdit;
 class AppController;
-class AmplitudeState;
-class OutputState;
+struct AmplitudeState;
+struct OutputState;
 
 
 class ChannelWidget : public QWidget
@@ -37,25 +37,24 @@ public:
     void setUiStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
     // Going from internal state (where Units may be normalized) to UI
-    void setUiWaveform(const QString &waveform, bool makeDirty = true);
-    void setUiFrequency(double value, bool makeDirty = true);
-    void setUiAmplitude(const AmplitudeState &amplitud,
-                        bool makeDirty = true);
-    void setUiOffset(double value, bool makeDirty = true);
-    void setUiPhase(double value, bool makeDirty = true);
-    void setUiDuty(double value, bool makeDirty = true);
-    void setUiRampSymmetry(double value, bool makeDirty = true);
-    void setUiPulseWidth(double value, bool makeDirty = true);
-    void setUiPulseRise(double value, bool makeDirty = true);
-    void setUiPulseFall(double value, bool makeDirty = true);
-    void setUiNoiseBandset(bool enabled, bool makeDirty = true);
-    void setUiNoiseStdev(double value, bool makeDirty = true);
-    void setUiNoiseMean(double value, bool makeDirty = true);
-    void setUiNoiseBandwidth(double value, bool makeDirty = true);
-    void setUiDcOffset(double value, bool makeDirty = true);
-    void setUiDcPrecisionHigh(bool enabled, bool makeDirty = true);
+    void setUiWaveform(const QString &waveform);
+    void setUiFrequency(double value);
+    void setUiAmplitude(const AmplitudeState &amplitud);
+    void setUiOffset(double value);
+    void setUiPhase(double value);
+    void setUiDuty(double value);
+    void setUiRampSymmetry(double value);
+    void setUiPulseWidth(double value);
+    void setUiPulseRise(double value);
+    void setUiPulseFall(double value);
+    void setUiNoiseBandset(bool enabled);
+    void setUiNoiseStdev(double value);
+    void setUiNoiseMean(double value);
+    void setUiNoiseBandwidth(double value);
+    void setUiDcOffset(double value);
+    void setUiDcPrecisionHigh(bool enabled);
 
-    void setUiOutput(const OutputState &output, bool makeDirty = true);
+    void setUiOutput(const OutputState &output);
 
     void setControlsEnabled(bool enabled);
 

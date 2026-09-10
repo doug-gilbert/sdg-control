@@ -140,6 +140,8 @@ private:
     Value currentValue() const;
 
     void beginEditing();
+
+    // sends committed signal with original and final values
     void commit();
 
     double convertedValue(double value, const QString &from,
@@ -165,6 +167,7 @@ private:
     double m_canonicalMinimum = 0.000'000'001;
     double m_canonicalMaximum = 1'000'000'000;
 
+    // set when user has started editing this field, awaiting commit()
     bool m_editing = false;
 
     bool m_dirty = false;

@@ -683,29 +683,29 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
 static void setChannelFields(int my_chan, ChannelWidget & cwid,
                              const ChannelState & ch)
 {
-    cwid.setUiWaveform(ch.waveform, false);
-    cwid.setUiFrequency(ch.frequency, false);
-    cwid.setUiAmplitude(ch.amplitude, false);
-    cwid.setUiOffset(ch.offset, false);
-    cwid.setUiPhase(ch.phase, false);
-    cwid.setUiDuty(ch.duty, false);
-    cwid.setUiRampSymmetry(ch.rampSymmetry, false);
-    cwid.setUiPulseWidth(ch.pulseWidth, false);
-    cwid.setUiPulseRise(ch.pulseRise, false);
-    cwid.setUiPulseFall(ch.pulseFall, false);
-    cwid.setUiNoiseBandset(ch.noiseBandset, false);
-    cwid.setUiNoiseStdev(ch.noiseStdev, false);
-    cwid.setUiNoiseMean(ch.noiseMean, false);
-    cwid.setUiNoiseBandwidth(ch.noiseBandwidth, false);
-    cwid.setUiDcOffset(ch.dcOffset, false);
+    cwid.setUiWaveform(ch.waveform);
+    cwid.setUiFrequency(ch.frequency);
+    cwid.setUiAmplitude(ch.amplitude);
+    cwid.setUiOffset(ch.offset);
+    cwid.setUiPhase(ch.phase);
+    cwid.setUiDuty(ch.duty);
+    cwid.setUiRampSymmetry(ch.rampSymmetry);
+    cwid.setUiPulseWidth(ch.pulseWidth);
+    cwid.setUiPulseRise(ch.pulseRise);
+    cwid.setUiPulseFall(ch.pulseFall);
+    cwid.setUiNoiseBandset(ch.noiseBandset);
+    cwid.setUiNoiseStdev(ch.noiseStdev);
+    cwid.setUiNoiseMean(ch.noiseMean);
+    cwid.setUiNoiseBandwidth(ch.noiseBandwidth);
+    cwid.setUiDcOffset(ch.dcOffset);
 
 // DC Precision is present in the SDG UI/firmware but is not currently
 // documented by Siglent and is not returned by BSWV?. Leave the field
 // in the application state/UI so it can be wired up if a future
 // firmware/SCPI implementation exposes it.
-    cwid.setUiDcPrecisionHigh(ch.dcPrecisionHigh, false);
+    cwid.setUiDcPrecisionHigh(ch.dcPrecisionHigh);
 
-    cwid.setUiOutput(ch.output, false);
+    cwid.setUiOutput(ch.output);
 
 #ifdef SDG_DEVELOPER_UI
     setChannelStatus(my_chan, cwid, ch);

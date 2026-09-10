@@ -736,23 +736,22 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
 }
 
-void ChannelWidget::setUiWaveform(const QString &waveform, bool makeDirty)
+void ChannelWidget::setUiWaveform(const QString &waveform)
 {
-    Q_UNUSED(makeDirty);
     m_waveformCombo->blockSignals(true);
     m_waveformCombo->setCurrentText(waveform);
     m_waveformCombo->blockSignals(false);
     updateControlVisibility();
 }
 
-void ChannelWidget::setUiFrequency(double frequency, bool makeDirty)
+void ChannelWidget::setUiFrequency(double frequency)
 {
     m_frequencyEdit->setCanonicalValue(frequency);
 
     if (frequency > 0.0) {
         const double period = 1.0 / frequency;
 
-        m_periodEdit->setValue(period, "s", makeDirty);
+        m_periodEdit->setValue(period, "s", false);
         sdgDebug() << Q_FUNC_INFO
                    << "frequency=" << frequency << "Hz"
                    << "period=" << period << "s";
@@ -765,8 +764,7 @@ void ChannelWidget::setUiFrequency(double frequency, bool makeDirty)
 }
 
 // Going from internal state (where voltages are normalized) to UI
-void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit,
-                                   bool makeDirty)
+void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit)
 {
     const QString & rep { amplit.userRepresentation };
 
@@ -775,70 +773,66 @@ void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit,
         double volts = amplit.getVpp();
         if (is_mV(rep))
             volts *= 1000.0;
-        m_amplitudeEdit->setValue(volts, rep, makeDirty);
+        m_amplitudeEdit->setValue(volts, rep, false);
     }
     else if (rep == "Vrms" || rep == "mVrms")
     {
         double volts = amplit.getVrms();
         if (is_mV(rep))
             volts *= 1000.0;
-        m_amplitudeEdit->setValue(volts, rep, makeDirty);
+        m_amplitudeEdit->setValue(volts, rep, false);
     }
     else if (rep == "dBm")
-        m_amplitudeEdit->setValue(amplit.get_dBm(), rep, makeDirty);
+        m_amplitudeEdit->setValue(amplit.get_dBm(), rep, false);
     else if (rep.isEmpty())   // this case: Initial refresh after connect
     {
         sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
-        m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp", makeDirty);
+        m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp", false);
     }
     else
         sdgDebug() << objectName() << Q_FUNC_INFO
                    << ">>> BAD representation: " << rep;
 }
 
-void ChannelWidget::setUiOffset(double offset, bool makeDirty)
+void ChannelWidget::setUiOffset(double offset)
 {
-    m_offsetEdit->setValue(offset, "Vdc", makeDirty);
+    m_offsetEdit->setValue(offset, "Vdc", false);
 }
 
-void ChannelWidget::setUiPhase(double value, bool makeDirty)
+void ChannelWidget::setUiPhase(double value)
 {
-    m_phaseEdit->setValue(value, "°", makeDirty);
+    m_phaseEdit->setValue(value, "°", false);
 }
 
-void ChannelWidget::setUiDuty(double value, bool makeDirty)
+void ChannelWidget::setUiDuty(double value)
 {
-    m_dutyEdit->setValue(value, "%", makeDirty);
+    m_dutyEdit->setValue(value, "%", false);
 }
 
-void ChannelWidget::setUiRampSymmetry(double percent, bool makeDirty)
+void ChannelWidget::setUiRampSymmetry(double percent)
 {
-    Q_UNUSED(makeDirty);
     m_rampSymmetrySpin->blockSignals(true);
     m_rampSymmetrySpin->setValue(percent);
     m_rampSymmetrySpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiPulseWidth(double value, bool makeDirty)
+void ChannelWidget::setUiPulseWidth(double value)
 {
-    Q_UNUSED(makeDirty);
     m_pulseWidthSpin->blockSignals(true);
     m_pulseWidthSpin->setValue(value);
     m_pulseWidthSpin->blockSignals(false);
     updatePulseDuty();
 }
 
-void ChannelWidget::setUiPulseRise(double value, bool makeDirty)
+void ChannelWidget::setUiPulseRise(double value)
 {
-    Q_UNUSED(makeDirty);
     m_pulseRiseSpin->blockSignals(true);
     m_pulseRiseSpin->setValue(value * 1'000'000'000.0);
     m_pulseRiseSpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiPulseFall(double value, bool makeDirty)
+void ChannelWidget::setUiPulseFall(double value)
 {
-    Q_UNUSED(makeDirty);
     m_pulseFallSpin->blockSignals(true);
     m_pulseFallSpin->setValue(value * 1'000'000'000.0);
     m_pulseFallSpin->blockSignals(false);
@@ -864,9 +858,8 @@ void ChannelWidget::updatePulseDuty()
     m_pulseDutySpin->setValue(duty);
 }
 
-void ChannelWidget::setUiNoiseBandset(bool enabled, bool makeDirty)
+void ChannelWidget::setUiNoiseBandset(bool enabled)
 {
-    Q_UNUSED(makeDirty);
     m_noiseBandsetCheck->blockSignals(true);
     m_noiseBandsetCheck->setChecked(enabled);
     m_noiseBandsetCheck->blockSignals(false);
@@ -874,49 +867,43 @@ void ChannelWidget::setUiNoiseBandset(bool enabled, bool makeDirty)
     updateControlVisibility();
 }
 
-void ChannelWidget::setUiNoiseStdev(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseStdev(double value)
 {
-    Q_UNUSED(makeDirty);
     m_noiseStdevSpin->blockSignals(true);
     m_noiseStdevSpin->setValue(value);
     m_noiseStdevSpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiNoiseMean(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseMean(double value)
 {
-    Q_UNUSED(makeDirty);
     m_noiseMeanSpin->blockSignals(true);
     m_noiseMeanSpin->setValue(value);
     m_noiseMeanSpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiNoiseBandwidth(double value, bool makeDirty)
+void ChannelWidget::setUiNoiseBandwidth(double value)
 {
-    Q_UNUSED(makeDirty);
     m_noiseBandwidthSpin->blockSignals(true);
     m_noiseBandwidthSpin->setValue(value);
     m_noiseBandwidthSpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiDcOffset(double value, bool makeDirty)
+void ChannelWidget::setUiDcOffset(double value)
 {
-    Q_UNUSED(makeDirty);
     m_dcOffsetSpin->blockSignals(true);
     m_dcOffsetSpin->setValue(value);
     m_dcOffsetSpin->blockSignals(false);
 }
 
-void ChannelWidget::setUiDcPrecisionHigh(bool enabled, bool makeDirty)
+void ChannelWidget::setUiDcPrecisionHigh(bool enabled)
 {
-    Q_UNUSED(makeDirty);
     m_dcPrecisionHighCheck->blockSignals(true);
     m_dcPrecisionHighCheck->setChecked(enabled);
     m_dcPrecisionHighCheck->blockSignals(false);
 }
 
-void ChannelWidget::setUiOutput(const OutputState &output, bool makeDirty)
+void ChannelWidget::setUiOutput(const OutputState &output)
 {
-    Q_UNUSED(makeDirty);
     m_outputCheck->blockSignals(true);
     m_outputCheck->setChecked(output.enabled);
     m_outputCheck->blockSignals(false);
