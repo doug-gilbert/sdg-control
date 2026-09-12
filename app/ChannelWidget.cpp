@@ -33,6 +33,52 @@
 namespace       // anonymous namespace so all within are at file scope
 {
 
+// Start of Frequency/Period section
+
+class FrequencyRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"Hz",  "Hz",  1.0},
+            {"kHz", "Hz", 1'000.0},
+            {"MHz", "Hz", 1'000'000.0},
+            {"mHz", "Hz", 0.001},
+            {"uHz", "Hz", 0.000'001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Hz" };
+    }
+};
+
+class PeriodRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"s",  "s",  1.0},
+            {"ms", "s",  0.001},
+            {"us", "s",  0.000'001},
+            {"ns", "s",  0.000'000'001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "s" };
+    }
+};
+
+const FrequencyRepresentation frequencyQuantityRepresentation;
+const PeriodRepresentation periodQuantityRepresentation;
+
 // Start of Amplitude section; still awaiting Vhigh/Vlow support
 class AmplitudeRepresentation : public QuantityRepresentation
 {
@@ -134,36 +180,34 @@ public:
 
     QString canonicalRepresentation() const override
     {
-        return {"°"};
+        return {"%"};
     }
 };
 
 const DutyRepresentation dutyRepresentation;
 
-// Start of Frequency/Period section
+// Start of RampSymmetry section
 
-class FrequencyRepresentation : public QuantityRepresentation
+class RampSymmetryRepresentation : public QuantityRepresentation
 {
 public:
     std::vector<QuantityRepresentation::Representation>
                                             representations() const override
     {
-        return {
-            {"Hz",  "Hz",  1.0},
-            {"kHz", "Hz", 1'000.0},
-            {"MHz", "Hz", 1'000'000.0},
-            {"mHz", "Hz", 0.001},
-            {"uHz", "Hz", 0.000'001}
-        };
+        return { {"%", "%", 1.0} };
     }
 
     QString canonicalRepresentation() const override
     {
-        return { "Hz" };
+        return {"%"};
     }
 };
 
-class PeriodRepresentation : public QuantityRepresentation
+const RampSymmetryRepresentation rampSymmetryRepresentation;
+
+// Start of PulseWidth section
+
+class PulseWidthRepresentation : public QuantityRepresentation
 {
 public:
     std::vector<QuantityRepresentation::Representation>
@@ -179,12 +223,78 @@ public:
 
     QString canonicalRepresentation() const override
     {
-        return { "s" };
+        return {"s"};
     }
 };
 
-const FrequencyRepresentation frequencyQuantityRepresentation;
-const PeriodRepresentation periodQuantityRepresentation;
+const PulseWidthRepresentation pulseWidthRepresentation;
+
+// Start of PulseRise section
+
+class PulseRiseRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"s",  "s",  1.0},
+            {"ms", "s",  0.001},
+            {"us", "s",  0.000'001},
+            {"ns", "s",  0.000'000'001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return {"s"};
+    }
+};
+
+const PulseRiseRepresentation pulseRiseRepresentation;
+
+// Start of PulseFall section
+
+class PulseFallRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"s",  "s",  1.0},
+            {"ms", "s",  0.001},
+            {"us", "s",  0.000'001},
+            {"ns", "s",  0.000'000'001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return {"s"};
+    }
+};
+
+const PulseFallRepresentation pulseFallRepresentation;
+
+// Start of PulseDuty section
+
+class PulseDutyRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return { {"%", "%", 1.0} };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return {"%"};
+    }
+};
+
+const PulseDutyRepresentation pulseDutyRepresentation;
 
 }       // <<< end of anonymous namespace
 
@@ -307,7 +417,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_frequencyEdit->setMinimumWidth(215);
     m_frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
                                    QSizePolicy::Fixed);
-    // m_frequencyEdit->setRange(0.000'01, 120'000'000);
+    m_frequencyEdit->setCanonicalRange(0.000'01, 120'000'000);
     m_frequencyEdit->setDecimals(6);
     m_frequencyEdit->setSingleStep(0.000'01);
     m_frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
@@ -323,7 +433,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_periodEdit->setMinimumWidth(215);
     m_periodEdit->setSizePolicy(QSizePolicy::Expanding,
                                 QSizePolicy::Fixed);
-    // m_periodEdit->setRange(0.000'000'008'3, 1'000'000.0);
+    m_periodEdit->setCanonicalRange(0.000'000'008'3, 1'000'000.0);
     m_periodEdit->setDecimals(6);
     m_periodEdit->setSingleStep(0.000'000'001);
     m_periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
@@ -361,48 +471,53 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_dutyEdit->setDecimals(1);
     m_dutyEdit->setSingleStep(1.0);
     m_dutyEdit->setStepLimits(0.1, 10.0);
-    m_dutyEdit->setToolTip("Duty cycle, 50% means same duration high and low");
+    m_dutyEdit->setToolTip(
+                  "Duty cycle: time_up/(time_up+time_down) as percentage");
 
-    m_rampSymmetrySpin = new QDoubleSpinBox(m_groupBox);
-    m_rampSymmetrySpin->setObjectName("rampSymmetrySpin");
-    m_rampSymmetrySpin->setRange(0.0, 100.0);
-    m_rampSymmetrySpin->setDecimals(1);
-    m_rampSymmetrySpin->setSingleStep(1.0);
-    m_rampSymmetrySpin->setSuffix(" %");
-    m_rampSymmetrySpin->setKeyboardTracking(false);
+    m_rampSymmetryEdit = new QuantityEdit(m_controller,
+                                          rampSymmetryRepresentation,
+                                          m_groupBox);
+    m_rampSymmetryEdit->setObjectName("rampSymmetryEdit");
+    // No comboBox so we can call setrange() directly
+    m_rampSymmetryEdit->setRange(0.0, 100.0);
+    m_rampSymmetryEdit->setDecimals(1);
+    m_rampSymmetryEdit->setSingleStep(1.0);
+    m_rampSymmetryEdit->setToolTip("(ramp_up / (ramp_up+ramp_down)) * 100");
 
-    m_pulseWidthSpin = new QDoubleSpinBox(m_groupBox);
-    m_pulseWidthSpin->setObjectName("pulseWidthSpin");
-    m_pulseWidthSpin->setRange(0.000'000'001, 1.0);
-    m_pulseWidthSpin->setDecimals(9);
-    m_pulseWidthSpin->setSingleStep(0.000'001);
-    m_pulseWidthSpin->setSuffix(" s");
-    m_pulseWidthSpin->setKeyboardTracking(false);
+    m_pulseWidthEdit = new QuantityEdit(m_controller,
+                                        pulseWidthRepresentation,
+                                        m_groupBox);
+    m_pulseWidthEdit->setObjectName("pulseWidthEdit");
+    m_pulseWidthEdit->setCanonicalRange(0.000'000'001, 1.0);
+    m_pulseWidthEdit->setDecimals(9);
+    m_pulseWidthEdit->setSingleStep(0.000'001);
 
-    m_pulseRiseSpin = new QDoubleSpinBox(m_groupBox);
-    m_pulseRiseSpin->setObjectName("pulseRiseSpin");
-    m_pulseRiseSpin->setRange(0.001, 1'000'000.0);
-    m_pulseRiseSpin->setDecimals(3);
-    m_pulseRiseSpin->setSingleStep(0.1);
-    m_pulseRiseSpin->setSuffix(" ns");
-    m_pulseRiseSpin->setKeyboardTracking(false);
+    m_pulseRiseEdit = new QuantityEdit(m_controller,
+                                       pulseRiseRepresentation,
+                                       m_groupBox);
+    m_pulseRiseEdit->setObjectName("pulseRiseEdit");
+    // m_pulseRiseEdit->setRange(0.001, 1'000'000.0);
+    m_pulseRiseEdit->setDecimals(3);
+    m_pulseRiseEdit->setSingleStep(0.1);
 
-    m_pulseFallSpin = new QDoubleSpinBox(m_groupBox);
-    m_pulseFallSpin->setObjectName("pulseFallSpin");
-    m_pulseFallSpin->setRange(0.001, 1'000'000.0);
-    m_pulseFallSpin->setDecimals(3);
-    m_pulseFallSpin->setSingleStep(0.1);
-    m_pulseFallSpin->setSuffix(" ns");
-    m_pulseFallSpin->setKeyboardTracking(false);
+    m_pulseFallEdit = new QuantityEdit(m_controller,
+                                       pulseFallRepresentation,
+                                       m_groupBox);
+    m_pulseFallEdit->setObjectName("pulseFallEdit");
+    // m_pulseFallEdit->setRange(0.001, 1'000'000.0);
+    m_pulseFallEdit->setDecimals(3);
+    m_pulseFallEdit->setSingleStep(0.1);
 
-    m_pulseDutySpin = new QDoubleSpinBox(m_groupBox);
-    m_pulseDutySpin->setObjectName("pulseDutySpin");
-    m_pulseDutySpin->setRange(0.0, 100.0);
-    m_pulseDutySpin->setDecimals(3);
-    m_pulseDutySpin->setSuffix(" %");
-    m_pulseDutySpin->setReadOnly(true);
-    m_pulseDutySpin->setButtonSymbols(QAbstractSpinBox::NoButtons);
-    m_pulseDutySpin->setFocusPolicy(Qt::NoFocus);
+    m_pulseDutyEdit = new QuantityEdit(m_controller, pulseDutyRepresentation,
+                                       m_groupBox);
+    m_pulseDutyEdit->setObjectName("pulseDutyEdit");
+    // No comboBox so we can call setrange() directly
+    m_pulseDutyEdit->setRange(0.0, 100.0);
+    m_pulseDutyEdit->setDecimals(1);
+    m_pulseDutyEdit->setSingleStep(1.0);
+    m_pulseDutyEdit->setStepLimits(0.1, 10.0);
+    m_pulseDutyEdit->setToolTip(
+                  "Duty cycle: time_up/(time_up+time_down) as percentage");
 
     m_noiseStdevSpin = new QDoubleSpinBox(m_groupBox);
     m_noiseStdevSpin->setObjectName("noiseStdevSpin");
@@ -474,11 +589,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_formLayout->addRow(m_offsetLabel, m_offsetEdit);
     m_formLayout->addRow(m_phaseLabel, m_phaseEdit);
     m_formLayout->addRow(m_dutyLabel, m_dutyEdit);
-    m_formLayout->addRow(m_rampSymmetryLabel, m_rampSymmetrySpin);
-    m_formLayout->addRow(m_pulseWidthLabel, m_pulseWidthSpin);
-    m_formLayout->addRow(m_pulseRiseLabel, m_pulseRiseSpin);
-    m_formLayout->addRow(m_pulseFallLabel, m_pulseFallSpin);
-    m_formLayout->addRow(m_pulseDutyLabel, m_pulseDutySpin);
+    m_formLayout->addRow(m_rampSymmetryLabel, m_rampSymmetryEdit);
+    m_formLayout->addRow(m_pulseWidthLabel, m_pulseWidthEdit);
+    m_formLayout->addRow(m_pulseRiseLabel, m_pulseRiseEdit);
+    m_formLayout->addRow(m_pulseFallLabel, m_pulseFallEdit);
+    m_formLayout->addRow(m_pulseDutyLabel, m_pulseDutyEdit);
     m_formLayout->addRow(m_noiseBandsetLabel, m_noiseBandsetCheck);
     m_formLayout->addRow(m_noiseStdevLabel, m_noiseStdevSpin);
     m_formLayout->addRow(m_noiseMeanLabel, m_noiseMeanSpin);
@@ -624,44 +739,62 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit dutyChanged(this->m_channel, final.value);
             });
 
-    connect(m_rampSymmetrySpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_rampSymmetryEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit rampSymmetryChanged(this->m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_rampSymmetryEdit->debugString();
+
+                emit rampSymmetryChanged(this->m_channel, final.value);
             });
 
-    connect(m_pulseWidthSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_pulseWidthEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                updatePulseDuty();
+                Q_UNUSED(original);
+                sdgDebug() << m_pulseWidthEdit->debugString();
 
-                emit pulseWidthChanged(
-                    this->m_channel,
-                    value);
+                emit pulseWidthChanged(this->m_channel, final.value);
             });
 
-    connect(m_pulseRiseSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_pulseRiseEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
+                Q_UNUSED(original);
+                sdgDebug() << m_pulseRiseEdit->debugString();
+#if 1
+                emit pulseRiseChanged(this->m_channel, final.value);
+#else
                 emit pulseRiseChanged(
                     this->m_channel,
                     value / 1'000'000'000.0);
+#endif
             });
 
-    connect(m_pulseFallSpin,
-            QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+    connect(m_pulseFallEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
+                Q_UNUSED(original);
+                sdgDebug() << m_pulseFallEdit->debugString();
+#if 1
+                emit pulseFallChanged(this->m_channel, final.value);
+#else
                 emit pulseFallChanged(
                     this->m_channel,
                     value / 1'000'000'000.0);
+#endif
             });
 
     connect(m_noiseBandsetCheck,
@@ -811,31 +944,25 @@ void ChannelWidget::setUiDuty(double value)
 
 void ChannelWidget::setUiRampSymmetry(double percent)
 {
-    m_rampSymmetrySpin->blockSignals(true);
-    m_rampSymmetrySpin->setValue(percent);
-    m_rampSymmetrySpin->blockSignals(false);
+    m_rampSymmetryEdit->setValue(percent, "%", false);
 }
 
 void ChannelWidget::setUiPulseWidth(double value)
 {
-    m_pulseWidthSpin->blockSignals(true);
-    m_pulseWidthSpin->setValue(value);
-    m_pulseWidthSpin->blockSignals(false);
+    m_pulseWidthEdit->setValue(value, "s", false);
     updatePulseDuty();
 }
 
 void ChannelWidget::setUiPulseRise(double value)
 {
-    m_pulseRiseSpin->blockSignals(true);
-    m_pulseRiseSpin->setValue(value * 1'000'000'000.0);
-    m_pulseRiseSpin->blockSignals(false);
+    // m_pulseRiseEdit->setValue(value * 1'000'000'000.0);
+    m_pulseRiseEdit->setValue(value, "s", false);
 }
 
 void ChannelWidget::setUiPulseFall(double value)
 {
-    m_pulseFallSpin->blockSignals(true);
-    m_pulseFallSpin->setValue(value * 1'000'000'000.0);
-    m_pulseFallSpin->blockSignals(false);
+    // m_pulseFallEdit->setValue(value * 1'000'000'000.0);
+    m_pulseFallEdit->setValue(value, "s", false);
 }
 
 void ChannelWidget::updatePulseDuty()
@@ -847,15 +974,15 @@ void ChannelWidget::updatePulseDuty()
 
     if (frequency <= 0.0)
     {
-        m_pulseDutySpin->setValue(0.0);
+        m_pulseDutyEdit->setValue(0.0, "Hz", false);
         return;
     }
 
     const double duty =
-        frequency * m_pulseWidthSpin->value() * 100.0;
+        frequency * m_pulseWidthEdit->value().value * 100.0;
 
     // Do we need duty_orig to see if this was a change or not
-    m_pulseDutySpin->setValue(duty);
+    m_pulseDutyEdit->setValue(duty, "%", false);
 }
 
 void ChannelWidget::setUiNoiseBandset(bool enabled)
@@ -945,19 +1072,19 @@ void ChannelWidget::updateControlVisibility()
     m_dutyEdit->setVisible(showSquare);
 
     m_rampSymmetryLabel->setVisible(showSymmetry);
-    m_rampSymmetrySpin->setVisible(showSymmetry);
+    m_rampSymmetryEdit->setVisible(showSymmetry);
 
     m_pulseWidthLabel->setVisible(showPulse);
-    m_pulseWidthSpin->setVisible(showPulse);
+    m_pulseWidthEdit->setVisible(showPulse);
 
     m_pulseRiseLabel->setVisible(showPulse);
-    m_pulseRiseSpin->setVisible(showPulse);
+    m_pulseRiseEdit->setVisible(showPulse);
 
     m_pulseFallLabel->setVisible(showPulse);
-    m_pulseFallSpin->setVisible(showPulse);
+    m_pulseFallEdit->setVisible(showPulse);
 
     m_pulseDutyLabel->setVisible(showPulse);
-    m_pulseDutySpin->setVisible(showPulse);
+    m_pulseDutyEdit->setVisible(showPulse);
 
     const bool showNoiseBandwidth =
         showNoise && m_noiseBandsetCheck->isChecked();

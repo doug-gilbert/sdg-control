@@ -138,11 +138,11 @@ private:
     QuantityEdit *m_offsetEdit = nullptr;
     QuantityEdit *m_phaseEdit = nullptr;
     QuantityEdit *m_dutyEdit = nullptr;
-    QDoubleSpinBox *m_rampSymmetrySpin;
-    QDoubleSpinBox *m_pulseWidthSpin;
-    QDoubleSpinBox *m_pulseRiseSpin;
-    QDoubleSpinBox *m_pulseFallSpin;
-    QDoubleSpinBox *m_pulseDutySpin;
+    QuantityEdit *m_rampSymmetryEdit = nullptr;
+    QuantityEdit *m_pulseWidthEdit = nullptr;
+    QuantityEdit *m_pulseRiseEdit = nullptr;
+    QuantityEdit *m_pulseFallEdit = nullptr;
+    QuantityEdit *m_pulseDutyEdit = nullptr;
     QCheckBox *m_noiseBandsetCheck;
     QDoubleSpinBox *m_noiseStdevSpin;
     QDoubleSpinBox *m_noiseMeanSpin;
