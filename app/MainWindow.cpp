@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2026 Douglas Gilbert.
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
 
 #include <QApplication>
 #include <QLabel>
@@ -555,8 +559,13 @@ void MainWindow::createMenuBar()
                 QString text;
 
                 text += QString("SDG Control\n\n");
-                text += QString("Version: %1\n")
+                text += QString("Version: %1\n\n")
                             .arg(SDG_CONTROL_VERSION);
+                text += QString("Controls Siglent SDG2000X series Arbitrary/Function\n");
+
+                text += QString("Waveform generators over a TCP connection using\n");
+                text += QString("the SCPI command set. Based on the Qt6 application\n");
+                text += QString("development framework.\n\n");
                 text += QString("Build time: %1")
                             .arg(BUILD_TIME);
 

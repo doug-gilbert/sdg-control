@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2026 Douglas Gilbert.
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #pragma once
 
 #include "Instrument.h"
