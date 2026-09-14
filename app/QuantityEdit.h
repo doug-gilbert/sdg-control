@@ -114,6 +114,8 @@ public:
     double minimum() const;
     double maximum() const;
     void setToolTip(const QString &toolTip);
+    // setMinimumWidth() passes through to base class (QWidget)
+    // setObjectName() passes through to base class (QWidget)
     QString toolTip() const;
 
     // get the contents of the SpinBox without leading and trailing

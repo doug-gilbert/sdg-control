@@ -149,10 +149,10 @@ private:
     QuantityEdit *m_pulseFallEdit = nullptr;
     QuantityEdit *m_pulseDutyEdit = nullptr;
     QCheckBox *m_noiseBandsetCheck;
-    QDoubleSpinBox *m_noiseStdevSpin;
-    QDoubleSpinBox *m_noiseMeanSpin;
-    QDoubleSpinBox *m_noiseBandwidthSpin;
-    QDoubleSpinBox *m_dcOffsetSpin;
+    QuantityEdit *m_noiseStdevEdit;
+    QuantityEdit *m_noiseMeanEdit;
+    QuantityEdit *m_noiseBandwidthEdit;
+    QuantityEdit *m_dcOffsetEdit;
     QCheckBox *m_dcPrecisionHighCheck;
     QCheckBox *m_outputCheck;
 
@@ -166,19 +166,19 @@ private:
     QuantityEdit *offsetEdit() const { return m_offsetEdit; }
     QuantityEdit *phaseEdit() const { return m_phaseEdit; }
     QuantityEdit *dutyEdit() const { return m_dutyEdit; }
+    QuantityEdit *rampSymmetryEdit() const { return m_rampSymmetryEdit; }
+    QuantityEdit *pulseWidthEdit() const { return m_pulseWidthEdit; }
+    QuantityEdit *pulseRiseEdit() const { return m_pulseRiseEdit; }
+    QuantityEdit *pulseFallEdit() const { return m_pulseFallEdit; }
+    QuantityEdit *pulseDutyEdit() const { return m_pulseDutyEdit; }
+    QuantityEdit *noiseStdevEdit() const { return m_noiseStdevEdit; }
+    QuantityEdit *noiseMeanEdit() const { return m_noiseMeanEdit; }
+    QuantityEdit *noiseBandwidthEdit() const { return m_noiseBandwidthEdit; }
+    QuantityEdit *dcOffsetEdit() const { return m_dcOffsetEdit; }
 
-    // Not QuantityEdit based yet
+    // Fields that are _not_ QuantityEdit based, mainly CheckBox_s
     QuantityEdit *waveformEdit() const { return nullptr; }
-    QuantityEdit *rampSymmetryEdit() const { return nullptr; }
-    QuantityEdit *pulseWidthEdit() const { return nullptr; }
-    QuantityEdit *pulseRiseEdit() const { return nullptr; }
-    QuantityEdit *pulseFallEdit() const { return nullptr; }
-    QuantityEdit *pulseDutyEdit() const { return nullptr; }
     QuantityEdit *noiseBandsetEdit() const { return nullptr; }
-    QuantityEdit *noiseStdevEdit() const { return nullptr; }
-    QuantityEdit *noiseMeanEdit() const { return nullptr; }
-    QuantityEdit *noiseBandwidthEdit() const { return nullptr; }
-    QuantityEdit *dcOffsetEdit() const { return nullptr; }
     QuantityEdit *dcPrecisionHighEdit() const { return nullptr; }
     QuantityEdit *outputEdit() const { return nullptr; }
 };

@@ -113,11 +113,9 @@ set(COMP_CLANG 0)
 set(COMP_MSVC 0)
 set(COMP_UNKNOWN 0)
 
-message(STATUS "CMAKE_C_COMPILER     = ${CMAKE_C_COMPILER}")
-message(STATUS "CMAKE_C_COMPILER_ID  = ${CMAKE_C_COMPILER_ID}")
-message(STATUS "CMAKE_C_COMPILER_VERSION = ${CMAKE_C_COMPILER_VERSION}")
-
-# How to read environment variable CC ?  CC here is '-DCC=/usr/bin/clang'
+message(STATUS "CMAKE_CXX_COMPILER     = ${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_CXX_COMPILER_ID  = ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
 
 if ( $ENV{CC} MATCHES "gcc" )
     MESSAGE( STATUS ">> GCC compiler selected [ev]" )

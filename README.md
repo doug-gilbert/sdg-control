@@ -34,6 +34,7 @@ Current features include:
     - Amplitude
     - Offset
     - Phase
+    - Duty
     - Symmetry [RAMP only]
 - Refresh instrument state
 - Provide two modes: Immediate or Send (non-immediate)
@@ -63,10 +64,10 @@ than the generator's front-panel display. This space allows related controls
 to be grouped together and additional information to be shown simultaneously.
 
 Another benefit of the 'non-emulation' model is that the user interface
-is not tied to a particular instrument model. Most modern function generators
-share a common set of capabilities (such as waveform selection, frequency,
-amplitude, offset, and phase control) even though the details and front
-panel placement differ between manufacturers and product families.
+is not tied tightly to a particular instrument model. Most modern function
+generators share a common set of capabilities (such as waveform selection,
+frequency, amplitude, offset, and phase control) even though the details and
+front panel placement differ between manufacturers and product families.
 
 By separating the user interface from the layout of any specific front
 panel, the application can more readily be extended to support additional
@@ -74,7 +75,7 @@ instruments in the future.
 
 ## Requirements
 
-- Qt 6  (built with cersion 6.10.2)
+- Qt 6  (currently using version 6.10.2)
 - CMake (version 3.16 or later)
 - C++17 compatible compiler, or later
 
@@ -147,7 +148,8 @@ See the LICENSE file for details.
 
 The author's existing open source packages use a command line interface
 (CLI). With programming assistance from ChatGPT this package uses a
-graphical user interface (GUI) based on the Qt6 toolkit.
+graphical user interface (GUI) based on the Qt6 "application development
+framework".
 
 ## Related projects
 
@@ -169,4 +171,4 @@ series. The user interface and supported functionality will continue to
 evolve.
 
 
-Last updated: 2026-09-06
+Last updated: 2026-09-14

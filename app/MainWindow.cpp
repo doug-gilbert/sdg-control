@@ -561,17 +561,17 @@ void MainWindow::createMenuBar()
                 text += QString("SDG Control\n\n");
                 text += QString("Version: %1\n\n")
                             .arg(SDG_CONTROL_VERSION);
-                text += QString("Controls Siglent SDG2000X series Arbitrary/Function\n");
+                text += QString(
+                    "Controls Siglent SDG2000X series Function/Arbitrary\n");
 
-                text += QString("Waveform generators over a TCP connection using\n");
-                text += QString("the SCPI command set. Based on the Qt6 application\n");
+                text += QString(
+                    "Waveform generators over a TCP connection using\n");
+                text += QString(
+                    "the SCPI command set. Based on the Qt6 application\n");
                 text += QString("development framework.\n\n");
-                text += QString("Build time: %1")
-                            .arg(BUILD_TIME);
+                text += QString("Build time: %1").arg(BUILD_TIME);
 
-                QMessageBox::about(this,
-                                   "About SDG Control",
-                                   text);
+                QMessageBox::about(this, "About SDG Control", text);
             });
 }
 
@@ -1089,8 +1089,10 @@ void MainWindow::setDuty(int channel, double value)
 void MainWindow::setRampSymmetry(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->rampSymmetry = value;
+    dirtyState->m_rampSymmetry = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1103,8 +1105,10 @@ void MainWindow::setRampSymmetry(int channel, double value)
 void MainWindow::setPulseWidth(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->pulseWidth = value;
+    dirtyState->m_pulseWidth = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1117,8 +1121,10 @@ void MainWindow::setPulseWidth(int channel, double value)
 void MainWindow::setPulseRise(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->pulseRise = value;
+    dirtyState->m_pulseRise = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1131,8 +1137,10 @@ void MainWindow::setPulseRise(int channel, double value)
 void MainWindow::setPulseFall(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->pulseFall = value;
+    dirtyState->m_pulseFall = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1145,8 +1153,10 @@ void MainWindow::setPulseFall(int channel, double value)
 void MainWindow::setNoiseBandset(int channel, bool enabled)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->noiseBandset = enabled;
+    dirtyState->m_noiseBandset = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1159,8 +1169,10 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
 void MainWindow::setNoiseStdev(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->noiseStdev = value;
+    dirtyState->m_noiseStdev = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1173,8 +1185,10 @@ void MainWindow::setNoiseStdev(int channel, double value)
 void MainWindow::setNoiseMean(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->noiseMean = value;
+    dirtyState->m_noiseMean = value;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1187,8 +1201,10 @@ void MainWindow::setNoiseMean(int channel, double value)
 void MainWindow::setNoiseBandwidth(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->noiseBandwidth = value;
+    dirtyState->m_noiseBandwidth = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1201,8 +1217,10 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
 void MainWindow::setDcOffset(int channel, double value)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->dcOffset = value;
+    dirtyState->m_dcOffset = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);

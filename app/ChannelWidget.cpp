@@ -300,6 +300,93 @@ public:
 
 const PulseDutyRepresentation pulseDutyRepresentation;
 
+// Start of NoiseStdev section
+class NoiseStdevRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"V",  "V",  1.0},
+            {"mV",  "V",  0.001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "V" };
+    }
+};
+
+const NoiseStdevRepresentation noiseStdevRepresentation;
+
+// Start of NoiseMean section
+class NoiseMeanRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"V",  "V",  1.0},
+            {"mV",  "V",  0.001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "V" };
+    }
+};
+
+const NoiseMeanRepresentation noiseMeanRepresentation;
+
+// Start of NoiseBandwidth section
+class NoiseBandwidthRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"Hz",  "Hz",  1.0},
+            {"kHz", "Hz", 1'000.0},
+            {"MHz", "Hz", 1'000'000.0},
+            {"mHz", "Hz", 0.001},
+            {"uHz", "Hz", 0.000'001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Hz" };
+    }
+};
+
+const NoiseBandwidthRepresentation noiseBandwidthRepresentation;
+
+// Start of DcOffset section
+class DcOffsetRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"Vdc",  "Vdc",  1.0},
+            {"mVdc",  "Vdc",  0.001}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "Vdc" };
+    }
+};
+
+const DcOffsetRepresentation dcOffsetRepresentation;
+
 }       // <<< end of anonymous namespace
 
 
@@ -523,41 +610,38 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_pulseDutyEdit->setToolTip(
                   "Duty cycle: time_up/(time_up+time_down) as percentage");
 
-    m_noiseStdevSpin = new QDoubleSpinBox(m_groupBox);
-    m_noiseStdevSpin->setObjectName("noiseStdevSpin");
-    m_noiseStdevSpin->setRange(0.002, 10.0);
-    m_noiseStdevSpin->setDecimals(3);
-    m_noiseStdevSpin->setSingleStep(0.001);
-    m_noiseStdevSpin->setSuffix(" V");
-    m_noiseStdevSpin->setKeyboardTracking(false);
+    m_noiseStdevEdit = new QuantityEdit(m_controller, noiseStdevRepresentation,
+                                        m_groupBox);
+    m_noiseStdevEdit->setObjectName("noiseStdevEdit");
+    m_noiseStdevEdit->setCanonicalRange(0.002, 10.0);
+    m_noiseStdevEdit->setDecimals(3);
+    m_noiseStdevEdit->setSingleStep(0.001);
 
-    m_noiseMeanSpin = new QDoubleSpinBox(m_groupBox);
-    m_noiseMeanSpin->setObjectName("noiseMeanSpin");
-    m_noiseMeanSpin->setRange(-10.0, 10.0);
-    m_noiseMeanSpin->setDecimals(3);
-    m_noiseMeanSpin->setSingleStep(0.001);
-    m_noiseMeanSpin->setSuffix(" V");
-    m_noiseMeanSpin->setKeyboardTracking(false);
+    m_noiseMeanEdit = new QuantityEdit(m_controller, noiseMeanRepresentation,
+                                       m_groupBox);
+    m_noiseMeanEdit->setObjectName("noiseMeanEdit");
+    m_noiseMeanEdit->setCanonicalRange(-10.0, 10.0);
+    m_noiseMeanEdit->setDecimals(3);
+    m_noiseMeanEdit->setSingleStep(0.001);
 
-    m_noiseBandwidthSpin = new QDoubleSpinBox(m_groupBox);
-    m_noiseBandwidthSpin->setObjectName("noiseBandwidthSpin");
-    m_noiseBandwidthSpin->setRange(0.001, 120'000'000.0);
-    m_noiseBandwidthSpin->setDecimals(3);
-    m_noiseBandwidthSpin->setSingleStep(1.0);
-    m_noiseBandwidthSpin->setSuffix(" Hz");
-    m_noiseBandwidthSpin->setKeyboardTracking(false);
+    m_noiseBandwidthEdit = new QuantityEdit(m_controller,
+                                            noiseBandwidthRepresentation,
+                                            m_groupBox);
+    m_noiseBandwidthEdit->setObjectName("noiseBandwidthEdit");
+    m_noiseBandwidthEdit->setCanonicalRange(0.000'001, 120'000'000.0);
+    m_noiseBandwidthEdit->setDecimals(3);
+    m_noiseBandwidthEdit->setSingleStep(1.0);
 
     m_noiseBandsetCheck = new QCheckBox(m_groupBox);
     m_noiseBandsetCheck->setObjectName("noiseBandsetCheck");
     m_noiseBandsetCheck->setText("On");
 
-    m_dcOffsetSpin = new QDoubleSpinBox(m_groupBox);
-    m_dcOffsetSpin->setObjectName("dcOffsetSpin");
-    m_dcOffsetSpin->setRange(-10.000'0, 10.000'0);
-    m_dcOffsetSpin->setDecimals(4);
-    m_dcOffsetSpin->setSingleStep(1.0);
-    m_dcOffsetSpin->setSuffix(" V");
-    m_dcOffsetSpin->setKeyboardTracking(false);
+    m_dcOffsetEdit = new QuantityEdit(m_controller, dcOffsetRepresentation,
+                                      m_groupBox);
+    m_dcOffsetEdit->setObjectName("dcOffsetEdit");
+    m_dcOffsetEdit->setCanonicalRange(-10.000'0, 10.000'0);
+    m_dcOffsetEdit->setDecimals(4);
+    m_dcOffsetEdit->setSingleStep(1.0);
 
     m_dcPrecisionHighCheck = new QCheckBox(m_groupBox);
     m_dcPrecisionHighCheck->setObjectName("dcPrecisionHighCheck");
@@ -599,10 +683,10 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_formLayout->addRow(m_pulseFallLabel, m_pulseFallEdit);
     m_formLayout->addRow(m_pulseDutyLabel, m_pulseDutyEdit);
     m_formLayout->addRow(m_noiseBandsetLabel, m_noiseBandsetCheck);
-    m_formLayout->addRow(m_noiseStdevLabel, m_noiseStdevSpin);
-    m_formLayout->addRow(m_noiseMeanLabel, m_noiseMeanSpin);
-    m_formLayout->addRow(m_noiseBandwidthLabel, m_noiseBandwidthSpin);
-    m_formLayout->addRow(m_dcOffsetLabel, m_dcOffsetSpin);
+    m_formLayout->addRow(m_noiseStdevLabel, m_noiseStdevEdit);
+    m_formLayout->addRow(m_noiseMeanLabel, m_noiseMeanEdit);
+    m_formLayout->addRow(m_noiseBandwidthLabel, m_noiseBandwidthEdit);
+    m_formLayout->addRow(m_dcOffsetLabel, m_dcOffsetEdit);
     m_formLayout->addRow(m_dcPrecisionHighLabel, m_dcPrecisionHighCheck);
 
     m_formLayout->addRow(m_outputCheck);
@@ -810,36 +894,52 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit noiseBandsetChanged(m_channel, enabled);
             });
 
-    connect(m_noiseStdevSpin,
-            &QDoubleSpinBox::valueChanged,
+    connect(m_noiseStdevEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit noiseStdevChanged(m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_noiseStdevEdit->debugString();
+
+                emit noiseStdevChanged(this->m_channel, final.value);
             });
 
-    connect(m_noiseMeanSpin,
-            &QDoubleSpinBox::valueChanged,
+    connect(m_noiseMeanEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit noiseMeanChanged(m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_noiseMeanEdit->debugString();
+
+                emit noiseMeanChanged(this->m_channel, final.value);
             });
 
-    connect(m_noiseBandwidthSpin,
-            &QDoubleSpinBox::valueChanged,
+    connect(m_noiseBandwidthEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit noiseBandwidthChanged(m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_noiseBandwidthEdit->debugString();
+
+                emit noiseBandwidthChanged(this->m_channel, final.value);
             });
 
-    connect(m_dcOffsetSpin,
-            &QDoubleSpinBox::valueChanged,
+    connect(m_dcOffsetEdit,
+            &QuantityEdit::committed,
             this,
-            [this](double value)
+            [this](const QuantityEdit::Value &original,
+                   const QuantityEdit::Value &final)
             {
-                emit dcOffsetChanged(m_channel, value);
+                Q_UNUSED(original);
+                sdgDebug() << m_dcOffsetEdit->debugString();
+
+                emit dcOffsetChanged(this->m_channel, final.value);
             });
 
     connect(m_dcPrecisionHighCheck,
@@ -991,39 +1091,29 @@ void ChannelWidget::updatePulseDuty()
 
 void ChannelWidget::setUiNoiseBandset(bool enabled)
 {
-    m_noiseBandsetCheck->blockSignals(true);
     m_noiseBandsetCheck->setChecked(enabled);
-    m_noiseBandsetCheck->blockSignals(false);
 
     updateControlVisibility();
 }
 
 void ChannelWidget::setUiNoiseStdev(double value)
 {
-    m_noiseStdevSpin->blockSignals(true);
-    m_noiseStdevSpin->setValue(value);
-    m_noiseStdevSpin->blockSignals(false);
+    m_noiseStdevEdit->setValue(value, "V", false);
 }
 
 void ChannelWidget::setUiNoiseMean(double value)
 {
-    m_noiseMeanSpin->blockSignals(true);
-    m_noiseMeanSpin->setValue(value);
-    m_noiseMeanSpin->blockSignals(false);
+    m_noiseMeanEdit->setValue(value, "V", false);
 }
 
 void ChannelWidget::setUiNoiseBandwidth(double value)
 {
-    m_noiseBandwidthSpin->blockSignals(true);
-    m_noiseBandwidthSpin->setValue(value);
-    m_noiseBandwidthSpin->blockSignals(false);
+    m_noiseBandwidthEdit->setValue(value, "Hz", false);
 }
 
 void ChannelWidget::setUiDcOffset(double value)
 {
-    m_dcOffsetSpin->blockSignals(true);
-    m_dcOffsetSpin->setValue(value);
-    m_dcOffsetSpin->blockSignals(false);
+    m_dcOffsetEdit->setValue(value, "Vdc", false);
 }
 
 void ChannelWidget::setUiDcPrecisionHigh(bool enabled)
@@ -1097,16 +1187,16 @@ void ChannelWidget::updateControlVisibility()
     m_noiseBandsetCheck->setVisible(showNoise);
 
     m_noiseStdevLabel->setVisible(showNoise);
-    m_noiseStdevSpin->setVisible(showNoise);
+    m_noiseStdevEdit->setVisible(showNoise);
 
     m_noiseMeanLabel->setVisible(showNoise);
-    m_noiseMeanSpin->setVisible(showNoise);
+    m_noiseMeanEdit->setVisible(showNoise);
 
     m_noiseBandwidthLabel->setVisible(showNoiseBandwidth);
-    m_noiseBandwidthSpin->setVisible(showNoiseBandwidth);
+    m_noiseBandwidthEdit->setVisible(showNoiseBandwidth);
 
     m_dcOffsetLabel->setVisible(showDC);
-    m_dcOffsetSpin->setVisible(showDC);
+    m_dcOffsetEdit->setVisible(showDC);
 
     m_dcPrecisionHighLabel->setVisible(showDC);
     m_dcPrecisionHighCheck->setVisible(showDC);
@@ -1126,6 +1216,15 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_offsetEdit);
     visitor(m_phaseEdit);
     visitor(m_dutyEdit);
+    visitor(m_rampSymmetryEdit);
+    visitor(m_pulseWidthEdit);
+    visitor(m_pulseRiseEdit);
+    visitor(m_pulseFallEdit);
+    visitor(m_pulseDutyEdit);
+    visitor(m_noiseStdevEdit);
+    visitor(m_noiseMeanEdit);
+    visitor(m_noiseBandwidthEdit);
+    visitor(m_dcOffsetEdit);
 }
 
 void ChannelWidget::clearAllDirty()
