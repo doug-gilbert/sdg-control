@@ -1188,7 +1188,7 @@ void MainWindow::setNoiseMean(int channel, double value)
     auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->noiseMean = value;
-    dirtyState->m_noiseMean = value;
+    dirtyState->m_noiseMean = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1233,8 +1233,10 @@ void MainWindow::setDcOffset(int channel, double value)
 void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->dcPrecisionHigh = enabled;
+    dirtyState->m_dcPrecisionHigh = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
@@ -1247,8 +1249,10 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
 void MainWindow::setOutput(int channel, bool enabled)
 {
     auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
 
     pendingState->output.enabled = enabled;
+    dirtyState->m_output = true;
     if (m_immediateMode)
     {
         m_generator->applyChannelState(channel, *pendingState);
