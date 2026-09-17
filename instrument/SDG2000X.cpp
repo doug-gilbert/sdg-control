@@ -495,59 +495,83 @@ bool SDG2000X::waitForOperationComplete(int timeout_ms)
     return scpi.waitForOperationComplete(timeout_ms);
 }
 
-bool SDG2000X::applyChannelState(int channel, const ChannelState& state)
+bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
+                                 const ChannelDirtyState& dirty)
 {
     bool ok = true;
 
-    ok &= setSdgWaveform(channel, state.waveform);
+    if (dirty.m_waveform)
+        ok &= setSdgWaveform(channel, state.waveform);
 
     if (state.waveform == "RAMP")
     {
-        ok &= setSdgFrequency(channel, state.frequency);
-        ok &= setSdgAmplitude(channel, state.amplitude);
-        ok &= setSdgOffset(channel, state.offset);
-        ok &= setSdgPhase(channel, state.phase);
-        ok &= setSdgRampSymmetry(channel, state.rampSymmetry);
+        if (dirty.m_frequency)
+            ok &= setSdgFrequency(channel, state.frequency);
+        if (dirty.m_amplitude)
+            ok &= setSdgAmplitude(channel, state.amplitude);
+        if (dirty.m_offset)
+            ok &= setSdgOffset(channel, state.offset);
+        if (dirty.m_phase)
+            ok &= setSdgPhase(channel, state.phase);
+        if (dirty.m_rampSymmetry)
+            ok &= setSdgRampSymmetry(channel, state.rampSymmetry);
     }
     else if (state.waveform == "PULSE")
     {
-        ok &= setSdgFrequency(channel, state.frequency);
-        ok &= setSdgAmplitude(channel, state.amplitude);
-        ok &= setSdgOffset(channel, state.offset);
-        ok &= setSdgPhase(channel, state.phase);
+        if (dirty.m_frequency)
+            ok &= setSdgFrequency(channel, state.frequency);
+        if (dirty.m_amplitude)
+            ok &= setSdgAmplitude(channel, state.amplitude);
+        if (dirty.m_offset)
+            ok &= setSdgOffset(channel, state.offset);
+        if (dirty.m_phase)
+            ok &= setSdgPhase(channel, state.phase);
 
-        ok &= setSdgPulseWidth(channel, state.pulseWidth);
-        ok &= setSdgPulseRise(channel, state.pulseRise);
-        ok &= setSdgPulseFall(channel, state.pulseFall);
+        if (dirty.m_pulseWidth)
+            ok &= setSdgPulseWidth(channel, state.pulseWidth);
+        if (dirty.m_pulseRise)
+            ok &= setSdgPulseRise(channel, state.pulseRise);
+        if (dirty.m_pulseFall)
+            ok &= setSdgPulseFall(channel, state.pulseFall);
     }
     else if (state.waveform == "NOISE")
     {
-        ok &= setSdgNoiseBandset(channel, state.noiseBandset);
-        ok &= setSdgNoiseStdev(channel, state.noiseStdev);
-        ok &= setSdgNoiseMean(channel, state.noiseMean);
+        if (dirty.m_noiseBandset)
+            ok &= setSdgNoiseBandset(channel, state.noiseBandset);
+        if (dirty.m_noiseStdev)
+            ok &= setSdgNoiseStdev(channel, state.noiseStdev);
+        if (dirty.m_noiseMean)
+            ok &= setSdgNoiseMean(channel, state.noiseMean);
 
-        if (state.noiseBandset)
+        if (state.noiseBandwidth)
             ok &= setSdgNoiseBandwidth(channel, state.noiseBandwidth);
     }
     else if (state.waveform == "DC")
     {
-        ok &= setSdgDcOffset(channel, state.dcOffset);
-        ok &= setSdgDcPrecisionHigh(channel, state.dcPrecisionHigh);
+        if (dirty.m_dcOffset)
+            ok &= setSdgDcOffset(channel, state.dcOffset);
+        if (dirty.m_dcPrecisionHigh)
+            ok &= setSdgDcPrecisionHigh(channel, state.dcPrecisionHigh);
     }
     else
     {
         // SINE, SQUARE, ARB, etc.
-        ok &= setSdgFrequency(channel, state.frequency);
-        ok &= setSdgAmplitude(channel, state.amplitude);
-        ok &= setSdgOffset(channel, state.offset);
-        ok &= setSdgPhase(channel, state.phase);
-        if (state.waveform == "SQUARE")
+        if (dirty.m_frequency)
+            ok &= setSdgFrequency(channel, state.frequency);
+        if (dirty.m_amplitude)
+            ok &= setSdgAmplitude(channel, state.amplitude);
+        if (dirty.m_offset)
+            ok &= setSdgOffset(channel, state.offset);
+        if (dirty.m_phase)
+            ok &= setSdgPhase(channel, state.phase);
+        if (dirty.m_duty && state.waveform == "SQUARE")
             ok &= setSdgDuty(channel, state.duty);
     }
 
     // Wait up to 5 seconds, could be connection lost
     ok &= waitForOperationComplete(5000);
-    ok &= setSdgOutput(channel, state.output.enabled);
+    if (dirty.m_output)
+        ok &= setSdgOutput(channel, state.output.enabled);
 
     return ok;
 }

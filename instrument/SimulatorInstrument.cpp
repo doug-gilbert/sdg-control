@@ -63,8 +63,11 @@ ChannelState SimulatorInstrument::getChannelState(int channel)
 
 bool SimulatorInstrument::applyChannelState(
     int channel,
-    const ChannelState &state)
+    const ChannelState &state,
+    const ChannelDirtyState& dirty)
 {
+    Q_UNUSED(dirty);
+
     if (!connected || channel < 1 || channel > 2)
         return false;
 

@@ -37,7 +37,8 @@ public:
     ChannelState getChannelState(int channel) override;
 
     bool applyChannelState(int channel,
-                           const ChannelState& state) override;
+                           const ChannelState& state,
+                           const ChannelDirtyState& dirty) override;
 
     // Siglent front-panel screen capture and virtual CH1/CH2 button press
     QByteArray getFrontPanelImage() override;

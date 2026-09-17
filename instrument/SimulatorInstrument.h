@@ -25,7 +25,8 @@ public:
     ChannelState getChannelState(int channel) override;
 
     bool applyChannelState(int channel,
-                           const ChannelState &state) override;
+                           const ChannelState &state,
+                           const ChannelDirtyState& dirty) override;
 
 private:
     std::array<ChannelState, 2> channelState;

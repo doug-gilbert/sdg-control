@@ -847,11 +847,13 @@ void MainWindow::sendClicked()
     for (int channel = 1; channel <= 2; channel++)
     {
         const auto state = pendingChannelState(channel);
+        const auto dirtyState = pendingChannelDirtyState(channel);
         ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
 sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n"
            << pendingChannelDirtyState(channel)->debugStr();
-        bool local_ok = m_generator->applyChannelState(channel, *state);
+        bool local_ok = m_generator->applyChannelState(channel, *state,
+                                                       *dirtyState);
         if (local_ok)
             widget->clearAllDirty();
         ok &= local_ok;
@@ -922,7 +924,7 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
     if (m_immediateMode)
     {
         // applyChannelState() needs to pass dirtyState as well
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);        // temporary hack, need to revisit
     }
     else
@@ -938,7 +940,7 @@ void MainWindow::setFrequency(int channel, double value)
     dirtyState->m_frequency = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1007,7 +1009,7 @@ void MainWindow::setAmplitude(int channel, double value,
     dirtyState->m_amplitude = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
         if (widget) {
@@ -1047,7 +1049,7 @@ void MainWindow::setOffset(int channel, double value,
     dirtyState->m_offset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1063,7 +1065,7 @@ void MainWindow::setPhase(int channel, double value)
     dirtyState->m_phase = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1079,7 +1081,7 @@ void MainWindow::setDuty(int channel, double value)
     dirtyState->m_duty = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1095,7 +1097,7 @@ void MainWindow::setRampSymmetry(int channel, double value)
     dirtyState->m_rampSymmetry = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1111,7 +1113,7 @@ void MainWindow::setPulseWidth(int channel, double value)
     dirtyState->m_pulseWidth = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1127,7 +1129,7 @@ void MainWindow::setPulseRise(int channel, double value)
     dirtyState->m_pulseRise = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1143,7 +1145,7 @@ void MainWindow::setPulseFall(int channel, double value)
     dirtyState->m_pulseFall = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1159,7 +1161,7 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
     dirtyState->m_noiseBandset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1175,7 +1177,7 @@ void MainWindow::setNoiseStdev(int channel, double value)
     dirtyState->m_noiseStdev = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1191,7 +1193,7 @@ void MainWindow::setNoiseMean(int channel, double value)
     dirtyState->m_noiseMean = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1207,7 +1209,7 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
     dirtyState->m_noiseBandwidth = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1223,7 +1225,7 @@ void MainWindow::setDcOffset(int channel, double value)
     dirtyState->m_dcOffset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1239,7 +1241,7 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
     dirtyState->m_dcPrecisionHigh = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
@@ -1255,7 +1257,7 @@ void MainWindow::setOutput(int channel, bool enabled)
     dirtyState->m_output = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState);
+        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
         clearDirty(channel);
     }
     else
