@@ -1246,18 +1246,19 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_dcOffsetEdit);
 }
 
-#if 0
-void ChannelWidget::clearAllDirty()
+void ChannelWidget::selectAllIfDirty(bool enabled)
 {
     sdgDebug() << Q_FUNC_INFO;
 
     visitAllQuantityEdits(
-        [](QuantityEdit *edit)
+        [enabled](QuantityEdit *edit)
         {
-            edit->clearDirty();
+	    if (enabled)
+                edit->selectIfDirty();
+	    else
+                edit->deselectIfDirty();
         });
 }
-#endif
 
 void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
 {

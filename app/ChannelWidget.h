@@ -68,9 +68,12 @@ public:
     void visitAllQuantityEdits(
         const std::function<void(QuantityEdit *)> &visitor);
 
-#if 0
-    void clearAllDirty();
-#endif
+    // If enabled is true, the numeric contents of every field are selected
+    // (highlighted) if the corresponding dirty flag is set. If enabled is
+    // false, and if the corresponding dirty flag is set, then the numeric
+    // contents of each field are deselected (i.e. any highlighted characters
+    // are returned to their normal state). [Uses visitAllQuantityEdits().]
+    void selectAllIfDirty(bool enabled);
 
     void contextMenuEvent(QContextMenuEvent *event) override;
 
@@ -162,29 +165,5 @@ private:
     QCheckBox *m_dcPrecisionHighCheck;
     QCheckBox *m_outputCheck;
 
-    friend class MainWindow;    // allow access to each field's dirty flag
-
-    // Accessors for fields based on QuantityEdit.
-    // MainWindow is the only intended caller.
-    QuantityEdit *frequencyEdit() const { return m_frequencyEdit; }
-    QuantityEdit *periodEdit() const { return m_periodEdit; }
-    QuantityEdit *amplitudeEdit() const { return m_amplitudeEdit; }
-    QuantityEdit *offsetEdit() const { return m_offsetEdit; }
-    QuantityEdit *phaseEdit() const { return m_phaseEdit; }
-    QuantityEdit *dutyEdit() const { return m_dutyEdit; }
-    QuantityEdit *rampSymmetryEdit() const { return m_rampSymmetryEdit; }
-    QuantityEdit *pulseWidthEdit() const { return m_pulseWidthEdit; }
-    QuantityEdit *pulseRiseEdit() const { return m_pulseRiseEdit; }
-    QuantityEdit *pulseFallEdit() const { return m_pulseFallEdit; }
-    QuantityEdit *pulseDutyEdit() const { return m_pulseDutyEdit; }
-    QuantityEdit *noiseStdevEdit() const { return m_noiseStdevEdit; }
-    QuantityEdit *noiseMeanEdit() const { return m_noiseMeanEdit; }
-    QuantityEdit *noiseBandwidthEdit() const { return m_noiseBandwidthEdit; }
-    QuantityEdit *dcOffsetEdit() const { return m_dcOffsetEdit; }
-
-    // Fields that are _not_ QuantityEdit based, mainly CheckBox_s
-    QuantityEdit *waveformEdit() const { return nullptr; }
-    QuantityEdit *noiseBandsetEdit() const { return nullptr; }
-    QuantityEdit *dcPrecisionHighEdit() const { return nullptr; }
-    QuantityEdit *outputEdit() const { return nullptr; }
+    // friend class MainWindow;    // allow access to each field's dirty flag
 };

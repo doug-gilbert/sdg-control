@@ -17,6 +17,7 @@ class QCloseEvent;
 class QCheckBox;
 class QComboBox;
 class QAction;
+class QPoint;
 
 class ChannelWidget;
 class AppController;
@@ -92,6 +93,7 @@ private:
     void updateFrontPanelAction();
 
     void setInstrument(InstrumentType type);
+
     void setSendEnabled(bool value);
     bool isSendEnabled() const;
 
@@ -122,6 +124,10 @@ private:
     void createMenuBar();
 
     QString displayIdentification(const QString &idn) const;
+
+    bool eventFilter(QObject *watched, QEvent *event);
+
+    void showSendContextMenu(const QPoint &globalPos);
 
     // Access functions for components of m_pendingState. As long as an
     // instance of this class exists, the returned pointer will be valid.

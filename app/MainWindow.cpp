@@ -22,6 +22,8 @@
 #include <QFrame>
 #include <QStatusBar>
 #include <QToolTip>
+#include <QContextMenuEvent>
+#include <QMenu>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -136,6 +138,8 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     connectionLayout->addWidget(m_disconnectButton);
 
     layout->addLayout(connectionLayout);
+
+    m_sendButton->installEventFilter(this);
 
     m_connectionStateEdit = new QLineEdit(central);
     m_connectionStateEdit->setReadOnly(true);
@@ -1399,4 +1403,53 @@ void MainWindow::updateFrontPanelAction()
 
     if (m_frontPanelWindow)
         m_frontPanelWindow->setInstrumentConnected(connected);
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched != m_sendButton)
+    {
+        return QWidget::eventFilter(watched, event);
+    }
+    if (watched == m_sendButton && event->type() == QEvent::ContextMenu)
+    {
+        auto *contextEvent = static_cast<QContextMenuEvent *>(event);
+
+        showSendContextMenu(contextEvent->globalPos());
+
+        return true;
+    }
+
+    return QWidget::eventFilter(watched, event);
+}
+
+void MainWindow::showSendContextMenu(const QPoint &globalPos)
+{
+    QMenu menu(this);
+
+    auto *hiAction = menu.addAction("Highlight changed fields");
+    auto *offAction = menu.addAction("Remove highlight from fields");
+
+    connect(hiAction,
+            &QAction::triggered,
+            this,
+            [this]
+            {
+                m_ch1Widget->selectAllIfDirty(true);
+                m_ch2Widget->selectAllIfDirty(true);
+            });
+
+    connect(offAction,
+            &QAction::triggered,
+            this,
+            [this]
+            {
+                m_ch1Widget->selectAllIfDirty(false);
+                m_ch2Widget->selectAllIfDirty(false);
+            });
+
+    if (menu.isEmpty())
+        return;
+
+    menu.exec(globalPos);
 }
