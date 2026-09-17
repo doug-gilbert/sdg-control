@@ -52,7 +52,7 @@ private:
     bool m_debugFocus = false;
 
     bool m_immediateMode = true;
-    bool m_settingsDirty = false;
+    bool m_sendEnabled = false;    // is Send button enabled in Send mode
 
     FrontPanelWindow *m_frontPanelWindow = nullptr;
     QAction *m_frontPanelAction = nullptr;
@@ -92,8 +92,8 @@ private:
     void updateFrontPanelAction();
 
     void setInstrument(InstrumentType type);
-    void setSettingsDirty(bool value);
-    bool areSettingsDirty() const;
+    void setSendEnabled(bool value);
+    bool isSendEnabled() const;
 
     void updateWidgetsFromState();
     void updateChannelWidget(int channel, const ChannelState &state);
@@ -118,8 +118,6 @@ private:
     void setDcPrecisionHigh(int channel, bool enabled);
 
     void setOutput(int channel, bool enabled);
-
-    void clearDirty(int channel);  // temporary, need per QuantityEdit call
 
     void createMenuBar();
 

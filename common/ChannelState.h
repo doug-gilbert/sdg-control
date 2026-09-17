@@ -159,7 +159,7 @@ inline QDebug operator<<(QDebug debug, const OutputState &output)
 
 struct ChannelDirtyState
 {
-// Generate fields, the first one should be: 'bool m_waveform = fale;'
+// Generate fields, the first one should be: 'bool m_waveform = false;'
 #define DECLARE_FIELD(name) bool m_##name = false;
     CHANNEL_DIRTY_FIELDS(DECLARE_FIELD)
 #undef DECLARE_FIELD
@@ -171,7 +171,7 @@ struct ChannelDirtyState
     };
 
 // Make a C array of Field_s the first of which is:
-//      { waveform, &ChannelDirtyState::, waveform},
+//      { "waveform", &ChannelDirtyState::m_waveform },
 #define MAKE_FIELD(name) { #name, &ChannelDirtyState::m_##name },
 
     inline static constexpr Field fields[] = {

@@ -71,6 +71,7 @@ public:
 
     explicit QuantityEdit(AppController *controller,
                           const QuantityRepresentation &representation,
+                          const bool &dirtyFlag,
                           QWidget *parent = nullptr);
 
     Value originalValue() const { return m_originalValue; }
@@ -81,10 +82,9 @@ public:
 
     bool isEditing() const { return m_editing; }
 
-    void setValue(double value, const QString &representation,
-                  bool make_dirty = true);
+    void setValue(double value, const QString &representation);
 
-    void setCanonicalValue(double value, bool make_dirty = false);
+    void setCanonicalValue(double value);
 
     void setRepresentation(const QString &representation);
 
@@ -92,12 +92,17 @@ public:
 
     double canonicalValue() const;
 
-    bool isDirty() const { return m_dirty; }
-    void clearDirty() { m_dirty = false; }
+    // This is accessing PendingChannelState owned by MainWindow and is not
+    // necessarily 1 to 1. For example the Frequency and Period fields share
+    // the same dirty/modified flag.
+    bool isModified() const { return m_dirtyFlag; }
 
-    // Select the value field if dirty. If clearAnyway is true,
-    // remove any selection regardless of dirty state.
-    void showIfDirty(bool clearAnyway = false);
+    // Select (highlight) the numeric field if m_dirtyFlag is true.
+    // "Deselecting" is removing the highlight.
+    void selectIfDirty() const;
+    void selectAll() const;
+    void deselectIfDirty() const;
+    void deselect() const;
 
     // These setters and getters are forwarded to the spinBox (input field)
     void setSingleStep(double step);
@@ -176,5 +181,7 @@ private:
     // set when user has started editing this field, awaiting commit()
     bool m_editing = false;
 
-    bool m_dirty = false;
+    // Owned by MainWindow via PendingChannelState.
+    // QuantityEdit does not modify this flag.
+    const bool &m_dirtyFlag;
 };

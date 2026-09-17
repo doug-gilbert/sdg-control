@@ -150,8 +150,10 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                                      Qt::TextSelectableByKeyboard);
 #endif
 
-    m_ch1Widget = new ChannelWidget(m_controller, 1, central);
-    m_ch2Widget = new ChannelWidget(m_controller, 2, central);
+    m_ch1Widget = new ChannelWidget(m_controller, 1,
+                                    pendingChannelDirtyState(1), central);
+    m_ch2Widget = new ChannelWidget(m_controller, 2,
+                                    pendingChannelDirtyState(2), central);
 
     m_refreshButton = new QPushButton("Refresh", central);
     m_refreshButton->setObjectName("refreshButton");
@@ -218,13 +220,12 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                 {
                     m_sendButton->hide();
                     sdgDebug() << "enter Immediate mode";
-                    setSettingsDirty(false);     // legacy global flag
                 }
                 else
                 {
                     m_sendButton->show();
                     sdgDebug() << "enter Send mode";
-                    m_sendButton->setEnabled(m_settingsDirty);
+                    m_sendButton->setEnabled(m_sendEnabled);
                 }
             });
 
@@ -618,7 +619,7 @@ void MainWindow::setInstrument(InstrumentType type)
     m_ch2Widget->setControlsEnabled(false);
 
     m_pendingState = {};
-    setSettingsDirty(false);     // legacy global flag
+    setSendEnabled(false);
 
     m_connectionStateEdit->setText("Not connected");
 }
@@ -740,7 +741,7 @@ void MainWindow::refreshClicked()
         return;
     }
 
-    const bool wasDirty = areSettingsDirty();
+    const bool wasDirty = isSendEnabled();
 
     m_connectionStateEdit->setText(
                displayIdentification(m_generator->identification()));
@@ -778,7 +779,7 @@ void MainWindow::refreshClicked()
     {
         sdgDebug() << Q_FUNC_INFO << ">>> Refresh overwrote user data";
     }
-    setSettingsDirty(false);     // legacy global flag
+    setSendEnabled(false);
 }
 
 // Connect replaces the existing pending settings with the state read from
@@ -848,23 +849,17 @@ void MainWindow::sendClicked()
     {
         const auto state = pendingChannelState(channel);
         const auto dirtyState = pendingChannelDirtyState(channel);
-        ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
-sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n"
-           << pendingChannelDirtyState(channel)->debugStr();
+sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n" << dirtyState->debugStr();
         bool local_ok = m_generator->applyChannelState(channel, *state,
                                                        *dirtyState);
         if (local_ok)
-            widget->clearAllDirty();
+            dirtyState->clearAll();
+        else
+            sdgDebug() << Q_FUNC_INFO << "Chan=" << channel
+                       << "setting of at least one field failed";
         ok &= local_ok;
     }
-
-    if (ok)
-        setSettingsDirty(false);        // global dirty flag, to be replaced
-    else
-        sdgDebug() << Q_FUNC_INFO
-                   << "setting of at least one field failed";
-    // sdgDebug() << "focusWidget:" << focusWidget();
 }
 
 void MainWindow::connectionLost()
@@ -904,16 +899,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     sdgDebug() << Q_FUNC_INFO << "finishing";
 }
 
-// This is a temporary solution. Want to move to something like
-//    void clearDirty(int channel, String objectName) where objectName
-// belongs to a sub-class of QuantityEdit.
-void MainWindow::clearDirty(int channel)
-{
-    ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
-
-    widget->clearAllDirty();
-}
-
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
     auto pendingState = pendingChannelState(channel);
@@ -923,12 +908,12 @@ void MainWindow::setWaveform(int channel, const QString & waveform)
     dirtyState->m_waveform = true;
     if (m_immediateMode)
     {
-        // applyChannelState() needs to pass dirtyState as well
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);        // temporary hack, need to revisit
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_waveform = false;
     }
     else
-        setSettingsDirty(true);     // global dirty flag, to be replaced
+        setSendEnabled(true);
 }
 
 void MainWindow::setFrequency(int channel, double value)
@@ -940,11 +925,12 @@ void MainWindow::setFrequency(int channel, double value)
     dirtyState->m_frequency = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_frequency = true;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 // Note that the Period field exists on the UI side (calling this method
@@ -1009,22 +995,12 @@ void MainWindow::setAmplitude(int channel, double value,
     dirtyState->m_amplitude = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
-
-        if (widget) {
-            QuantityEdit *qe = widget->amplitudeEdit();
-
-            if (qe) {
-                qe->clearDirty();
-                return;
-            }
-        }
-        // fall-through: clear all dirty flags in a channel
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_amplitude = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setOffset(int channel, double value,
@@ -1049,11 +1025,12 @@ void MainWindow::setOffset(int channel, double value,
     dirtyState->m_offset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_offset = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setPhase(int channel, double value)
@@ -1065,11 +1042,10 @@ void MainWindow::setPhase(int channel, double value)
     dirtyState->m_phase = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_phase = false;
     }
-    else
-        setSettingsDirty(true);
 }
 
 void MainWindow::setDuty(int channel, double value)
@@ -1081,11 +1057,12 @@ void MainWindow::setDuty(int channel, double value)
     dirtyState->m_duty = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_duty = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setRampSymmetry(int channel, double value)
@@ -1097,11 +1074,12 @@ void MainWindow::setRampSymmetry(int channel, double value)
     dirtyState->m_rampSymmetry = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_rampSymmetry = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setPulseWidth(int channel, double value)
@@ -1113,11 +1091,12 @@ void MainWindow::setPulseWidth(int channel, double value)
     dirtyState->m_pulseWidth = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                                    *dirtyState))
+            dirtyState->m_pulseWidth = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setPulseRise(int channel, double value)
@@ -1129,11 +1108,12 @@ void MainWindow::setPulseRise(int channel, double value)
     dirtyState->m_pulseRise = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_pulseRise = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setPulseFall(int channel, double value)
@@ -1145,11 +1125,12 @@ void MainWindow::setPulseFall(int channel, double value)
     dirtyState->m_pulseFall = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_pulseFall = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setNoiseBandset(int channel, bool enabled)
@@ -1161,11 +1142,12 @@ void MainWindow::setNoiseBandset(int channel, bool enabled)
     dirtyState->m_noiseBandset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_noiseBandset = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setNoiseStdev(int channel, double value)
@@ -1177,11 +1159,12 @@ void MainWindow::setNoiseStdev(int channel, double value)
     dirtyState->m_noiseStdev = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_noiseStdev = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setNoiseMean(int channel, double value)
@@ -1193,11 +1176,12 @@ void MainWindow::setNoiseMean(int channel, double value)
     dirtyState->m_noiseMean = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_noiseMean = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setNoiseBandwidth(int channel, double value)
@@ -1209,11 +1193,12 @@ void MainWindow::setNoiseBandwidth(int channel, double value)
     dirtyState->m_noiseBandwidth = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_noiseBandwidth = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setDcOffset(int channel, double value)
@@ -1225,11 +1210,12 @@ void MainWindow::setDcOffset(int channel, double value)
     dirtyState->m_dcOffset = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_dcOffset = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
@@ -1241,11 +1227,12 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
     dirtyState->m_dcPrecisionHigh = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_dcPrecisionHigh = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
 void MainWindow::setOutput(int channel, bool enabled)
@@ -1257,24 +1244,25 @@ void MainWindow::setOutput(int channel, bool enabled)
     dirtyState->m_output = true;
     if (m_immediateMode)
     {
-        m_generator->applyChannelState(channel, *pendingState, *dirtyState);
-        clearDirty(channel);
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_output = false;
     }
     else
-        setSettingsDirty(true);
+        setSendEnabled(true);
 }
 
-void MainWindow::setSettingsDirty(bool value)
+void MainWindow::setSendEnabled(bool value)
 {
-    m_settingsDirty = value;    // global dirty flag to be replaced
+    m_sendEnabled = value;
 
     if (!m_immediateMode)
-        m_sendButton->setEnabled(m_settingsDirty);
+        m_sendButton->setEnabled(m_sendEnabled);
 }
 
-bool MainWindow::areSettingsDirty() const
+bool MainWindow::isSendEnabled() const
 {
-    return m_settingsDirty;
+    return m_sendEnabled;
 }
 
 void MainWindow::loadSettings()
@@ -1308,7 +1296,7 @@ void MainWindow::loadSettings()
 
     updateWidgetsFromState();
 
-    setSettingsDirty(true);
+    setSendEnabled(true);
 }
 
 void MainWindow::saveSettings()

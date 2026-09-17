@@ -29,6 +29,7 @@ class QuantityEdit;
 class AppController;
 struct AmplitudeState;
 struct OutputState;
+struct ChannelDirtyState;
 
 
 class ChannelWidget : public QWidget
@@ -37,6 +38,7 @@ class ChannelWidget : public QWidget
 
 public:
     explicit ChannelWidget(AppController *controller, int channel,
+                           const ChannelDirtyState *dirtyState,
                            QWidget *parent = nullptr);
 
     void setUiStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
@@ -66,7 +68,9 @@ public:
     void visitAllQuantityEdits(
         const std::function<void(QuantityEdit *)> &visitor);
 
+#if 0
     void clearAllDirty();
+#endif
 
     void contextMenuEvent(QContextMenuEvent *event) override;
 
@@ -102,6 +106,8 @@ private:
     void debugLayout() const;
 
     int m_channel;
+
+    const ChannelDirtyState *m_dirtyState;
 
     QPushButton *m_closeButton = nullptr;
 

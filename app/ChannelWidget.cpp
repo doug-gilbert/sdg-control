@@ -416,10 +416,12 @@ protected:
 
 
 ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
+                             const ChannelDirtyState *dirtyState,
                              QWidget *parent)
     : QWidget(parent),
       m_controller(controller),
-      m_channel(my_channel)
+      m_channel(my_channel),
+      m_dirtyState(dirtyState)
 {
     auto *outerLayout = new QVBoxLayout(this);
 
@@ -499,8 +501,9 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     });
 
     m_frequencyEdit = new QuantityEdit(m_controller,
-                                frequencyQuantityRepresentation, m_groupBox);
-
+                                       frequencyQuantityRepresentation,
+                                       m_dirtyState->m_frequency,
+                                       m_groupBox);
     m_frequencyEdit->setObjectName("frequencyEdit");
     m_frequencyEdit->setToolTip(
         "Right click in the numeric field to modify\n"
@@ -512,10 +515,12 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_frequencyEdit->setDecimals(6);
     m_frequencyEdit->setSingleStep(0.000'01);
     m_frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
-    m_frequencyEdit->setValue(1'000.0, "Hz", false);
+    m_frequencyEdit->setValue(1'000.0, "Hz");
 
     m_periodEdit = new QuantityEdit(m_controller,
-                                    periodQuantityRepresentation, m_groupBox);
+                                    periodQuantityRepresentation,
+          /* not an error --> */    m_dirtyState->m_frequency,
+                                    m_groupBox);
     m_periodEdit->setObjectName("periodEdit");
     m_periodEdit->setToolTip(
         "Right click in the numeric field to modify\n"
@@ -528,23 +533,28 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_periodEdit->setDecimals(6);
     m_periodEdit->setSingleStep(0.000'000'001);
     m_periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
-    m_periodEdit->setValue(0.001, "s", false);
+    m_periodEdit->setValue(0.001, "s");
 
     m_amplitudeEdit = new QuantityEdit(m_controller,
                                        amplitudeQuantityRepresentation,
+                                       m_dirtyState->m_amplitude,
                                        m_groupBox);
     m_amplitudeEdit->setObjectName("amplitudeEdit");
     m_amplitudeEdit->setMinimumWidth(215);
     m_amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
                                    QSizePolicy::Fixed);
 
-    m_offsetEdit = new QuantityEdit(m_controller, offsetRepresentation,
+    m_offsetEdit = new QuantityEdit(m_controller,
+                                    offsetRepresentation,
+                                    m_dirtyState->m_offset,
                                     m_groupBox);
     m_offsetEdit->setObjectName("offsetEdit");
     m_offsetEdit->setMinimumWidth(215);
     m_offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    m_phaseEdit = new QuantityEdit(m_controller, phaseRepresentation,
+    m_phaseEdit = new QuantityEdit(m_controller,
+                                   phaseRepresentation,
+                                   m_dirtyState->m_phase,
                                    m_groupBox);
     m_phaseEdit->setObjectName("phaseEdit");
     // No comboBox so we can call setrange() directly
@@ -555,7 +565,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_phaseEdit->setToolTip("Phase angle in degrees, from -360 to 360");
 
     m_dutyEdit = new QuantityEdit(m_controller, dutyRepresentation,
-                                  m_groupBox);
+                                   m_dirtyState->m_duty, m_groupBox);
     m_dutyEdit->setObjectName("dutyEdit");
     // No comboBox so we can call setrange() directly
     m_dutyEdit->setRange(0.0, 100.0);
@@ -567,6 +577,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_rampSymmetryEdit = new QuantityEdit(m_controller,
                                           rampSymmetryRepresentation,
+                                          m_dirtyState->m_rampSymmetry,
                                           m_groupBox);
     m_rampSymmetryEdit->setObjectName("rampSymmetryEdit");
     // No comboBox so we can call setrange() directly
@@ -577,6 +588,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_pulseWidthEdit = new QuantityEdit(m_controller,
                                         pulseWidthRepresentation,
+                                        m_dirtyState->m_pulseWidth,
                                         m_groupBox);
     m_pulseWidthEdit->setObjectName("pulseWidthEdit");
     m_pulseWidthEdit->setCanonicalRange(0.000'000'001, 1.0);
@@ -585,6 +597,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_pulseRiseEdit = new QuantityEdit(m_controller,
                                        pulseRiseRepresentation,
+                                       m_dirtyState->m_pulseRise,
                                        m_groupBox);
     m_pulseRiseEdit->setObjectName("pulseRiseEdit");
     // m_pulseRiseEdit->setRange(0.001, 1'000'000.0);
@@ -593,6 +606,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_pulseFallEdit = new QuantityEdit(m_controller,
                                        pulseFallRepresentation,
+                                       m_dirtyState->m_pulseFall,
                                        m_groupBox);
     m_pulseFallEdit->setObjectName("pulseFallEdit");
     // m_pulseFallEdit->setRange(0.001, 1'000'000.0);
@@ -600,6 +614,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_pulseFallEdit->setSingleStep(0.1);
 
     m_pulseDutyEdit = new QuantityEdit(m_controller, pulseDutyRepresentation,
+          /* duty or pulseDuty ?? */   m_dirtyState->m_duty,
                                        m_groupBox);
     m_pulseDutyEdit->setObjectName("pulseDutyEdit");
     // No comboBox so we can call setrange() directly
@@ -611,6 +626,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                   "Duty cycle: time_up/(time_up+time_down) as percentage");
 
     m_noiseStdevEdit = new QuantityEdit(m_controller, noiseStdevRepresentation,
+                                        m_dirtyState->m_noiseStdev,
                                         m_groupBox);
     m_noiseStdevEdit->setObjectName("noiseStdevEdit");
     m_noiseStdevEdit->setCanonicalRange(0.002, 10.0);
@@ -618,6 +634,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_noiseStdevEdit->setSingleStep(0.001);
 
     m_noiseMeanEdit = new QuantityEdit(m_controller, noiseMeanRepresentation,
+                                       m_dirtyState->m_noiseMean,
                                        m_groupBox);
     m_noiseMeanEdit->setObjectName("noiseMeanEdit");
     m_noiseMeanEdit->setCanonicalRange(-10.0, 10.0);
@@ -626,6 +643,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     m_noiseBandwidthEdit = new QuantityEdit(m_controller,
                                             noiseBandwidthRepresentation,
+                                            m_dirtyState->m_noiseBandwidth,
                                             m_groupBox);
     m_noiseBandwidthEdit->setObjectName("noiseBandwidthEdit");
     m_noiseBandwidthEdit->setCanonicalRange(0.000'001, 120'000'000.0);
@@ -637,6 +655,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_noiseBandsetCheck->setText("On");
 
     m_dcOffsetEdit = new QuantityEdit(m_controller, dcOffsetRepresentation,
+                                      m_dirtyState->m_dcOffset,
                                       m_groupBox);
     m_dcOffsetEdit->setObjectName("dcOffsetEdit");
     m_dcOffsetEdit->setCanonicalRange(-10.000'0, 10.000'0);
@@ -715,7 +734,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 if (frequency > 0.0) {
                     const double period = 1.0 / frequency;
 
-                    m_periodEdit->setValue(period, "s", false);
+                    m_periodEdit->setValue(period, "s");
 
                     sdgDebug() << Q_FUNC_INFO
                                << "frequency=" << frequency << "Hz"
@@ -744,7 +763,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 if (period > 0.0) {
                     const double frequency = 1.0 / period;
 
-                    m_frequencyEdit->setValue(frequency, "Hz", false);
+                    m_frequencyEdit->setValue(frequency, "Hz");
 
                     sdgDebug() << Q_FUNC_INFO
                                << "period=" << period << "s"
@@ -988,7 +1007,7 @@ void ChannelWidget::setUiFrequency(double frequency)
     if (frequency > 0.0) {
         const double period = 1.0 / frequency;
 
-        m_periodEdit->setValue(period, "s", false);
+        m_periodEdit->setValue(period, "s");
         sdgDebug() << Q_FUNC_INFO
                    << "frequency=" << frequency << "Hz"
                    << "period=" << period << "s";
@@ -1010,21 +1029,21 @@ void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit)
         double volts = amplit.getVpp();
         if (is_mV(rep))
             volts *= 1000.0;
-        m_amplitudeEdit->setValue(volts, rep, false);
+        m_amplitudeEdit->setValue(volts, rep);
     }
     else if (rep == "Vrms" || rep == "mVrms")
     {
         double volts = amplit.getVrms();
         if (is_mV(rep))
             volts *= 1000.0;
-        m_amplitudeEdit->setValue(volts, rep, false);
+        m_amplitudeEdit->setValue(volts, rep);
     }
     else if (rep == "dBm")
-        m_amplitudeEdit->setValue(amplit.get_dBm(), rep, false);
+        m_amplitudeEdit->setValue(amplit.get_dBm(), rep);
     else if (rep.isEmpty())   // this case: Initial refresh after connect
     {
         sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
-        m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp", false);
+        m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp");
     }
     else
         sdgDebug() << objectName() << Q_FUNC_INFO
@@ -1033,40 +1052,40 @@ void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit)
 
 void ChannelWidget::setUiOffset(double offset)
 {
-    m_offsetEdit->setValue(offset, "Vdc", false);
+    m_offsetEdit->setValue(offset, "Vdc");
 }
 
 void ChannelWidget::setUiPhase(double value)
 {
-    m_phaseEdit->setValue(value, "°", false);
+    m_phaseEdit->setValue(value, "°");
 }
 
 void ChannelWidget::setUiDuty(double value)
 {
-    m_dutyEdit->setValue(value, "%", false);
+    m_dutyEdit->setValue(value, "%");
 }
 
 void ChannelWidget::setUiRampSymmetry(double percent)
 {
-    m_rampSymmetryEdit->setValue(percent, "%", false);
+    m_rampSymmetryEdit->setValue(percent, "%");
 }
 
 void ChannelWidget::setUiPulseWidth(double value)
 {
-    m_pulseWidthEdit->setValue(value, "s", false);
+    m_pulseWidthEdit->setValue(value, "s");
     updatePulseDuty();
 }
 
 void ChannelWidget::setUiPulseRise(double value)
 {
     // m_pulseRiseEdit->setValue(value * 1'000'000'000.0);
-    m_pulseRiseEdit->setValue(value, "s", false);
+    m_pulseRiseEdit->setValue(value, "s");
 }
 
 void ChannelWidget::setUiPulseFall(double value)
 {
     // m_pulseFallEdit->setValue(value * 1'000'000'000.0);
-    m_pulseFallEdit->setValue(value, "s", false);
+    m_pulseFallEdit->setValue(value, "s");
 }
 
 void ChannelWidget::updatePulseDuty()
@@ -1078,7 +1097,7 @@ void ChannelWidget::updatePulseDuty()
 
     if (frequency <= 0.0)
     {
-        m_pulseDutyEdit->setValue(0.0, "Hz", false);
+        m_pulseDutyEdit->setValue(0.0, "Hz");
         return;
     }
 
@@ -1086,7 +1105,7 @@ void ChannelWidget::updatePulseDuty()
         frequency * m_pulseWidthEdit->value().value * 100.0;
 
     // Do we need duty_orig to see if this was a change or not
-    m_pulseDutyEdit->setValue(duty, "%", false);
+    m_pulseDutyEdit->setValue(duty, "%");
 }
 
 void ChannelWidget::setUiNoiseBandset(bool enabled)
@@ -1098,22 +1117,22 @@ void ChannelWidget::setUiNoiseBandset(bool enabled)
 
 void ChannelWidget::setUiNoiseStdev(double value)
 {
-    m_noiseStdevEdit->setValue(value, "V", false);
+    m_noiseStdevEdit->setValue(value, "V");
 }
 
 void ChannelWidget::setUiNoiseMean(double value)
 {
-    m_noiseMeanEdit->setValue(value, "V", false);
+    m_noiseMeanEdit->setValue(value, "V");
 }
 
 void ChannelWidget::setUiNoiseBandwidth(double value)
 {
-    m_noiseBandwidthEdit->setValue(value, "Hz", false);
+    m_noiseBandwidthEdit->setValue(value, "Hz");
 }
 
 void ChannelWidget::setUiDcOffset(double value)
 {
-    m_dcOffsetEdit->setValue(value, "Vdc", false);
+    m_dcOffsetEdit->setValue(value, "Vdc");
 }
 
 void ChannelWidget::setUiDcPrecisionHigh(bool enabled)
@@ -1227,6 +1246,7 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_dcOffsetEdit);
 }
 
+#if 0
 void ChannelWidget::clearAllDirty()
 {
     sdgDebug() << Q_FUNC_INFO;
@@ -1237,6 +1257,7 @@ void ChannelWidget::clearAllDirty()
             edit->clearDirty();
         });
 }
+#endif
 
 void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
 {
@@ -1255,7 +1276,7 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
         visitAllQuantityEdits(
             [](QuantityEdit *edit)
             {
-                edit->showIfDirty();
+                edit->selectIfDirty();
             });
     }
     else if (action == clearModified)
@@ -1263,7 +1284,7 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
         visitAllQuantityEdits(
             [](QuantityEdit *edit)
             {
-                edit->showIfDirty(true);
+                edit->deselectIfDirty();
             });
     }
 }

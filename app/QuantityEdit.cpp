@@ -86,10 +86,12 @@ bool QuantityRepresentation::convertible(const QString &from,
 // Start of QuantityEdit methods
 QuantityEdit::QuantityEdit(AppController *controller,
                            const QuantityRepresentation &representation,
+                           const bool &dirtyFlag,
                            QWidget *parent)
     : QWidget(parent),
       m_controller(controller),
-      m_representation(representation)
+      m_representation(representation),
+      m_dirtyFlag(dirtyFlag)
 {
     m_valueSpin = new StepAdjustSpinBox(m_controller, this);
     m_valueSpin->setObjectName("quantityValueSpin");
@@ -150,8 +152,6 @@ QuantityEdit::QuantityEdit(AppController *controller,
             [this](double value)
             {
                 Q_UNUSED(value);
-                if (! m_dirty)
-                    m_dirty = true;
             });
 
     if (m_representationCombo)
@@ -166,7 +166,6 @@ QuantityEdit::QuantityEdit(AppController *controller,
                         << "ComboBox::currentTextChanged:"
                         << representationText;
                     emit representationChanged(representationText);
-                    m_dirty = true;
                 });
     }
     // triggered if right click over double SpinBox (numeric input) field
@@ -182,7 +181,7 @@ QuantityEdit::QuantityEdit(AppController *controller,
                                                 [this] {
                                                     commit();
                                                 });
-                finish->setEnabled(m_dirty);
+                finish->setEnabled(m_dirtyFlag);
             });
 
 }
@@ -199,8 +198,7 @@ QuantityEdit::Value QuantityEdit::currentValue() const
 
 void QuantityEdit::setValue(
     double value,
-    const QString &representation,
-    bool make_dirty)
+    const QString &representation)
 {
     m_valueSpin->blockSignals(true);
     if (m_representationCombo)
@@ -226,10 +224,9 @@ void QuantityEdit::setValue(
 
     m_originalValue = currentValue();
     m_editing = false;
-    m_dirty = make_dirty;
 }
 
-void QuantityEdit::setCanonicalValue(double value, bool make_dirty)
+void QuantityEdit::setCanonicalValue(double value)
 {
     const QString representation = currentValue().representation;
 
@@ -239,7 +236,7 @@ void QuantityEdit::setCanonicalValue(double value, bool make_dirty)
             m_representation.canonicalRepresentation(),
             representation);
 
-    setValue(displayValue, representation, make_dirty);
+    setValue(displayValue, representation);
 }
 
 void QuantityEdit::setRepresentation(const QString &representation)
@@ -284,16 +281,28 @@ void QuantityEdit::setRepresentation(const QString &representation)
     // Deliberately preserve m_originalValue, m_editing and m_dirty.
 }
 
-void QuantityEdit::showIfDirty(bool clearAnyway)
+void QuantityEdit::deselect() const
 {
-    if (clearAnyway)
-    {
+    if (m_valueSpin->edit()->hasSelectedText())
         m_valueSpin->edit()->deselect();
-        return;
-    }
+}
 
-    if (m_dirty)
-        m_valueSpin->edit()->selectAll();
+void QuantityEdit::deselectIfDirty() const
+{
+    if (m_dirtyFlag)
+        deselect();
+}
+
+// Highlight all characters in a field
+void QuantityEdit::selectAll() const
+{
+    m_valueSpin->edit()->selectAll();
+}
+
+void QuantityEdit::selectIfDirty() const
+{
+    if (m_dirtyFlag)
+        selectAll();
 }
 
 void QuantityEdit::beginEditing()
