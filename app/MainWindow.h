@@ -118,8 +118,9 @@ private:
     void setNoiseBandwidth(int channel, double value);
     void setDcOffset(int channel, double value);
     void setDcPrecisionHigh(int channel, bool enabled);
-
-    void setOutput(int channel, bool enabled);
+    void setPolarity(int channel, Polarity polarity);
+    void setOutputLoad(int channel, OutputLoad load);
+    void setExternalOutput(int channel, bool enabled);
 
     void createMenuBar();
 

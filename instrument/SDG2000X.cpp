@@ -130,8 +130,7 @@ bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
     }
 
 #if 0
-    sdgDebug() << Q_FUNC_INFO
-               << "Channel=" << channel
+    DEBUG_FUNC << "Channel=" << channel
                << ">>> No valid amplitude representation"
                << "userRep=" << amp.userRepresentation
                << "vppValid=" << amp.v_ppValid
@@ -254,7 +253,7 @@ bool SDG2000X::setSdgDcPrecisionHigh(int channel, bool enabled)
 #endif
 }
 
-bool SDG2000X::setSdgOutput(int channel, bool enabled)
+bool SDG2000X::setSdgExternalOutput(int channel, bool externalOutput)
 {
     if (!scpi.isConnected())
         return false;
@@ -262,21 +261,20 @@ bool SDG2000X::setSdgOutput(int channel, bool enabled)
     QString cmd =
         QString("%1:OUTP %2")
         .arg(channelPrefix(channel))
-        .arg(enabled ? "ON" : "OFF");
+        .arg(externalOutput ? "ON" : "OFF");
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
+        DEBUG_FUNC << "CH" << channel << "  scpi.command() returned false";
         return false;
     }
 
     auto state = getOutputState(channel);
 
-    return state && state->enabled == enabled;
+    return state && state->externalOutput == externalOutput;
 }
 
-bool SDG2000X::setSdgOutputLoadPol(int channel, bool enabled, bool load50,
-                                   bool polNormal)
+bool SDG2000X::setSdgOutputLoadPol(int channel, const OutputState &oState)
 {
     if (!scpi.isConnected())
         return false;
@@ -284,19 +282,41 @@ bool SDG2000X::setSdgOutputLoadPol(int channel, bool enabled, bool load50,
     QString cmd =
         QString("%1:OUTP %2,LOAD,%3,PLRT,%4")
         .arg(channelPrefix(channel))
-        .arg(enabled ? "ON" : "OFF")
-        .arg(load50 ? "50" : "HZ")
-        .arg(polNormal ? "NOR" : "INVT");
+        .arg(oState.externalOutput ? "ON" : "OFF")
+        .arg(oState.outputLoad == OutputLoad::Ohms50 ? "50" : "HZ")
+        .arg(oState.polarity == Polarity::Normal ? "NOR" : "INVT");
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
+        DEBUG_FUNC << "CH" << channel << ": scpi.command() returned false";
         return false;
     }
 
     auto state = getOutputState(channel);
 
-    return state && state->enabled == enabled;
+    if (state)
+    {
+        bool ok = true;
+
+        if (state->externalOutput != oState.externalOutput)
+        {
+            sdgDebug() << "CH" << channel << ": setting main Output failed";
+            ok = false;
+        }
+        if (state->outputLoad != oState.outputLoad)
+        {
+            DEBUG_FUNC << "CH" << channel << ": setting OutputLoad failed";
+            ok = false;
+        }
+        if (state->polarity != oState.polarity)
+        {
+            DEBUG_FUNC << "CH" << channel << "setting Polarity failed";
+            ok = false;
+        }
+        return ok;
+    }
+    else
+        return false;
 }
 
 bool SDG2000X::setSdgOutputBoth(bool enabled)
@@ -310,13 +330,13 @@ bool SDG2000X::setSdgOutputBoth(bool enabled)
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
+        DEBUG_FUNC << "scpi.command() returned false";
         return false;
     }
     return true;
 }
 
-bool SDG2000X::invert(int channel, bool enabled)
+bool SDG2000X::setInvert(int channel, bool enable)
 {
     if (!scpi.isConnected())
         return false;
@@ -324,11 +344,12 @@ bool SDG2000X::invert(int channel, bool enabled)
     QString cmd =
         QString("%1:INVT %2")
         .arg(channelPrefix(channel))
-        .arg(enabled ? "ON" : "OFF");
+        .arg(enable ? "ON" : "OFF");
 
     if (!scpi.command(cmd))
     {
-        sdgDebug() << Q_FUNC_INFO << "scpi.command() returned false";
+        DEBUG_FUNC << "CH" << channel
+                       << ": scpi.command() returned false";
         return false;
     }
     return true;
@@ -468,15 +489,26 @@ std::optional<OutputState> SDG2000X::getOutputState(int channel)
         return std::nullopt;
 
     OutputState state;
-    state.enabled = response.contains("OUTP ON");
+    state.externalOutput = response.contains("OUTP ON");
+
+    if (response.contains("PLRT,NOR"))
+        state.polarity = Polarity::Normal;
+    else if (response.contains("PLRT,INVT"))
+        state.polarity = Polarity::Inverted;
 
     if (response.contains("LOAD,50"))
-        state.load = OutputLoad::Ohm50;
+        state.outputLoad = OutputLoad::Ohms50;
     else if (response.contains("LOAD,HZ"))
-        state.load = OutputLoad::HighZ;
-    else
-        return std::nullopt;
+        state.outputLoad = OutputLoad::HiZ;
 
+    state.powerOnState = response.contains("POWERON_STATE,ON");
+
+qsdgDebug() << "ExtrenalOutput=" << state.externalOutput
+            << "OutputLoad=" << ((state.outputLoad == OutputLoad::HiZ) ?
+                                 "HiZ" : "Ohms50")
+            << "Polarity=" << ((state.polarity == Polarity::Normal) ?
+                               "Normal" : "inverted")
+            << "PowerOn_State=" << state.powerOnState;
     return state;
 }
 
@@ -570,8 +602,8 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
 
     // Wait up to 5 seconds, could be connection lost
     ok &= waitForOperationComplete(5000);
-    if (dirty.m_output)
-        ok &= setSdgOutput(channel, state.output.enabled);
+    if (dirty.m_externalOutput || dirty.m_polarity || dirty.m_outputLoad)
+        ok &= setSdgOutputLoadPol(channel, state.output);
 
     return ok;
 }
@@ -608,7 +640,7 @@ bool SDG2000X::reset()
 bool SDG2000X::setSdgDuty(int channel, double percent)
 {
     if (percent < 0.0 || percent > 100.0) {
-        sdgDebug() << Q_FUNC_INFO << "bad percentage:" << percent;
+        DEBUG_FUNC << "bad percentage:" << percent;
         return false;
     }
     if (!scpi.isConnected())

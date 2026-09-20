@@ -17,6 +17,7 @@
 #include <QTimer>
 #include <QtGlobal>
 #include <QMenu>
+#include <QLineEdit>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -30,7 +31,7 @@
 #include "StepAdjustSpinBox.h"
 #include "QuantityEdit.h"
 #include "AppController.h"
-#include "ChannelState.h"
+#include "SettingsIO.h"
 #include "debug.h"
 
 
@@ -390,31 +391,7 @@ const DcOffsetRepresentation dcOffsetRepresentation;
 }       // <<< end of anonymous namespace
 
 
-// Helper class ChannelGroupBox hidden in this source file
-class ChannelGroupBox : public QGroupBox
-{
-public:
-    using QGroupBox::QGroupBox;
-
-    QToolButton *m_closeButton = nullptr;
-
-protected:
-    void resizeEvent(QResizeEvent *event) override
-    {
-        QGroupBox::resizeEvent(event);
-
-        if (m_closeButton)
-        {
-            m_closeButton->adjustSize();
-
-            m_closeButton->move(
-                width() - m_closeButton->width() - 4,
-                1);
-        }
-    }
-};
-
-
+// The start of the main class this source file is named after
 ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                              const ChannelDirtyState *dirtyState,
                              QWidget *parent)
@@ -485,9 +462,6 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_formLayout->addRow("Status:", m_statusLabel);
 #endif
 
-    m_outputCheck = new QCheckBox(chOutStr, m_groupBox);
-    m_outputCheck->setObjectName("outputCheck");
-
     m_waveformCombo = new QComboBox(m_groupBox);
 
     m_waveformCombo->addItems({
@@ -499,6 +473,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         "DC",  // Supported by the SDG, but DC-specific UI not implemented yet
         "ARB"
     });
+    m_waveformCombo->setObjectName("waveformCombo");
+    m_waveformCombo->setToolTip("Best to start with this field");
 
     m_frequencyEdit = new QuantityEdit(m_controller,
                                        frequencyQuantityRepresentation,
@@ -666,6 +642,24 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_dcPrecisionHighCheck->setObjectName("dcPrecisionHighCheck");
     m_dcPrecisionHighCheck->setText("High");
 
+
+    m_polarityCombo = new QComboBox(m_groupBox);
+    m_polarityCombo->addItem("Normal",
+                             QVariant::fromValue(Polarity::Normal));
+    m_polarityCombo->addItem("Inverted",
+                             QVariant::fromValue(Polarity::Inverted));
+    m_polarityCombo->setObjectName("polarityCombo");
+
+    m_outputLoadCombo = new QComboBox(m_groupBox);
+    m_outputLoadCombo->addItem("50",
+                               QVariant::fromValue(OutputLoad::Ohms50));
+    m_outputLoadCombo->addItem("HiZ",    // for 'High impedance'
+                               QVariant::fromValue(OutputLoad::HiZ));
+    m_polarityCombo->setObjectName("outputLoadCombo");
+
+    m_externalOutputCheck = new QCheckBox(chOutStr, m_groupBox);
+    m_externalOutputCheck->setObjectName("externalOutputCheck");
+
     // Create widgets and labels
     m_waveformLabel = new QLabel("Waveform:", m_groupBox);
     m_frequencyLabel = new QLabel("Frequency:", m_groupBox);
@@ -685,6 +679,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_noiseBandsetLabel = new QLabel("Bandset:", m_groupBox);
     m_dcOffsetLabel = new QLabel("DC Offset:", m_groupBox);
     m_dcPrecisionHighLabel = new QLabel("DC Precision:", m_groupBox);
+    m_polarityLabel = new QLabel("Polarity:", m_groupBox);
+    m_outputLoadLabel = new QLabel("Load impedance:", m_groupBox);
 
     updateControlVisibility();
 
@@ -708,7 +704,15 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_formLayout->addRow(m_dcOffsetLabel, m_dcOffsetEdit);
     m_formLayout->addRow(m_dcPrecisionHighLabel, m_dcPrecisionHighCheck);
 
-    m_formLayout->addRow(m_outputCheck);
+    auto *rowLayout = new QHBoxLayout;
+    rowLayout->addWidget(m_polarityLabel);
+    rowLayout->addWidget(m_polarityCombo);
+    rowLayout->addSpacing(15);
+    rowLayout->addWidget(m_outputLoadLabel);
+    rowLayout->addWidget(m_outputLoadCombo);
+    m_formLayout->addRow(rowLayout);
+
+    m_formLayout->addRow(m_externalOutputCheck);
 
     // updateControlVisibility() call is _after_ the connect() calls
 
@@ -736,13 +740,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
                     m_periodEdit->setValue(period, "s");
 
-                    sdgDebug() << Q_FUNC_INFO
-                               << "frequency=" << frequency << "Hz"
+                    DEBUG_FUNC << "frequency=" << frequency << "Hz"
                                << "period=" << period << "s";
                 }
                 else {
-                    sdgDebug() << Q_FUNC_INFO
-                               << "<< WILD frequency="
+                    DEBUG_FUNC << "<< WILD frequency="
                                << frequency << "Hz >>";
                 }
 
@@ -765,13 +767,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
                     m_frequencyEdit->setValue(frequency, "Hz");
 
-                    sdgDebug() << Q_FUNC_INFO
-                               << "period=" << period << "s"
+                    DEBUG_FUNC << "period=" << period << "s"
                                << "frequency=" << frequency << "Hz";
                 }
                 else {
-                    sdgDebug() << Q_FUNC_INFO
-                               <<  "<< WILD period=" << period << "s >>";
+                    DEBUG_FUNC <<  "<< WILD period=" << period << "s >>";
                 }
 
                 updatePulseDuty();
@@ -786,23 +786,15 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
             {
                 sdgDebug() << "Amplitude field contents:"
                            << m_amplitudeEdit->cleanText();
-                sdgDebug() << m_offsetEdit->debugString();
-                sdgDebug()
-                    << "amplitude committed:"
-                    << "original =" << original.value
-                    << original.representation
-                    << "final =" << final.value
-                    << final.representation;
+                qsdgDebug() << "amplitude committed:"
+                            << "original =" << original.value
+                            << original.representation
+                            << "final =" << final.value
+                            << final.representation;
 
                 emit amplitudeChanged(m_channel,
                                      final.value,
                                      final.representation);
-#if 0   // too soon for this
-                emit amplitudeChanged(m_channel,
-                                      m_amplitudeEdit->canonicalValue(),
-                                      final.representation);
-                // Bridge to the existing amplitude/model code here.
-#endif
             });
 
     connect(m_offsetEdit,
@@ -969,13 +961,35 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit dcPrecisionHighChanged(m_channel, enabled);
             });
 
+    connect(m_polarityCombo,
+            &QComboBox::currentTextChanged,
+            this,
+            [this](const QString &)
+            {
+                const auto polarity = m_polarityCombo->currentIndex() == 0
+                                      ? Polarity::Normal : Polarity::Inverted;
 
-    connect(m_outputCheck,
+                emit polarityChanged(this->m_channel, polarity);
+            });
+
+    connect(m_outputLoadCombo,
+            &QComboBox::currentTextChanged,
+            this,
+            [this](const QString &)
+            {
+                const auto load = m_outputLoadCombo->currentIndex() == 0
+                                  ? OutputLoad::Ohms50 : OutputLoad::HiZ;
+
+                emit outputLoadChanged(this->m_channel, load);
+            });
+
+
+    connect(m_externalOutputCheck,
             &QCheckBox::toggled,
             this,
             [this](bool enabled)
             {
-                emit outputChanged(this->m_channel, enabled);
+                emit externalOutputChanged(this->m_channel, enabled);
             });
 
     connect(m_closeButton,
@@ -1008,14 +1022,11 @@ void ChannelWidget::setUiFrequency(double frequency)
         const double period = 1.0 / frequency;
 
         m_periodEdit->setValue(period, "s");
-        sdgDebug() << Q_FUNC_INFO
-                   << "frequency=" << frequency << "Hz"
+        DEBUG_FUNC << "frequency=" << frequency << "Hz"
                    << "period=" << period << "s";
     }
     else
-        sdgDebug() << Q_FUNC_INFO << "<< WILD frequency=" << frequency
-                   << "Hz >>";
-
+        DEBUG_FUNC << "<< WILD frequency=" << frequency << "Hz >>";
     updatePulseDuty();
 }
 
@@ -1042,12 +1053,11 @@ void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit)
         m_amplitudeEdit->setValue(amplit.get_dBm(), rep);
     else if (rep.isEmpty())   // this case: Initial refresh after connect
     {
-        sdgDebug() << objectName() << Q_FUNC_INFO << "defaulting to Vpp";
+        DEBUG_FUNC << objectName() << "defaulting to Vpp";
         m_amplitudeEdit->setValue(amplit.getVpp(), "Vpp");
     }
     else
-        sdgDebug() << objectName() << Q_FUNC_INFO
-                   << ">>> BAD representation: " << rep;
+        DEBUG_FUNC << objectName() << ">>> BAD representation: " << rep;
 }
 
 void ChannelWidget::setUiOffset(double offset)
@@ -1142,11 +1152,23 @@ void ChannelWidget::setUiDcPrecisionHigh(bool enabled)
     m_dcPrecisionHighCheck->blockSignals(false);
 }
 
+// There are no setUiPolarity and setUiOutputLoad methods, see setUiOutput
+
 void ChannelWidget::setUiOutput(const OutputState &output)
 {
-    m_outputCheck->blockSignals(true);
-    m_outputCheck->setChecked(output.enabled);
-    m_outputCheck->blockSignals(false);
+    m_externalOutputCheck->blockSignals(true);
+    m_externalOutputCheck->setChecked(output.externalOutput);
+    m_externalOutputCheck->blockSignals(false);
+
+    m_polarityCombo->blockSignals(true);
+    m_polarityCombo->setCurrentText(
+                     SettingsIO::polarityToString(output.polarity));
+    m_polarityCombo->blockSignals(false);
+
+    m_outputLoadCombo->blockSignals(true);
+    m_outputLoadCombo->setCurrentText(
+                       SettingsIO::outputLoadToString(output.outputLoad));
+    m_outputLoadCombo->blockSignals(false);
 }
 
 void ChannelWidget::setUiStatus(const QString &text)
@@ -1246,18 +1268,53 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_dcOffsetEdit);
 }
 
+void ChannelWidget::selectCombo(QComboBox *combo)
+{
+    DEBUG_FUNC << " Object:" << combo->objectName();
+
+    combo->setStyleSheet(
+        "QComboBox {"
+        " background-color: palette(highlight);"
+        " color: palette(highlighted-text);"
+        "}"
+    );
+}
+
+void ChannelWidget::deselectCombo(QComboBox *combo)
+{
+    combo->setStyleSheet({});
+}
+
+// Note that CheckBox_s are not visited
 void ChannelWidget::selectAllIfDirty(bool enabled)
 {
-    sdgDebug() << Q_FUNC_INFO;
+    DEBUG_FUNC << "Channel:" << m_channel;
 
     visitAllQuantityEdits(
-        [enabled](QuantityEdit *edit)
+        [enabled](QuantityEdit *qedit)
         {
-	    if (enabled)
-                edit->selectIfDirty();
-	    else
-                edit->deselectIfDirty();
+            if (qedit)
+            {
+                if (enabled)
+                    qedit->selectIfDirty();
+                else
+                    qedit->deselectIfDirty();
+            }
         });
+
+    // ComboBoxes
+    if (enabled) {
+        if (m_dirtyState->m_waveform)
+            selectCombo(m_waveformCombo);
+        if (m_dirtyState->m_polarity)
+            selectCombo(m_polarityCombo);
+        if (m_dirtyState->m_outputLoad)
+            selectCombo(m_outputLoadCombo);
+    } else {
+        deselectCombo(m_waveformCombo);
+        deselectCombo(m_polarityCombo);
+        deselectCombo(m_outputLoadCombo);
+    }
 }
 
 void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)

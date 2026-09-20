@@ -48,8 +48,9 @@ namespace
     constexpr auto NoiseBandwidthKey = "noiseBandwidth";
     constexpr auto DcOffsetKey      = "dcOffset";
     constexpr auto DcPrecisionHighKey = "dcPrecisionHigh";
-
-    constexpr auto OutputKey    = "output";
+    constexpr auto PolarityKey      = "polarity";
+    constexpr auto OutputLoadKey    = "outputLoad";
+    constexpr auto ExternalOutputKey = "externalOutput";
 
     QJsonObject channelToJson(const ChannelState &state)
     {
@@ -61,7 +62,7 @@ namespace
         obj[FrequencyKey]      = state.frequency;
         obj[AmplitudeKey]      = ampState.valueRepresentation().value;
         obj[AmplitudeRepresentationKey] =
-                          ampState.valueRepresentation().representation;
+                  ampState.valueRepresentation().representation;
         obj[AmplitudeUserRepresentationKey] = ampState.userRepresentation;
         obj[OffsetKey]         = state.offset;
         obj[PhaseKey]          = state.phase;
@@ -76,8 +77,11 @@ namespace
         obj[NoiseBandwidthKey] = state.noiseBandwidth;
         obj[DcOffsetKey]       = state.dcOffset;
         obj[DcPrecisionHighKey] = state.dcPrecisionHigh;
-
-        obj[OutputKey]         = state.output.enabled;
+        obj[PolarityKey]       =
+                 SettingsIO::polarityToString(state.output.polarity);
+        obj[OutputLoadKey]     =
+                 SettingsIO::outputLoadToString(state.output.outputLoad);
+        obj[ExternalOutputKey] = state.output.externalOutput;
 
         return obj;
     }
@@ -85,13 +89,18 @@ namespace
     bool jsonToChannel(const QJsonObject &obj, ChannelState &state)
     {
         if (!obj.contains(WaveformKey) ||
-            !obj.contains(OutputKey))
+            !obj.contains(ExternalOutputKey))
         {
             return false;
         }
 
         state.waveform  = obj[WaveformKey].toString();
-        state.output.enabled = obj[OutputKey].toBool();
+        state.output.polarity =
+             SettingsIO::stringToPolarity(obj[PolarityKey].toString());
+        state.output.outputLoad =
+             SettingsIO::stringToOutputLoad(obj[OutputLoadKey].toString());
+
+        state.output.externalOutput = obj[ExternalOutputKey].toBool();
 
         if (obj.contains(FrequencyKey))
             state.frequency = obj[FrequencyKey].toDouble();
@@ -247,4 +256,40 @@ bool SettingsIO::load(const QString &filename,
     state[1] = ch2;
 
     return true;
+}
+
+QString SettingsIO::polarityToString(Polarity polarity)
+{
+    switch (polarity) {
+    case Polarity::Normal:
+        return "Normal";
+    case Polarity::Inverted:
+        return "Inverted";
+    }
+    return "Normal";    // defensive fallback
+}
+
+Polarity SettingsIO::stringToPolarity(const QString &str)
+{
+    if (str == "Inverted")
+        return Polarity::Inverted;
+    return Polarity::Normal;
+}
+
+QString SettingsIO::outputLoadToString(OutputLoad load)
+{
+    switch (load) {
+    case OutputLoad::Ohms50:
+        return "50";
+    case OutputLoad::HiZ:
+        return "HiZ";
+    }
+    return "50";
+}
+
+OutputLoad SettingsIO::stringToOutputLoad(const QString &str)
+{
+    if (str == "HiZ")
+        return OutputLoad::HiZ;
+    return OutputLoad::Ohms50;
 }

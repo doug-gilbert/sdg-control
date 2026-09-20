@@ -189,28 +189,6 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     setCentralWidget(frame);
 
-#if 0
-    setStyleSheet(R"(
-        QMainWindow {
-            background: #dedfdd;
-        }
-
-        QMenuBar {
-            background: #dedfdd;
-            border-bottom: 1px solid #aeb0ad;
-        }
-
-        QStatusBar {
-            background: #dedfdd;
-            border-top: 1px solid #aeb0ad;
-        }
-    )");
-
-    central->setStyleSheet("background: #f7f7f4;");
-
-    // central->setStyleSheet("background-color: #f5f5f2;");
-#endif
-
     setInstrument(InstrumentType::Simulator);
 
     connect(m_immediateCheck,
@@ -365,12 +343,26 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
             setDcPrecisionHigh(channel, enabled);
         });
 
+    connectChannelWidgets(
+        &ChannelWidget::polarityChanged,
+        [this](int channel, Polarity polarity)
+        {
+            setPolarity(channel, polarity);
+        });
 
     connectChannelWidgets(
-        &ChannelWidget::outputChanged,
+        &ChannelWidget::outputLoadChanged,
+        [this](int channel, OutputLoad load)
+        {
+            setOutputLoad(channel, load);
+        });
+
+
+    connectChannelWidgets(
+        &ChannelWidget::externalOutputChanged,
         [this](int channel, bool enabled)
         {
-            setOutput(channel, enabled);
+            setExternalOutput(channel, enabled);
         });
 
     connect(m_connectButton,
@@ -462,15 +454,15 @@ void MainWindow::createMenuBar()
     // cannot be used to initialize these actions.
     // Needs a connect(viewMenu, QMenu::hovered, ...) for toolTip to work
     m_showChannel1Action->setToolTip(
-        "Remove Channel 1 from this UI leaving more\n"
-        "screen 'real estate' for Channel 2");
+        "When UNchecked, Channel 1 is hidden leaving\n"
+        "more screen 'real estate' for Channel 2");
 
     m_showChannel2Action = viewMenu->addAction("Show Channel 2");
     m_showChannel2Action->setCheckable(true);
     m_showChannel2Action->setChecked(true);
     m_showChannel2Action->setToolTip(
-        "Remove Channel 2 from this UI leaving more\n"
-        "screen 'real estate' for Channel 1");
+        "When UNchecked, Channel 2 is hidden leaving\n"
+        "more screen 'real estate' for Channel 1");
 
     m_frontPanelAction = viewMenu->addAction("Show front panel");
     m_frontPanelAction->setCheckable(true);
@@ -582,7 +574,7 @@ void MainWindow::createMenuBar()
 
 MainWindow::~MainWindow()
 {
-    sdgDebug() << Q_FUNC_INFO << "starting";
+    DEBUG_FUNC << "starting";
     delete m_frontPanelWindow;
     delete m_generator;
 }
@@ -660,36 +652,37 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
         .arg(ch.phase, 0, 'f', 1);
 
     if (ch.waveform == "RAMP")
-        cwid.setUiStatus( QString("%1  Sym %2  Output %3")
+        cwid.setUiStatus( QString("%1  Sym %2  ExternalOutput %3")
             .arg(common)
             .arg(ch.rampSymmetry)
-            .arg(ch.output.enabled ? "ON" : "OFF"));
+            .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "DC")
-        cwid.setUiStatus( QString("%1  DC_OFST %2  Output %3")
+        cwid.setUiStatus( QString("%1  DC_OFST %2  ExternalOutput %3")
             .arg(common)
             .arg(ch.dcOffset)
-            .arg(ch.output.enabled ? "ON" : "OFF"));
+            .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "PULSE")
-        cwid.setUiStatus( QString("%1  Width %2  Rise %3  Fall %4  Output %5")
-            .arg(common)
-            .arg(ch.pulseWidth)
-            .arg(ch.pulseRise)
-            .arg(ch.pulseFall)
-            .arg(ch.output.enabled ? "ON" : "OFF"));
+        cwid.setUiStatus(
+            QString("%1  Width %2  Rise %3  Fall %4  ExternalOutput %5")
+                   .arg(common)
+                   .arg(ch.pulseWidth)
+                   .arg(ch.pulseRise)
+                   .arg(ch.pulseFall)
+                   .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "SQUARE")
-        cwid.setUiStatus( QString("%1  Duty %2 Output %3")
+        cwid.setUiStatus( QString("%1  Duty %2 ExternalOutput %3")
             .arg(common)
             .arg(ch.duty)
-            .arg(ch.output.enabled ? "ON" : "OFF"));
+            .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (my_chan == 1 && ch.waveform == "SINE")
-        cwid.setUiStatus( QString("%1  Output %2  %3")
+        cwid.setUiStatus( QString("%1  ExternalOutput %2  %3")
             .arg(common)
-            .arg(ch.output.enabled ? "ON" : "OFF")
+            .arg(ch.output.externalOutput ? "ON" : "OFF")
             .arg(BUILD_TIME));
     else
-        cwid.setUiStatus( QString("%1  Output %2")
+        cwid.setUiStatus( QString("%1  ExternalOutput %2")
             .arg(common)
-            .arg(ch.output.enabled ? "ON" : "OFF"));
+            .arg(ch.output.externalOutput ? "ON" : "OFF"));
 }
 #endif
 
@@ -719,6 +712,7 @@ static void setChannelFields(int my_chan, ChannelWidget & cwid,
 // firmware/SCPI implementation exposes it.
     cwid.setUiDcPrecisionHigh(ch.dcPrecisionHigh);
 
+    // Note: ch.output has type OutputState which holds several fields
     cwid.setUiOutput(ch.output);
 
 #ifdef SDG_DEVELOPER_UI
@@ -754,7 +748,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch1))
     {
-        sdgDebug() << Q_FUNC_INFO << ":ch1: " << ioErrorMsg;
+        DEBUG_FUNC << ":ch1: " << ioErrorMsg;
         return;
     }
     // Need to carry over userRepresentation from existing UI state
@@ -767,7 +761,7 @@ void MainWindow::refreshClicked()
 
     if (haveIOError(ch2))
     {
-        sdgDebug() << Q_FUNC_INFO << ":ch2: " << ioErrorMsg;
+        DEBUG_FUNC << ":ch2: " << ioErrorMsg;
         return;
     }
     // Need to carry over userRepresentation from existing UI state
@@ -781,7 +775,7 @@ void MainWindow::refreshClicked()
 
     if (wasDirty)
     {
-        sdgDebug() << Q_FUNC_INFO << ">>> Refresh overwrote user data";
+        DEBUG_FUNC << ">>> Refresh overwrote user data";
     }
     setSendEnabled(false);
 }
@@ -790,7 +784,7 @@ void MainWindow::refreshClicked()
 // the SDG (or simulator). In effect, Connect performs a Refresh.
 void MainWindow::connectClicked()
 {
-    sdgDebug() << Q_FUNC_INFO ;
+    DEBUG_FUNC;
     if (!m_generator->connectTo(m_ipaddrEdit->text()))
     {
         m_connectionStateEdit->setText("Connection failed: " +
@@ -822,7 +816,7 @@ void MainWindow::connectClicked()
 
 void MainWindow::disconnectClicked()
 {
-    sdgDebug() << Q_FUNC_INFO ;
+    DEBUG_FUNC;
     m_generator->disconnect();
 
     m_connectButton->setEnabled(true);
@@ -844,7 +838,7 @@ void MainWindow::sendClicked()
 {
     bool ok = true;
 
-    sdgDebug() << Q_FUNC_INFO;
+    DEBUG_FUNC;
 
     if (!m_generator->isConnected())
         return;
@@ -854,21 +848,23 @@ void MainWindow::sendClicked()
         const auto state = pendingChannelState(channel);
         const auto dirtyState = pendingChannelDirtyState(channel);
 
-sdgDebug() << Q_FUNC_INFO << "pending_dirty:\n" << dirtyState->debugStr();
+#if 0
+DEBUG_FUNC << "pending_dirty:\n" << dirtyState->debugStr();
+#endif
         bool local_ok = m_generator->applyChannelState(channel, *state,
                                                        *dirtyState);
         if (local_ok)
             dirtyState->clearAll();
         else
-            sdgDebug() << Q_FUNC_INFO << "Chan=" << channel
-                       << "setting of at least one field failed";
+            DEBUG_FUNC << "Chan=" << channel
+                           << "setting of at least one field failed";
         ok &= local_ok;
     }
 }
 
 void MainWindow::connectionLost()
 {
-    sdgDebug() << Q_FUNC_INFO;
+    DEBUG_FUNC;
 
     m_connectionStateEdit->setText("Connection lost");
 
@@ -886,7 +882,7 @@ void MainWindow::connectionLost()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    sdgDebug() << Q_FUNC_INFO << "starting";
+    DEBUG_FUNC << "starting";
 
     if (m_generator && m_generator->isConnected())
     {
@@ -900,11 +896,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
         m_frontPanelWindow->close();
     }
     event->accept();
-    sdgDebug() << Q_FUNC_INFO << "finishing";
+    DEBUG_FUNC << "finishing";
 }
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
+DEBUG_FUNC << "channel=" << channel << " waveform=" << waveform;
     auto pendingState = pendingChannelState(channel);
     auto dirtyState = pendingChannelDirtyState(channel);
 
@@ -945,8 +942,8 @@ void MainWindow::setPeriod(int channel, double value)
     if (value > 0.0)
         setFrequency(channel, 1.0 / value);
     else
-        sdgDebug() << Q_FUNC_INFO << "<< WILD period=" << value
-                   << " chan=" << channel << " >>";
+        DEBUG_FUNC << "<< WILD period=" << value << " chan="
+                   << channel << " >>";
 }
 
 void MainWindow::setAmplitude(int channel, double value,
@@ -956,8 +953,7 @@ void MainWindow::setAmplitude(int channel, double value,
     AmplitudeState & ampState = pendingState->amplitude;
     auto dirtyState = pendingChannelDirtyState(channel);
 
-    sdgDebug() << Q_FUNC_INFO << "value =" << value
-               << "representation =" << representation;
+    DEBUG_FUNC << "value =" << value << "representation =" << representation;
 
     ampState.v_ppValid = false;
     ampState.v_rmsValid = false;
@@ -1239,18 +1235,56 @@ void MainWindow::setDcPrecisionHigh(int channel, bool enabled)
         setSendEnabled(true);
 }
 
-void MainWindow::setOutput(int channel, bool enabled)
+void MainWindow::setPolarity(int channel, Polarity polarity)
 {
     auto pendingState = pendingChannelState(channel);
     auto dirtyState = pendingChannelDirtyState(channel);
 
-    pendingState->output.enabled = enabled;
-    dirtyState->m_output = true;
+DEBUG_FUNC << "channel=" << channel << "polarity="
+           << SettingsIO::polarityToString(polarity);
+    pendingState->output.polarity = polarity;
+    dirtyState->m_polarity = true;
     if (m_immediateMode)
     {
         if (m_generator->applyChannelState(channel, *pendingState,
                                            *dirtyState))
-            dirtyState->m_output = false;
+            dirtyState->m_polarity = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
+void MainWindow::setOutputLoad(int channel, OutputLoad load)
+{
+    auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
+
+DEBUG_FUNC << "channel=" << channel << "load="
+           << SettingsIO::outputLoadToString(load);
+    pendingState->output.outputLoad = load;
+    dirtyState->m_outputLoad = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_outputLoad = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
+void MainWindow::setExternalOutput(int channel, bool externalOutput)
+{
+    auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
+
+    pendingState->output.externalOutput = externalOutput;
+    dirtyState->m_externalOutput = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_externalOutput = false;
     }
     else
         setSendEnabled(true);
@@ -1271,7 +1305,7 @@ bool MainWindow::isSendEnabled() const
 
 void MainWindow::loadSettings()
 {
-    sdgDebug() << Q_FUNC_INFO;
+    DEBUG_FUNC;
 
     QString fileName = QFileDialog::getOpenFileName(
         this,
@@ -1305,7 +1339,7 @@ void MainWindow::loadSettings()
 
 void MainWindow::saveSettings()
 {
-    sdgDebug() << Q_FUNC_INFO;
+    DEBUG_FUNC;
 
     QString fileName = QFileDialog::getSaveFileName(
         this,

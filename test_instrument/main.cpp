@@ -32,7 +32,7 @@
 #include "debug.h"
 
 
-static const char * version_str = "0.91 20260905";
+static const char * version_str = "0.92 20260919";
 
 static const struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
     generator.setSdgOffset(1, 1);
 
     generator.setSdgDuty(1, 90);
-    generator.setSdgOutput(1, true);
+    generator.setSdgExternalOutput(1, true);
 
 generator.getChannelState(1);
     // sleep(3);
@@ -186,7 +186,7 @@ generator.getChannelState(1);
     sdgDebug() << "<< Press Return to continue >>";
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
-    bool inverted = generator.invert(1, true);
+    bool inverted = generator.setInvert(1, true);
     sdgDebug() << "INVT:" << inverted;
 generator.getChannelState(1);
 
@@ -194,7 +194,7 @@ generator.getChannelState(1);
     sdgDebug() << "<< Press Return to continue >>";
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
-    inverted = generator.invert(1, false);
+    inverted = generator.setInvert(1, false);
     sdgDebug() << "INVT:" << inverted;
 generator.getChannelState(1);
 
@@ -203,7 +203,7 @@ generator.getChannelState(1);
     sdgDebug() << "<< Press Return to continue >>";
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
-    inverted = generator.invert(1, true);
+    inverted = generator.setInvert(1, true);
     sdgDebug() << "INVT:" << inverted;
 generator.getChannelState(1);
 
@@ -212,8 +212,8 @@ generator.getChannelState(1);
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
 
-    bool ok = generator.setSdgOutputLoadPol(1, true, /* load50= */ true,
-                                            /* polNormal */ true);
+    OutputState outputState {true, Polarity::Normal, OutputLoad::Ohms50};
+    bool ok = generator.setSdgOutputLoadPol(1, outputState);
     sdgDebug() << "outputLoadPol --> " << ok;
 generator.getChannelState(1);
 
@@ -223,7 +223,7 @@ generator.getChannelState(1);
 std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 std::cin.get();
 
-    generator.setSdgOutput(1, true);
+    generator.setSdgExternalOutput(1, true);
 
     printChannelState(generator, 1);
 
@@ -241,7 +241,7 @@ sdgDebug() << "SCPI error:"
 sdgDebug() << "CH2 immediate:"
          << generator.getChannelState(2).offset;
 #endif
-    generator.setSdgOutput(2, true);
+    generator.setSdgExternalOutput(2, true);
 
     printChannelState(generator, 2);
 

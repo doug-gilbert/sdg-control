@@ -14,6 +14,8 @@
 
 #include <functional>
 
+#include "ChannelState.h"
+
 
 class QLabel;
 class QCheckBox;
@@ -61,6 +63,7 @@ public:
     void setUiDcOffset(double value);
     void setUiDcPrecisionHigh(bool enabled);
 
+    // Note: there are multiple UI fields within OutputState
     void setUiOutput(const OutputState &output);
 
     void setControlsEnabled(bool enabled);
@@ -97,12 +100,16 @@ signals:
     void noiseBandwidthChanged(int channel, double value);
     void dcOffsetChanged(int channel, double value);
     void dcPrecisionHighChanged(int channel, bool enabled);
-
-    void outputChanged(int channel, bool enabled);
+    void polarityChanged(int channel, Polarity polarity);
+    void outputLoadChanged(int channel, OutputLoad load);
+    void externalOutputChanged(int channel, bool enabled);
 
     void hideRequested(int channel);
 
 private:
+    static void selectCombo(QComboBox *combo);
+    static void deselectCombo(QComboBox *combo);
+
     void updateControlVisibility();
     void updatePulseDuty();
 
@@ -144,6 +151,8 @@ private:
     QLabel *m_noiseBandsetLabel;
     QLabel *m_dcOffsetLabel;
     QLabel *m_dcPrecisionHighLabel;
+    QLabel *m_polarityLabel;
+    QLabel *m_outputLoadLabel;
 
     QComboBox *m_waveformCombo;
     QuantityEdit *m_frequencyEdit = nullptr;
@@ -163,7 +172,9 @@ private:
     QuantityEdit *m_noiseBandwidthEdit;
     QuantityEdit *m_dcOffsetEdit;
     QCheckBox *m_dcPrecisionHighCheck;
-    QCheckBox *m_outputCheck;
+    QComboBox *m_polarityCombo;
+    QComboBox *m_outputLoadCombo;
+    QCheckBox *m_externalOutputCheck;
 
     // friend class MainWindow;    // allow access to each field's dirty flag
 };

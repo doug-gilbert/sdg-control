@@ -65,15 +65,11 @@ public:
     bool setSdgDcOffset(int channel, double value);
     bool setSdgDcPrecisionHigh(int channel, bool enabled);
     bool setSdgDuty(int channel, double percent);
-
-    bool setSdgOutput(int channel, bool enabled);
-
-    bool setSdgOutputLoadPol(int channel, bool enabled, bool load50,
-                             bool polNormal);
+    bool setInvert(int channel, bool enable);
+    bool setSdgOutputLoadPol(int channel, const OutputState &oState);
+    bool setSdgExternalOutput(int channel, bool externalOutput);
 
     bool setSdgOutputBoth(bool enabled);
-
-    bool invert(int channel, bool enabled);
 
     bool clearErrors();
 

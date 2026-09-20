@@ -20,4 +20,9 @@ namespace SettingsIO
     bool load(const QString &filename,
               std::array<ChannelState,2> &state,
               QString *error = nullptr);
+
+    QString polarityToString(Polarity polarity);
+    Polarity stringToPolarity(const QString &str);
+    QString outputLoadToString(OutputLoad load);
+    OutputLoad stringToOutputLoad(const QString &str);
 }

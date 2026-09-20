@@ -31,16 +31,22 @@ struct ValueRepresentation
     QString representation;
 };
 
-enum class OutputLoad
-{
-    Ohm50,
-    HighZ
+enum class Polarity {
+    Normal,
+    Inverted
+};
+
+enum class OutputLoad {
+    Ohms50,
+    HiZ
 };
 
 struct OutputState
 {
-    bool enabled = false;
-    OutputLoad load = OutputLoad::Ohm50;
+    bool externalOutput = false;
+    Polarity polarity = Polarity::Normal;
+    OutputLoad outputLoad = OutputLoad::Ohms50;
+    bool powerOnState = false;
 };
 
 inline bool is_mV(const QString & rep)
@@ -130,9 +136,11 @@ struct ChannelState
 inline QDebug operator<<(QDebug debug, const OutputState &output)
 {
     debug << "OutputState{"
-          << " enabled=" << output.enabled
+          << " externalOutput=" << output.externalOutput
           << " load="
-          << (output.load == OutputLoad::Ohm50 ? "Ohm50" : "HighZ")
+          << (output.outputLoad == OutputLoad::Ohms50 ? "Ohms50" : "HighZ")
+          << " polarity="
+          << (output.polarity == Polarity::Normal ? "Normal" : "Inverted")
           << " }";
     return debug;
 }
@@ -155,7 +163,9 @@ inline QDebug operator<<(QDebug debug, const OutputState &output)
     X(noiseBandwidth)           \
     X(dcOffset)                 \
     X(dcPrecisionHigh)          \
-    X(output)
+    X(polarity)                 \
+    X(outputLoad)               \
+    X(externalOutput)
 
 struct ChannelDirtyState
 {

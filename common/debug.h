@@ -14,7 +14,11 @@
  * Note that if SDG_DEBUG is not defined, change to No OPeration (NOP).
  */
 
+#define DEBUG_FUNC sdgDebug() << Q_FUNC_INFO
+#define QDEBUG_FUNC qsdgDebug() << Q_FUNC_INFO
+
 #ifdef SDG_DEBUG
+
 inline QDebug sdgDebug()
 {
     return qDebug().noquote()
