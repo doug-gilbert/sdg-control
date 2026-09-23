@@ -39,6 +39,9 @@
 #include "FrontPanelWindow.h"
 #include "InstrumentFactory.h"
 #include "SettingsIO.h"
+#include "Utility.h"
+#include "GeneralWidget.h"
+#include "GeneralState.h"
 #include "ChannelWidget.h"
 #include "QuantityEdit.h"
 #include "AppController.h"
@@ -53,9 +56,6 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
       m_controller(new AppController(this))
 {
     setWindowTitle("SDG Control");
-
-    // this should give us a Status Bar at the bottom of the main window
-    // statusBar();
 
     auto *central = new QWidget(this);
     auto *layout = new QVBoxLayout(central);
@@ -154,6 +154,8 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                                      Qt::TextSelectableByKeyboard);
 #endif
 
+    m_generalWidget = new GeneralWidget(m_controller, central);
+
     m_ch1Widget = new ChannelWidget(m_controller, 1,
                                     pendingChannelDirtyState(1), central);
     m_ch2Widget = new ChannelWidget(m_controller, 2,
@@ -172,6 +174,7 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     channelLayout->addWidget(m_ch1Widget);
     channelLayout->addWidget(m_ch2Widget);
+    channelLayout->addWidget(m_generalWidget);
 
     layout->addLayout(channelLayout);
 
@@ -464,11 +467,27 @@ void MainWindow::createMenuBar()
         "When UNchecked, Channel 2 is hidden leaving\n"
         "more screen 'real estate' for Channel 1");
 
+    m_showGeneralAction = viewMenu->addAction("Show General Settings");
+    m_showGeneralAction->setCheckable(true);
+    m_showGeneralAction->setChecked(false);
+    m_showGeneralAction->setToolTip(
+        "When Checked, a General settings window will appear\n"
+        "when UNchecked, the General settings window is hidden");
+
     m_frontPanelAction = viewMenu->addAction("Show front panel");
     m_frontPanelAction->setCheckable(true);
     m_frontPanelAction->setEnabled(false);
     m_frontPanelAction->setToolTip(
         "Fetch SDG2000X's screen as a bmp and render it");
+
+    connect(m_generalWidget,
+            &GeneralWidget::hideRequested,
+            this,
+            [this]()
+            {
+                m_generalWidget->hide();
+                m_showGeneralAction->setChecked(false);
+            });
 
     connect(m_ch1Widget,
             &ChannelWidget::hideRequested,
@@ -486,6 +505,14 @@ void MainWindow::createMenuBar()
             {
                 m_ch2Widget->hide();
                 m_showChannel2Action->setChecked(false);
+            });
+
+    connect(m_showGeneralAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_generalWidget->setVisible(checked);
             });
 
     connect(m_showChannel1Action,
@@ -1241,7 +1268,7 @@ void MainWindow::setPolarity(int channel, Polarity polarity)
     auto dirtyState = pendingChannelDirtyState(channel);
 
 DEBUG_FUNC << "channel=" << channel << "polarity="
-           << SettingsIO::polarityToString(polarity);
+           << Utility::polarityToString(polarity);
     pendingState->output.polarity = polarity;
     dirtyState->m_polarity = true;
     if (m_immediateMode)
@@ -1260,7 +1287,7 @@ void MainWindow::setOutputLoad(int channel, OutputLoad load)
     auto dirtyState = pendingChannelDirtyState(channel);
 
 DEBUG_FUNC << "channel=" << channel << "load="
-           << SettingsIO::outputLoadToString(load);
+           << Utility::outputLoadToString(load);
     pendingState->output.outputLoad = load;
     dirtyState->m_outputLoad = true;
     if (m_immediateMode)

@@ -31,7 +31,7 @@
 #include "StepAdjustSpinBox.h"
 #include "QuantityEdit.h"
 #include "AppController.h"
-#include "SettingsIO.h"
+#include "Utility.h"
 #include "debug.h"
 
 
@@ -391,6 +391,7 @@ const DcOffsetRepresentation dcOffsetRepresentation;
 }       // <<< end of anonymous namespace
 
 
+// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 // The start of the main class this source file is named after
 ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                              const ChannelDirtyState *dirtyState,
@@ -1162,12 +1163,12 @@ void ChannelWidget::setUiOutput(const OutputState &output)
 
     m_polarityCombo->blockSignals(true);
     m_polarityCombo->setCurrentText(
-                     SettingsIO::polarityToString(output.polarity));
+                     Utility::polarityToString(output.polarity));
     m_polarityCombo->blockSignals(false);
 
     m_outputLoadCombo->blockSignals(true);
     m_outputLoadCombo->setCurrentText(
-                       SettingsIO::outputLoadToString(output.outputLoad));
+                       Utility::outputLoadToString(output.outputLoad));
     m_outputLoadCombo->blockSignals(false);
 }
 

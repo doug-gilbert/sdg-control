@@ -22,6 +22,7 @@ class QPoint;
 class ChannelWidget;
 class AppController;
 class FrontPanelWindow;
+class GeneralWidget;
 class CLI_options;
 
 
@@ -55,6 +56,11 @@ private:
     bool m_immediateMode = true;
     bool m_sendEnabled = false;    // is Send button enabled in Send mode
 
+    GeneralWidget *m_generalWidget = nullptr;
+
+    ChannelWidget *m_ch1Widget = nullptr;
+    ChannelWidget *m_ch2Widget = nullptr;
+
     FrontPanelWindow *m_frontPanelWindow = nullptr;
     QAction *m_frontPanelAction = nullptr;
 
@@ -77,11 +83,10 @@ private:
     QAction *m_resetAction;
     QAction *m_adaptiveDecimalStepAction;
 
+    QAction *m_showGeneralAction;
+
     QAction *m_showChannel1Action;
     QAction *m_showChannel2Action;
-
-    ChannelWidget *m_ch1Widget;
-    ChannelWidget *m_ch2Widget;
 
     Instrument *m_generator = nullptr;
 

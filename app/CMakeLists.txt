@@ -6,6 +6,8 @@ add_executable(sdg-control
     FrontPanelWindow.h
     ChannelWidget.cpp
     ChannelWidget.h
+    GeneralWidget.cpp
+    GeneralWidget.h
     StepAdjustSpinBox.cpp
     StepAdjustSpinBox.h
     SettingsIO.cpp
@@ -13,6 +15,10 @@ add_executable(sdg-control
     QuantityEdit.cpp
     QuantityEdit.h
     AppController.h
+    ../common/GeneralState.h
+    ../common/ChannelState.h
+    ../common/Utility.cpp
+    ../common/Utility.h
     ${getopt_if_needed}
 )
 

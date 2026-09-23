@@ -16,6 +16,7 @@
 /* Include config.h _before_ any local includes in case they need it */
 
 #include "SDG2000X.h"
+#include "Utility.h"    /* in common sub-directory */
 #include "debug.h"      /* in common sub-directory */
 
 
@@ -504,10 +505,8 @@ std::optional<OutputState> SDG2000X::getOutputState(int channel)
     state.powerOnState = response.contains("POWERON_STATE,ON");
 
 qsdgDebug() << "ExtrenalOutput=" << state.externalOutput
-            << "OutputLoad=" << ((state.outputLoad == OutputLoad::HiZ) ?
-                                 "HiZ" : "Ohms50")
-            << "Polarity=" << ((state.polarity == Polarity::Normal) ?
-                               "Normal" : "inverted")
+            << "OutputLoad=" << Utility::outputLoadToString(state.outputLoad)
+            << "Polarity=" << Utility::polarityToString(state.polarity)
             << "PowerOn_State=" << state.powerOnState;
     return state;
 }

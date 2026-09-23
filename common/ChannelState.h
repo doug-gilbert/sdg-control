@@ -189,6 +189,7 @@ struct ChannelDirtyState
     };
 
 #undef MAKE_FIELD
+#undef CHANNEL_DIRTY_FIELDS
 
     void setAll()
     {

@@ -11,6 +11,8 @@ add_library(instrument
     InstrumentFactory.h
     SimulatorInstrument.cpp
     SimulatorInstrument.h
+    ../common/Utility.cpp
+    ../common/Utility.h
 )
 
 set_compile_options(instrument)     # function defined in parent
