@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QCloseEvent>
 #include <QFrame>
+#include <QTimer>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -37,6 +38,7 @@ FrontPanelWindow::FrontPanelWindow(Instrument *a_instrument, QWidget *parent)
     screenLabel = new QLabel(this);
     screenLabel->setAlignment(Qt::AlignCenter);
     screenLabel->setScaledContents(true);
+    screenLabel->setMinimumSize(640, 400);
 
     updateButton = new QPushButton("Update", this);
     toggleButton = new QPushButton("Toggle channel", this);
@@ -78,9 +80,18 @@ FrontPanelWindow::FrontPanelWindow(Instrument *a_instrument, QWidget *parent)
                 if (instrument->toggleChannelFocus() &&
                     instrument->waitForOperationComplete(5000))
                 {
-                    updateScreen();
+		    // toggle seems to need extra time to be reliable
+                    QTimer::singleShot(400, this, [this]()
+                        {
+                            updateScreen();
+                        });
                 }
             });
+}
+
+FrontPanelWindow::~FrontPanelWindow()
+{
+    DEBUG_FUNC;
 }
 
 void FrontPanelWindow::updateScreen()

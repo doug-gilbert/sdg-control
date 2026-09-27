@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2026 Douglas Gilbert.
  * SPDX-License-Identifier: BSD-2-Clause
@@ -10,9 +11,14 @@
 #include <QHBoxLayout>
 #include <QTimer>
 #include <QContextMenuEvent>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QLineEdit>
 #include <QLabel>
+#include <QSignalBlocker>
+#include <QUndoCommand>
+#include <QUndoStack>
+
 
 #include <limits>
 
@@ -59,6 +65,7 @@ double QuantityRepresentation::convert(double value,
     return canonicalValue / toRep->ui2CanonicalScale;
 }
 
+
 bool QuantityRepresentation::convertible(const QString &from,
                                          const QString &to) const
 {
@@ -83,7 +90,10 @@ bool QuantityRepresentation::convertible(const QString &from,
 }
 
 
-// Start of QuantityEdit methods
+// ---------------------------------------------------------------------------
+// QuantityEdit
+// ---------------------------------------------------------------------------
+
 QuantityEdit::QuantityEdit(AppController *controller,
                            const QuantityRepresentation &representation,
                            const bool &dirtyFlag,
@@ -96,7 +106,7 @@ QuantityEdit::QuantityEdit(AppController *controller,
     m_valueSpin = new StepAdjustSpinBox(m_controller, this);
     m_valueSpin->setObjectName("quantityValueSpin");
     m_valueSpin->setRange(-1.0e9, 1.0e9);
-    m_valueSpin->setDecimals(6);     // changeable via this->setDecimals()
+    m_valueSpin->setDecimals(6);
     m_valueSpin->setSingleStep(0.1);
     m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
@@ -104,21 +114,30 @@ QuantityEdit::QuantityEdit(AppController *controller,
 
     if (representations.size() == 1)
     {
-        m_representationLabel = new QLabel(representations.front().uiRep,
-                                           this);
-        m_representationLabel->setObjectName("quantityRepresentationLabel");
-        m_representationLabel->setSizePolicy(QSizePolicy::Preferred,
-                                             QSizePolicy::Fixed);
+        m_representationLabel =
+            new QLabel(representations.front().uiRep, this);
+
+        m_representationLabel->setObjectName(
+            "quantityRepresentationLabel");
+
+        m_representationLabel->setSizePolicy(
+            QSizePolicy::Preferred,
+            QSizePolicy::Fixed);
+
         m_representationLabel->setContentsMargins(4, 0, 0, 0);
     }
     else
     {
         m_representationCombo = new QComboBox(this);
-        m_representationCombo->setObjectName("quantityRepresentationCombo");
-        m_representationCombo->setSizePolicy(QSizePolicy::Preferred,
-                                             QSizePolicy::Fixed);
+        m_representationCombo->setObjectName(
+            "quantityRepresentationCombo");
+
+        m_representationCombo->setSizePolicy(
+            QSizePolicy::Preferred,
+            QSizePolicy::Fixed);
+
         m_representationCombo->setSizeAdjustPolicy(
-                                            QComboBox::AdjustToContents);
+            QComboBox::AdjustToContents);
 
         for (const auto &text : representations)
             m_representationCombo->addItem(text.uiRep);
@@ -127,10 +146,15 @@ QuantityEdit::QuantityEdit(AppController *controller,
     auto *layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    m_valueSpin->setSizePolicy(
+        QSizePolicy::Expanding,
+        QSizePolicy::Fixed);
 
     layout->addWidget(m_valueSpin, 1);
+
     if (m_representationCombo)
         layout->addWidget(m_representationCombo, 0);
     else
@@ -138,14 +162,38 @@ QuantityEdit::QuantityEdit(AppController *controller,
 
     m_valueSpin->installEventFilter(this);
 
-    auto *lineEdit = m_valueSpin->lineEditWidget();
+    auto *lineEdit = m_valueSpin->edit();
+
     lineEdit->setObjectName("quantityValueLineEdit");
     lineEdit->installEventFilter(this);
+
     if (m_representationCombo)
         m_representationCombo->installEventFilter(this);
 
-    // this is needed even though (without sdgDebug()) it does not seem to
-    // do anything useful. Qt6 magic.
+    /*
+     * textEdited() is emitted only for user changes to the text.
+     *
+     * This is important when the user has finished an editing transaction
+     * with the context-menu "Finish editing" action but keeps focus in the
+     * same field. A subsequent edit must begin a new QuantityEdit
+     * transaction even though there was no new FocusIn event.
+     */
+    connect(lineEdit,
+            &QLineEdit::textEdited,
+            this,
+            [this](const QString &)
+            {
+                if (!m_undoRedoInProgress)
+                {
+                    beginEditing();
+                    m_qdirty = true;
+                }
+            });
+
+    /*
+     * This is needed even though (without sdgDebug()) it does not seem to
+     * do anything useful. Qt6 magic.
+     */
     connect(m_valueSpin,
             &QDoubleSpinBox::valueChanged,
             this,
@@ -165,10 +213,29 @@ QuantityEdit::QuantityEdit(AppController *controller,
                         << objectName()
                         << "ComboBox::currentTextChanged:"
                         << representationText;
+
                     emit representationChanged(representationText);
                 });
     }
-    // triggered if right click over double SpinBox (numeric input) field
+
+    // This picks up digit spins and SpinBox up and down buttons
+    connect(m_valueSpin,
+            &StepAdjustSpinBox::userValueChanged,
+            this,
+            [this](double)
+            {
+                if (!m_undoRedoInProgress)
+                {
+                    beginEditing();
+                    m_qdirty = true;
+                }
+            });
+
+    /*
+     * The SpinBox owns its numeric/step context menu.
+     *
+     * QuantityEdit adds its semantic Undo/Redo actions to that menu.
+     */
     connect(m_valueSpin,
             &StepAdjustSpinBox::contextMenuAboutToShow,
             this,
@@ -176,14 +243,32 @@ QuantityEdit::QuantityEdit(AppController *controller,
             {
                 menu->addSeparator();
 
-                auto *finish = menu->addAction("Finish editing",
-                                                this,
-                                                [this] {
-                                                    commit();
-                                                });
-                finish->setEnabled(m_dirtyFlag);
-            });
+                auto *undoAction = menu->addAction("Undo value",
+                                    this,
+                                    [this]
+                                    {
+                                        undo();
+                                    });
+                undoAction->setEnabled(m_qdirty || m_undoStack.canUndo());
 
+                auto *redoAction = menu->addAction("Redo value",
+                                    this,
+                                    [this]
+                                    {
+                                        redo();
+                                    });
+                redoAction->setEnabled(!m_editing && m_undoStack.canRedo());
+
+                menu->addSeparator();
+
+                auto *finish = menu->addAction("Finish editing",
+                                    this,
+                                    [this]
+                                    {
+                                        commit();
+                                    });
+                finish->setEnabled(m_qdirty);
+            });
 }
 
 QuantityEdit::Value QuantityEdit::currentValue() const
@@ -195,35 +280,15 @@ QuantityEdit::Value QuantityEdit::currentValue() const
            };
 }
 
-
 void QuantityEdit::setValue(
     double value,
     const QString &representation)
 {
-    m_valueSpin->blockSignals(true);
-    if (m_representationCombo)
-        m_representationCombo->blockSignals(true);
-
-    m_valueSpin->setValue(value);
-
-    if (m_representationCombo)
-    {
-        const int index = m_representationCombo->findText(representation);
-
-        if (index >= 0)
-            m_representationCombo->setCurrentIndex(index);
-    }
-    else
-    {
-        m_representationLabel->setText(representation);
-    }
-
-    if (m_representationCombo)
-        m_representationCombo->blockSignals(false);
-    m_valueSpin->blockSignals(false);
+    setValueWithoutHistory({value, representation});
 
     m_originalValue = currentValue();
     m_editing = false;
+    m_qdirty = false;
 }
 
 void QuantityEdit::setCanonicalValue(double value)
@@ -310,8 +375,18 @@ void QuantityEdit::beginEditing()
     if (m_editing)
         return;
 
+    DEBUG_FUNC << objectName()
+               << "current =" << currentValue().value
+               << currentValue().representation;
+
     m_originalValue = currentValue();
     m_editing = true;
+    m_qdirty = false;
+
+    DEBUG_FUNC << objectName()
+               << "captured original ="
+               << m_originalValue.value
+               << m_originalValue.representation;
 
     emit editingStarted();
 }
@@ -321,20 +396,21 @@ void QuantityEdit::commit()
     if (!m_editing)
         return;
 
+    m_editing = false;
+
     const Value final = currentValue();
 
     if (final != m_originalValue)
     {
+        pushValueCommand(m_originalValue, final);
         emit committed(m_originalValue, final);
     }
-
-    m_editing = false;
 }
 
 bool QuantityEdit::eventFilter(QObject *watched, QEvent *event)
 {
     if (watched != m_valueSpin &&
-        watched != m_valueSpin->lineEditWidget() &&
+        watched != m_valueSpin->edit() &&
         watched != m_representationCombo)
     {
         return QWidget::eventFilter(watched, event);
@@ -346,8 +422,26 @@ bool QuantityEdit::eventFilter(QObject *watched, QEvent *event)
         auto *contextEvent = static_cast<QContextMenuEvent *>(event);
 
         showRepresentationContextMenu(contextEvent->globalPos());
-
         return true;
+    }
+
+    if ((watched == m_valueSpin ||
+         watched == m_valueSpin->edit()) &&
+        event->type() == QEvent::KeyPress)
+    {
+        auto *keyEvent = static_cast<QKeyEvent *>(event);
+
+        if (keyEvent->matches(QKeySequence::Undo))
+        {
+            undo();
+            return true;
+        }
+
+        if (keyEvent->matches(QKeySequence::Redo))
+        {
+            redo();
+            return true;
+        }
     }
 
     if (event->type() == QEvent::FocusIn)
@@ -412,12 +506,14 @@ void QuantityEdit::focusInEvent(QFocusEvent *event)
     beginEditing();
 
     sdgDebug() << objectName() << Q_FUNC_INFO;
+
     QWidget::focusInEvent(event);
 }
 
 void QuantityEdit::focusOutEvent(QFocusEvent *event)
 {
     sdgDebug() << objectName() << Q_FUNC_INFO;
+
     QWidget::focusOutEvent(event);
 }
 
@@ -442,7 +538,7 @@ double QuantityEdit::singleStep() const
     return m_valueSpin->singleStep();
 }
 
-// This is NOT a Qt6 method, it is implemented in StepAdjustSpinBox
+// This is NOT a Qt6 method, it is implemented in StepAdjustSpinBox.
 void QuantityEdit::setStepLimits(double minimum, double maximum)
 {
     m_valueSpin->setStepLimits(minimum, maximum);
@@ -512,7 +608,8 @@ QString QuantityEdit::toolTip() const
     return m_valueSpin->toolTip();
 }
 
-double QuantityEdit::convertedValue(double value, const QString &from,
+double QuantityEdit::convertedValue(double value,
+                                    const QString &from,
                                     const QString &to) const
 {
     return m_representation.convert(value, from, to);
@@ -539,12 +636,54 @@ void QuantityEdit::showRepresentationContextMenu(
         connect(action,
                 &QAction::triggered,
                 this,
-                [this, from, to]
+                [this, to]
                 {
+                    /*
+                     * setRepresentation() deliberately changes only
+                     * the current state. The eventual commit() creates
+                     * the single undo command containing both value and
+                     * representation.
+                     */
                     setRepresentation(to.uiRep);
                 });
     }
 
+    /*
+     * Keep Undo/Redo/Finish_editing in the representation context menu as
+     * well.
+     * Unlike the old conversion-only menu, the menu must exist even
+     * when there are no conversion actions.
+     */
+    menu.addSeparator();
+
+    auto *undoAction = menu.addAction("Undo value",
+        this,
+        [this] {
+            undo();
+        });
+    undoAction->setEnabled(m_qdirty || m_undoStack.canUndo());
+
+    auto *redoAction = menu.addAction("Redo value",
+        this,
+        [this] {
+            redo();
+        });
+    redoAction->setEnabled(!m_editing && m_undoStack.canRedo());
+
+    menu.addSeparator();
+
+    auto *finish = menu.addAction("Finish editing",
+        this,
+        [this] {
+            commit();
+        });
+    finish->setEnabled(m_qdirty);
+
+    /*
+     * Don't show an entirely empty menu. This shouldn't normally
+     * happen because Undo/Redo have just been added, but keeping
+     * the guard makes the intention explicit.
+     */
     if (menu.isEmpty())
         return;
 
@@ -553,14 +692,119 @@ void QuantityEdit::showRepresentationContextMenu(
 
 QString QuantityEdit::cleanText() const
 {
-     return m_valueSpin ? m_valueSpin->cleanText() : "";
+    return m_valueSpin ? m_valueSpin->cleanText() : "";
 }
 
 bool QuantityEdit::checkCanonicalRange()
 {
     double c_value = canonicalValue();
 
-    return c_value >= m_canonicalMinimum && c_value <= m_canonicalMaximum;
+    return c_value >= m_canonicalMinimum &&
+           c_value <= m_canonicalMaximum;
+}
+
+void QuantityEdit::pushValueCommand(const Value &oldValue,
+                                    const Value &newValue)
+{
+    if (m_undoRedoInProgress || oldValue == newValue)
+        return;
+
+    m_undoStack.push(new ValueCommand(this, oldValue, newValue));
+}
+
+void QuantityEdit::setValueWithoutHistory(const Value &value)
+{
+    m_undoRedoInProgress = true;
+
+    m_valueSpin->blockSignals(true);
+
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(true);
+
+    m_valueSpin->setValue(value.value);
+
+    if (m_representationCombo)
+    {
+        const int index =
+            m_representationCombo->findText(value.representation);
+
+        if (index >= 0)
+            m_representationCombo->setCurrentIndex(index);
+    }
+    else
+    {
+        m_representationLabel->setText(value.representation);
+    }
+
+    if (m_representationCombo)
+        m_representationCombo->blockSignals(false);
+
+    m_valueSpin->blockSignals(false);
+
+    m_undoRedoInProgress = false;
+}
+
+void QuantityEdit::undo()
+{
+    if (m_editing)
+    {
+        const Value current = currentValue();
+
+        if (current != m_originalValue)
+        {
+            setValueWithoutHistory(m_originalValue);
+            m_qdirty = false;
+            m_editing = false;
+            return;
+        }
+
+        m_editing = false;
+    }
+
+    if (!m_undoStack.canUndo())
+    {
+        return;
+    }
+
+    m_undoRedoInProgress = true;
+    m_undoStack.undo();
+    m_undoRedoInProgress = false;
+
+    m_originalValue = currentValue();
+    m_qdirty = false;
+}
+
+void QuantityEdit::redo()
+{
+    if (!m_undoStack.canRedo())
+        return;
+
+    m_undoRedoInProgress = true;
+    m_undoStack.redo();
+    m_undoRedoInProgress = false;
+
+    /*
+     * Redo restores a committed history state.
+     */
+    m_originalValue = currentValue();
+    m_editing = false;
+    m_qdirty = false;
+}
+
+void QuantityEdit::setValueForUndoRedo(const Value &value)
+{
+    const Value before = currentValue();
+
+    setValueWithoutHistory(value);
+
+    const Value after = currentValue();
+
+    if (before != after)
+        emit valueRestored(before, after);
+
+    m_originalValue = after;
+    m_editing = false;
+    m_qdirty = false;
 }
 
 QString QuantityEdit::debugString() const
@@ -568,17 +812,22 @@ QString QuantityEdit::debugString() const
     const Value cval = currentValue();
 
     if (m_representationCombo)
-        return QString("objectName: %1 current: [%2, %3]  orig: [%4, %5]  editing: %6")
-                       .arg(objectName())
-                       .arg(cval.value, 0, 'g', 6)
-                       .arg(cval.representation)
-                       .arg(m_originalValue.value, 0, 'g', 6)
-                       .arg(m_originalValue.representation)
-                       .arg(m_editing ? "true" : "false");
-    else
-        return QString("objectName: %1  current: %2  orig: %3  editing: %4")
-                       .arg(objectName())
-                       .arg(cval.value, 0, 'g', 6)
-                       .arg(m_originalValue.value, 0, 'g', 6)
-                       .arg(m_editing ? "true" : "false");
+    {
+        return QString(
+            "objectName: %1 current: [%2, %3]  "
+            "orig: [%4, %5]  editing: %6")
+            .arg(objectName())
+            .arg(cval.value, 0, 'g', 6)
+            .arg(cval.representation)
+            .arg(m_originalValue.value, 0, 'g', 6)
+            .arg(m_originalValue.representation)
+            .arg(m_editing ? "true" : "false");
+    }
+
+    return QString(
+        "objectName: %1  current: %2  orig: %3  editing: %4")
+        .arg(objectName())
+        .arg(cval.value, 0, 'g', 6)
+        .arg(m_originalValue.value, 0, 'g', 6)
+        .arg(m_editing ? "true" : "false");
 }

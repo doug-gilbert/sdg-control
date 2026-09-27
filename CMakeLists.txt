@@ -17,6 +17,7 @@ string(TIMESTAMP BUILD_TIME "%Y%m%d %H:%M:%S")
 option(SDG_DEBUG "Enable SDG SCPI debug output" OFF)
 option(SDG_DEVELOPER_UI "Extra GUI fields to aid development" OFF)
 option(SDG_BUILD_TEST "Build sdg_test CLI in test_instrument directory" OFF)
+option(USE_DOXYGEN "Generate Doxygen documentation with '--target docs'" OFF)
 
 if (SDG_DEBUG)
     MESSAGE( STATUS ">> SDG_DEBUG set, messages sent to console" )
@@ -24,6 +25,25 @@ endif ()
 if (SDG_DEVELOPER_UI)
     MESSAGE( STATUS ">> SDG_DEVELOPER_UI set, extra fields to aid development" )
 endif ()
+
+if (USE_DOXYGEN)
+    # Use 'cmake --build build --target docs' then see build/html
+    find_package(Doxygen REQUIRED)
+
+    set(DOXYGEN_EXTRACT_ALL YES)
+    set(DOXYGEN_HAVE_DOT YES)
+    set(DOXYGEN_CLASS_DIAGRAMS YES)
+    set(DOXYGEN_UML_LOOK YES)
+
+    doxygen_add_docs(
+        docs
+        ${PROJECT_SOURCE_DIR}/app
+        ${PROJECT_SOURCE_DIR}/instrument
+        ${PROJECT_SOURCE_DIR}/common
+        COMMENT "Generating API documentation"
+    )
+endif (USE_DOXYGEN)
+
 
 set(OS_LINUX 0)
 set(CONTAINS_LINUX 0)

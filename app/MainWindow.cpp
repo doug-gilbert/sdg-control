@@ -802,7 +802,10 @@ void MainWindow::refreshClicked()
 
     if (wasDirty)
     {
-        DEBUG_FUNC << ">>> Refresh overwrote user data";
+        // Not a bug: the SDG is the source of truth, so Refresh overwrites
+        // locally committed but unsent UI changes.
+        // In the future, optionally ask the user to confirm the overwrite.
+        DEBUG_FUNC << ">>> Refresh overwrote locally committed unsent data";
     }
     setSendEnabled(false);
 }
@@ -875,17 +878,32 @@ void MainWindow::sendClicked()
         const auto state = pendingChannelState(channel);
         const auto dirtyState = pendingChannelDirtyState(channel);
 
-#if 0
-DEBUG_FUNC << "pending_dirty:\n" << dirtyState->debugStr();
-#endif
         bool local_ok = m_generator->applyChannelState(channel, *state,
                                                        *dirtyState);
+
         if (local_ok)
+        {
             dirtyState->clearAll();
-        else
+
             DEBUG_FUNC << "Chan=" << channel
-                           << "setting of at least one field failed";
+                       << " apply OK, dirty cleared";
+        }
+        else
+        {
+            DEBUG_FUNC << "Chan=" << channel
+                       << " setting of at least one field failed";
+        }
         ok &= local_ok;
+    }
+
+    if (ok)
+    {
+        DEBUG_FUNC << "All channels applied OK; disabling Send";
+        setSendEnabled(false);
+    }
+    else
+    {
+        DEBUG_FUNC << "At least one channel failed; Send remains enabled";
     }
 }
 
@@ -909,26 +927,21 @@ void MainWindow::connectionLost()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    DEBUG_FUNC << "starting";
-
     if (m_generator && m_generator->isConnected())
     {
         m_generator->disconnect();
     }
     if (m_frontPanelWindow)
     {
-        // __PRETTY_FUNCTION__ is a GCC extension, best not to use
-        // sdgDebug() << __PRETTY_FUNCTION__ << "closing frontPanelWindow";
-        sdgDebug() << "closing frontPanelWindow";
+        DEBUG_FUNC << "closing frontPanelWindow";
         m_frontPanelWindow->close();
     }
     event->accept();
-    DEBUG_FUNC << "finishing";
 }
 
 void MainWindow::setWaveform(int channel, const QString & waveform)
 {
-DEBUG_FUNC << "channel=" << channel << " waveform=" << waveform;
+    DEBUG_FUNC << "channel=" << channel << " waveform=" << waveform;
     auto pendingState = pendingChannelState(channel);
     auto dirtyState = pendingChannelDirtyState(channel);
 
@@ -1119,7 +1132,7 @@ void MainWindow::setPulseWidth(int channel, double value)
     if (m_immediateMode)
     {
         if (m_generator->applyChannelState(channel, *pendingState,
-                                                    *dirtyState))
+                                           *dirtyState))
             dirtyState->m_pulseWidth = false;
     }
     else
@@ -1445,6 +1458,7 @@ void MainWindow::createFrontPanelWindow()
             this,
             [this]()
             {
+                DEBUG_FUNC << "got QObject destroyed from front panel";
                 m_frontPanelWindow = nullptr;
             });
 }

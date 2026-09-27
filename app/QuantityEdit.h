@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2026 Douglas Gilbert.
  * SPDX-License-Identifier: BSD-2-Clause
@@ -7,11 +8,13 @@
 
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QUndoStack>
 #include <QWidget>
 
 #include <vector>
 
 class QLabel;
+class QUndoCommand;
 
 class StepAdjustSpinBox;
 class AppController;
@@ -22,9 +25,9 @@ class QuantityRepresentation
 public:
     struct Representation
     {
-        QString uiRep;
-        QString canonicalRep;
-        double ui2CanonicalScale;
+        QString uiRep;            // Example: mVpp (selection in comboBox)
+        QString canonicalRep;     // Thus: Vpp
+        double ui2CanonicalScale; // If 0.0 implies no scaling
     };
 
     virtual ~QuantityRepresentation() = default;
@@ -45,8 +48,18 @@ public:
                              const QString &to) const;
 };
 
-// Holds a [doubleSpinBox, comboBox] or a [doubleSpinBox, label] pair inside
-// a widget.
+
+/// QuantityEdit is an abstraction over a numeric field and a very closely
+/// associated representation selector (e.g. 'mVpp' meaning the unit is
+/// (lower) peak to (upper) peak milliVolts). More precisely it is a type
+/// of QWidget that includes a StepAdjustSpinBox on the left and a ComboBox
+/// on the right. The StepAdjustSpinBox is derived for Qt's QDoubleSpinBox.
+/// The comboBox is a QComboBox and in the degenerate case where
+/// QuantityRepresentation::representations().size() is 1 then the
+/// QComboBox is replaced a QLabel.
+/// This class has the concept of 'committed' when editing an instance of
+/// this class. After editing a "QuantityEdit" field A, clicking on another
+/// field will cause a commit() on field A.
 class QuantityEdit : public QWidget
 {
     Q_OBJECT
@@ -92,6 +105,9 @@ public:
 
     double canonicalValue() const;
 
+    void undo();         // also invoked by Ctrl+Z
+    void redo();         // also invoked by Ctrl+Y or Ctrl+Shift+Z
+
     // This is accessing PendingChannelState owned by MainWindow and is not
     // necessarily 1 to 1. For example the Frequency and Period fields share
     // the same dirty/modified flag.
@@ -114,11 +130,12 @@ public:
     bool isStepType2MSD() const; // spins second Most Significant Digit
     void setDecimals(int num);
     int decimals() const;
-    void setSuffix(const QString & suffix);
+    void setSuffix(const QString &suffix);
     void setRange(double minimum, double maximum);
     double minimum() const;
     double maximum() const;
     void setToolTip(const QString &toolTip);
+
     // setMinimumWidth() passes through to base class (QWidget)
     // setObjectName() passes through to base class (QWidget)
     QString toolTip() const;
@@ -128,7 +145,10 @@ public:
     QString cleanText() const;
 
     void setCanonicalRange(double minimum, double maximum)
-            { m_canonicalMinimum = minimum; m_canonicalMaximum = maximum; }
+    {
+        m_canonicalMinimum = minimum;
+        m_canonicalMaximum = maximum;
+    }
 
     // Yields current and original state of this widget as a QString
     QString debugString() const;
@@ -141,6 +161,9 @@ signals:
     void committed(const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final);
 
+    void valueRestored(const QuantityEdit::Value &oldValue,
+                       const QuantityEdit::Value &newValue);
+
 protected:
     void focusInEvent(QFocusEvent *event) override;
     void focusOutEvent(QFocusEvent *event) override;
@@ -148,24 +171,63 @@ protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
+    class ValueCommand : public QUndoCommand
+    {
+    public:
+        ValueCommand(QuantityEdit *quantityEdit,
+                     const Value &oldValue,
+                     const Value &newValue)
+            : m_quantityEdit(quantityEdit),
+              m_oldValue(oldValue),
+              m_newValue(newValue)
+        {
+        }
+
+        void undo() override
+        {
+            m_quantityEdit->setValueForUndoRedo(m_oldValue);
+        }
+
+        void redo() override
+        {
+            m_quantityEdit->setValueForUndoRedo(m_newValue);
+        }
+
+    private:
+        QuantityEdit *m_quantityEdit;
+        Value m_oldValue;
+        Value m_newValue;
+    };
+
+    void setValueWithoutHistory(const Value &value);
+
     Value currentValue() const;
 
     void beginEditing();
 
-    // sends committed signal with original and final values
+    // Sends committed signal with original and final values.
     void commit();
 
-    double convertedValue(double value, const QString &from,
+    // Applies a value/representation pair during undo/redo without
+    // starting or finishing an editing transaction.
+    void setValueForUndoRedo(const Value &value);
+
+    // Adds one complete QuantityEdit transaction to the undo stack.
+    void pushValueCommand(const Value &oldValue,
+                          const Value &newValue);
+
+    double convertedValue(double value,
+                          const QString &from,
                           const QString &to) const;
 
-    // sub-classes may override this simple implementation
+    // Sub-classes may override this simple implementation.
     virtual bool checkCanonicalRange();
 
     void showRepresentationContextMenu(const QPoint &globalPos);
 
     AppController *m_controller = nullptr;
 
-    // Note that StepAdjustSpinBox is derived from QDoubleSpinBox
+    // Note that StepAdjustSpinBox is derived from QDoubleSpinBox.
     StepAdjustSpinBox *m_valueSpin = nullptr;
     QComboBox *m_representationCombo = nullptr;
     QLabel *m_representationLabel = nullptr;
@@ -174,14 +236,26 @@ private:
 
     Value m_originalValue{1.0, {}};
 
-    // checked when leaving the QuantityEdit field
+    // Checked when leaving the QuantityEdit field.
     double m_canonicalMinimum = 0.000'000'001;
     double m_canonicalMaximum = 1'000'000'000;
 
-    // set when user has started editing this field, awaiting commit()
+    // Set when user has started editing this field, awaiting commit().
     bool m_editing = false;
 
-    // Owned by MainWindow via PendingChannelState.
-    // QuantityEdit does not modify this flag.
+    // True while a ValueCommand is restoring the widget.
+    bool m_undoRedoInProgress = false;
+
+    // True when this QuantityEdit has been changed during the current
+    // editing transaction, regardless of whether the normalized quantity
+    // differs from the original value.
+    bool m_qdirty = false;
+
+    // Application-level dirty state. This may be shared by multiple
+    // QuantityEdit instances (e.g. Frequency and Period).
     const bool &m_dirtyFlag;
+
+    // One undo history for the complete QuantityEdit state:
+    // { numeric value, representation }.
+    QUndoStack m_undoStack;
 };

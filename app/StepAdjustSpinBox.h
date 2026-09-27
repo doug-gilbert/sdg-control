@@ -46,8 +46,13 @@ public:
 signals:
     void contextMenuAboutToShow(QMenu *);
 
+    void userValueChanged(double value);
+
 public slots:
     void onSecondMSD_changed(bool checked);
+
+protected:
+    void stepBy(int steps) override;
 
 private:
     // does NOT change m_defaultStep but changes QDoubleSpinBox::singleStep

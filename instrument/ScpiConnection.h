@@ -13,7 +13,7 @@
 class ScpiConnection : public QObject
 {
     Q_OBJECT
-  
+
 public:
     explicit ScpiConnection(QObject *parent = nullptr);
 
@@ -34,10 +34,17 @@ public:
 
     QString errorString() const;
 
+    uint32_t numScpiSent() const { return m_numScpiSent; }
+
 signals:
     void disconnected();
     void connectionError(const QString &message);
 
 private:
     QTcpSocket socket;
+
+    // Running count of SCPI commands sent. Useful for knowing if
+    // anything was sent in the last commit. If not, no need to wait.
+    uint32_t m_numScpiSent = 0;
+
 };

@@ -34,6 +34,11 @@ struct OutputState;
 struct ChannelDirtyState;
 
 
+/// The SDG2000X series are all two channel devices that are relatively
+/// independent. Each channel is modelled by an instance of this class.
+/// Other settings that are common to both channels (e.g. Clock source)
+/// are modelled by an instance of the GeneralWidget class.
+/// MainWindow is the parent of this class.
 class ChannelWidget : public QWidget
 {
     Q_OBJECT
@@ -42,6 +47,8 @@ public:
     explicit ChannelWidget(AppController *controller, int channel,
                            const ChannelDirtyState *dirtyState,
                            QWidget *parent = nullptr);
+
+    ~ChannelWidget();
 
     void setUiStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 

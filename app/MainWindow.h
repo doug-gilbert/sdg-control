@@ -25,7 +25,10 @@ class FrontPanelWindow;
 class GeneralWidget;
 class CLI_options;
 
-
+/// All other windows in sdg-control live within (or are owned by) this one.
+/// There is only one instance of this class (i.e. it's a singleton). The
+/// destructor of this class is designed to clean up all other windows. All
+/// windows (widgets) are modal apart from FrontPanelWindow.
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -41,7 +44,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
-private slots:  // 'slots' Qt6 keyword not needed with modern connects()s
+private slots:  ///< 'slots' Qt6 keyword not needed with modern connects()s
     void refreshClicked();
     void connectClicked();
     void disconnectClicked();
@@ -54,7 +57,7 @@ private:
     bool m_debugFocus = false;
 
     bool m_immediateMode = true;
-    bool m_sendEnabled = false;    // is Send button enabled in Send mode
+    bool m_sendEnabled = false;    ///< is Send button enabled in Send mode
 
     GeneralWidget *m_generalWidget = nullptr;
 
@@ -64,9 +67,11 @@ private:
     FrontPanelWindow *m_frontPanelWindow = nullptr;
     QAction *m_frontPanelAction = nullptr;
 
-    // Channel is either 1 or 2. Take care when indexing this array with
-    // the channel number (i.e. need to use 'channel - 1' as the index
-    // since array indexing is origin 0.
+    /**
+     * Channel is either 1 or 2. Take care when indexing this array with
+     * the channel number (i.e. need to use 'channel - 1' as the index
+     * since array indexing is origin 0.
+     */
     std::array<PendingChannelState, 2> m_pendingState;
 
     QCheckBox *m_immediateCheck;

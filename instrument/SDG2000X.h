@@ -79,7 +79,7 @@ public:
 
 private:
 
-    ScpiConnection scpi;
+    ScpiConnection m_scpi;
 
     QString channelPrefix(int channel);
 };

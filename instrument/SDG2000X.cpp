@@ -23,7 +23,7 @@
 SDG2000X::SDG2000X(QObject *parent)
     : Instrument(parent)
 {
-    connect(&scpi,
+    connect(&m_scpi,
             &ScpiConnection::disconnected,
             this,
             &SDG2000X::disconnected);
@@ -31,7 +31,7 @@ SDG2000X::SDG2000X(QObject *parent)
 
 SDG2000X::~SDG2000X()
 {
-    sdgDebug() << "SDG2000X destructor";
+    DEBUG_FUNC;
 }
 
 // Yes the SDG2000X has a front panel, the simulator doesnt
@@ -42,22 +42,22 @@ bool SDG2000X::hasFrontPanel() const
 
 bool SDG2000X::connectTo(const QString& ip)
 {
-    return scpi.connectTo(ip);
+    return m_scpi.connectTo(ip);
 }
 
 void SDG2000X::disconnect()
 {
-    scpi.disconnect();
+    m_scpi.disconnect();
 }
 
 bool SDG2000X::isConnected() const
 {
-    return scpi.isConnected();
+    return m_scpi.isConnected();
 }
 
 QString SDG2000X::identification()
 {
-    return scpi.query("*IDN?");
+    return m_scpi.query("*IDN?");
 }
 
 QString SDG2000X::channelPrefix(int channel)
@@ -67,7 +67,7 @@ QString SDG2000X::channelPrefix(int channel)
 
 bool SDG2000X::setSdgWaveform(int channel, const QString& waveform)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -77,12 +77,12 @@ bool SDG2000X::setSdgWaveform(int channel, const QString& waveform)
 
     sdgDebug() << "Waveform:" << cmd;
 
-    return scpi.command(cmd);
+    return m_scpi.command(cmd);
 }
 
 bool SDG2000X::setSdgFrequency(int channel, double hz)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -90,12 +90,12 @@ bool SDG2000X::setSdgFrequency(int channel, double hz)
         .arg(channelPrefix(channel))
         .arg(QString::number(hz, 'f', 6));
 
-    return scpi.command(cmd);
+    return m_scpi.command(cmd);
 }
 
 bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     const ValueRepresentation vr = amp.valueRepresentation();
@@ -107,7 +107,7 @@ bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
                 .arg(channelPrefix(channel))
                 .arg(QString::number(vr.value, 'f', 3));
 
-        return scpi.command(cmd);
+        return m_scpi.command(cmd);
     }
 
     if (vr.representation == "Vrms")
@@ -117,7 +117,7 @@ bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
                 .arg(channelPrefix(channel))
                 .arg(QString::number(vr.value, 'f', 6));
 
-        return scpi.command(cmd);
+        return m_scpi.command(cmd);
     }
 
     if (vr.representation == "dBm")
@@ -127,7 +127,7 @@ bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
                 .arg(channelPrefix(channel))
                 .arg(QString::number(vr.value, 'f', 6));
 
-        return scpi.command(cmd);
+        return m_scpi.command(cmd);
     }
 
 #if 0
@@ -144,7 +144,7 @@ bool SDG2000X::setSdgAmplitude(int channel, const AmplitudeState &amp)
 
 bool SDG2000X::setSdgOffset(int channel, double volts)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -152,12 +152,12 @@ bool SDG2000X::setSdgOffset(int channel, double volts)
         .arg(channelPrefix(channel))
         .arg(QString::number(volts, 'g', 4));
 
-    return scpi.command(cmd);
+    return m_scpi.command(cmd);
 }
 
 bool SDG2000X::setSdgPhase(int channel, double degrees)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -165,12 +165,12 @@ bool SDG2000X::setSdgPhase(int channel, double degrees)
         .arg(channelPrefix(channel))
         .arg(QString::number(degrees, 'f', 1));
 
-    return scpi.command(cmd);
+    return m_scpi.command(cmd);
 }
 
 bool SDG2000X::setSdgRampSymmetry(int channel, double percent)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV SYM,%2")
             .arg(channelPrefix(channel))
             .arg(percent, 0, 'f', 1));
@@ -178,7 +178,7 @@ bool SDG2000X::setSdgRampSymmetry(int channel, double percent)
 
 bool SDG2000X::setSdgPulseWidth(int channel, double seconds)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV WIDTH,%2")
             .arg(channelPrefix(channel))
             .arg(QString::number(seconds, 'g', 12)));
@@ -186,7 +186,7 @@ bool SDG2000X::setSdgPulseWidth(int channel, double seconds)
 
 bool SDG2000X::setSdgPulseRise(int channel, double seconds)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV RISE,%2")
             .arg(channelPrefix(channel))
             .arg(QString::number(seconds, 'g', 12)));
@@ -194,7 +194,7 @@ bool SDG2000X::setSdgPulseRise(int channel, double seconds)
 
 bool SDG2000X::setSdgPulseFall(int channel, double seconds)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV FALL,%2")
             .arg(channelPrefix(channel))
             .arg(QString::number(seconds, 'g', 12)));
@@ -202,7 +202,7 @@ bool SDG2000X::setSdgPulseFall(int channel, double seconds)
 
 bool SDG2000X::setSdgNoiseBandset(int channel, bool enabled)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV BANDSTATE,%2")
             .arg(channelPrefix(channel))
             .arg(enabled ? "ON" : "OFF"));
@@ -210,7 +210,7 @@ bool SDG2000X::setSdgNoiseBandset(int channel, bool enabled)
 
 bool SDG2000X::setSdgNoiseStdev(int channel, double volts)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV STDEV,%2")
             .arg(channelPrefix(channel))
             .arg(volts, 0, 'g', 12));
@@ -218,7 +218,7 @@ bool SDG2000X::setSdgNoiseStdev(int channel, double volts)
 
 bool SDG2000X::setSdgNoiseMean(int channel, double volts)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV MEAN,%2")
             .arg(channelPrefix(channel))
             .arg(volts, 0, 'g', 12));
@@ -226,7 +226,7 @@ bool SDG2000X::setSdgNoiseMean(int channel, double volts)
 
 bool SDG2000X::setSdgNoiseBandwidth(int channel, double freq)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV BANDWIDTH,%2")
             .arg(channelPrefix(channel))
             .arg(freq, 0, 'g', 12));
@@ -234,7 +234,7 @@ bool SDG2000X::setSdgNoiseBandwidth(int channel, double freq)
 
 bool SDG2000X::setSdgDcOffset(int channel, double value)
 {
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV OFST,%2")
             .arg(channelPrefix(channel))
             .arg(value, 0, 'g', 4));
@@ -243,7 +243,7 @@ bool SDG2000X::setSdgDcOffset(int channel, double value)
 bool SDG2000X::setSdgDcPrecisionHigh(int channel, bool enabled)
 {
 #if 0           // not defined in Prog. manual, not returned by SDG ??
-    return scpi.command(
+    return m_scpi.command(
         QString("%1:BSWV PRECISION,%2")
             .arg(channelPrefix(channel))
             .arg(enabled ? "HIGH" : "LOW"));
@@ -256,7 +256,7 @@ bool SDG2000X::setSdgDcPrecisionHigh(int channel, bool enabled)
 
 bool SDG2000X::setSdgExternalOutput(int channel, bool externalOutput)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -264,9 +264,9 @@ bool SDG2000X::setSdgExternalOutput(int channel, bool externalOutput)
         .arg(channelPrefix(channel))
         .arg(externalOutput ? "ON" : "OFF");
 
-    if (!scpi.command(cmd))
+    if (!m_scpi.command(cmd))
     {
-        DEBUG_FUNC << "CH" << channel << "  scpi.command() returned false";
+        DEBUG_FUNC << "CH" << channel << "  m_scpi.command() returned false";
         return false;
     }
 
@@ -277,7 +277,7 @@ bool SDG2000X::setSdgExternalOutput(int channel, bool externalOutput)
 
 bool SDG2000X::setSdgOutputLoadPol(int channel, const OutputState &oState)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -287,9 +287,9 @@ bool SDG2000X::setSdgOutputLoadPol(int channel, const OutputState &oState)
         .arg(oState.outputLoad == OutputLoad::Ohms50 ? "50" : "HZ")
         .arg(oState.polarity == Polarity::Normal ? "NOR" : "INVT");
 
-    if (!scpi.command(cmd))
+    if (!m_scpi.command(cmd))
     {
-        DEBUG_FUNC << "CH" << channel << ": scpi.command() returned false";
+        DEBUG_FUNC << "CH" << channel << ": m_scpi.command() returned false";
         return false;
     }
 
@@ -322,16 +322,16 @@ bool SDG2000X::setSdgOutputLoadPol(int channel, const OutputState &oState)
 
 bool SDG2000X::setSdgOutputBoth(bool enabled)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
         QString("OUT_BOTHCH %1")
         .arg(enabled ? "ON" : "OFF");
 
-    if (!scpi.command(cmd))
+    if (!m_scpi.command(cmd))
     {
-        DEBUG_FUNC << "scpi.command() returned false";
+        DEBUG_FUNC << "m_scpi.command() returned false";
         return false;
     }
     return true;
@@ -339,7 +339,7 @@ bool SDG2000X::setSdgOutputBoth(bool enabled)
 
 bool SDG2000X::setInvert(int channel, bool enable)
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -347,10 +347,10 @@ bool SDG2000X::setInvert(int channel, bool enable)
         .arg(channelPrefix(channel))
         .arg(enable ? "ON" : "OFF");
 
-    if (!scpi.command(cmd))
+    if (!m_scpi.command(cmd))
     {
         DEBUG_FUNC << "CH" << channel
-                       << ": scpi.command() returned false";
+                       << ": m_scpi.command() returned false";
         return false;
     }
     return true;
@@ -361,7 +361,7 @@ ChannelState SDG2000X::getChannelState(int channel)
     ChannelState state;
     QString wvtp;
     QString response =
-        scpi.query(channelPrefix(channel) + ":BSWV?");
+        m_scpi.query(channelPrefix(channel) + ":BSWV?");
 
     sdgDebug() << "BSWV raw response:" << response;
 
@@ -473,16 +473,16 @@ ChannelState SDG2000X::getChannelState(int channel)
 
 bool SDG2000X::clearErrors()
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
-    return scpi.command("*CLS");
+    return m_scpi.command("*CLS");
 }
 
 std::optional<OutputState> SDG2000X::getOutputState(int channel)
 {
     QString response =
-        scpi.query(channelPrefix(channel) + ":OUTP?");
+        m_scpi.query(channelPrefix(channel) + ":OUTP?");
 
     sdgDebug() << "OUTP response:" << response;
 
@@ -513,24 +513,27 @@ qsdgDebug() << "ExtrenalOutput=" << state.externalOutput
 
 QString SDG2000X::getError()
 {
-    return scpi.query("SYST:ERR?");
+    return m_scpi.query("SYST:ERR?");
 }
 
 QString SDG2000X::getConnectionError() const
 {
-    return scpi.errorString();
+    return m_scpi.errorString();
 }
 
 bool SDG2000X::waitForOperationComplete(int timeout_ms)
 {
-    return scpi.waitForOperationComplete(timeout_ms);
+    return m_scpi.waitForOperationComplete(timeout_ms);
 }
 
 bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
                                  const ChannelDirtyState& dirty)
 {
     bool ok = true;
+    const uint32_t scpiStart = m_scpi.numScpiSent();
 
+    DEBUG_FUNC << "SCPI count at entry =" << scpiStart << ", waveform ="
+               << state.waveform;
     if (dirty.m_waveform)
         ok &= setSdgWaveform(channel, state.waveform);
 
@@ -599,38 +602,52 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
             ok &= setSdgDuty(channel, state.duty);
     }
 
-    // Wait up to 5 seconds, could be connection lost
-    ok &= waitForOperationComplete(5000);
-    if (dirty.m_externalOutput || dirty.m_polarity || dirty.m_outputLoad)
+    if (dirty.m_externalOutput || dirty.m_polarity || dirty.m_outputLoad) {
+        if (m_scpi.numScpiSent() != scpiStart)
+            ok &= waitForOperationComplete(5000);
+        // Following command was observed to ignore requests when SDG busy
         ok &= setSdgOutputLoadPol(channel, state.output);
+    }
 
-    return ok;
+    const uint32_t scpiEnd = m_scpi.numScpiSent();
+
+    DEBUG_FUNC << "SCPI count at exit =" << scpiEnd;
+
+    if (scpiEnd != scpiStart) {
+        DEBUG_FUNC << "Commands sent; waiting for OPC";
+        // Wait up to 5 seconds, could be connection lost
+        return ok & m_scpi.waitForOperationComplete(5000);
+    }
+
+    DEBUG_FUNC << "No SCPI commands sent; skipping OPC";
+    return true;
 }
 
 QByteArray SDG2000X::getFrontPanelImage()
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return {};
 
-    return scpi.queryBinary("SCDP");
+    return m_scpi.queryBinary("SCDP");
 }
 
 bool SDG2000X::toggleChannelFocus()
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
-    return scpi.command("VKEY VALUE,KB_CHANNEL,STATE,1");
+    waitForOperationComplete(5000);
+    return m_scpi.command("VKEY VALUE,KB_CHANNEL,STATE,1");
 }
 
 bool SDG2000X::reset()
 {
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     sdgDebug() << "about to issue RESET";
 
-    if (!scpi.command("*RST"))
+    if (!m_scpi.command("*RST"))
         return false;
 
     return waitForOperationComplete(5000);
@@ -642,7 +659,7 @@ bool SDG2000X::setSdgDuty(int channel, double percent)
         DEBUG_FUNC << "bad percentage:" << percent;
         return false;
     }
-    if (!scpi.isConnected())
+    if (!m_scpi.isConnected())
         return false;
 
     QString cmd =
@@ -650,5 +667,5 @@ bool SDG2000X::setSdgDuty(int channel, double percent)
         .arg(channelPrefix(channel))
         .arg(percent, 0, 'f', 3);
 
-    return scpi.command(cmd);
+    return m_scpi.command(cmd);
 }

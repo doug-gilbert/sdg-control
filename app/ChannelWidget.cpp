@@ -656,7 +656,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                                QVariant::fromValue(OutputLoad::Ohms50));
     m_outputLoadCombo->addItem("HiZ",    // for 'High impedance'
                                QVariant::fromValue(OutputLoad::HiZ));
-    m_polarityCombo->setObjectName("outputLoadCombo");
+    m_outputLoadCombo->setObjectName("outputLoadCombo");
 
     m_externalOutputCheck = new QCheckBox(chOutStr, m_groupBox);
     m_externalOutputCheck->setObjectName("externalOutputCheck");
@@ -1005,6 +1005,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     // This sets initial visibilty (whether or not fields are shown)
     updateControlVisibility();
 
+}
+
+ChannelWidget::~ChannelWidget()
+{
+    DEBUG_FUNC << "Channel:" << m_channel;
 }
 
 void ChannelWidget::setUiWaveform(const QString &waveform)

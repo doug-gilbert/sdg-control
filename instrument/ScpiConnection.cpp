@@ -80,8 +80,10 @@ QString ScpiConnection::query(const QString& command, int timeout)
     if (!isConnected())
         return "WRITE ERROR";
 
+DEBUG_FUNC << "cmd: " << command;
     QByteArray cmd = command.toUtf8() + "\r\n";
 
+    ++m_numScpiSent;
     socket.write(cmd);
 
     if (!socket.waitForBytesWritten(1000))
@@ -118,6 +120,7 @@ bool ScpiConnection::command(const QString& command)
     sdgDebug() << "TX command:" << command;
     QByteArray cmd = command.toUtf8() + "\r\n";
 
+    ++m_numScpiSent;
     socket.write(cmd);
 
     if (!socket.waitForBytesWritten(1000))
@@ -157,6 +160,7 @@ QByteArray ScpiConnection::queryBinary(const QString& command)
 
     QByteArray cmd = command.toUtf8() + "\r\n";
 
+    ++m_numScpiSent;
     socket.write(cmd);
 
     if (!socket.waitForBytesWritten(1000))
@@ -193,11 +197,8 @@ bool ScpiConnection::waitForOperationComplete(int timeout_ms)
     if (!isConnected())
         return false;
 
-    DEBUG_FUNC;
+    DEBUG_FUNC << "About to send *OPC?";
 
     QString response = query("*OPC?", timeout_ms);
-
-    sdgDebug() << "OPC response:" << response;
-
     return response.trimmed() == "1";
 }

@@ -14,6 +14,8 @@ class QCloseEvent;
 class Instrument;
 
 
+/// A instance of this class renders a BMP image of the SDG2000X front
+/// panel screen in the ctor and when the Update button is  pressed.
 class FrontPanelWindow : public QWidget
 {
     Q_OBJECT
@@ -22,7 +24,8 @@ public:
     explicit FrontPanelWindow(Instrument *a_instrument,
                               QWidget *parent = nullptr);
 
-public:
+    ~FrontPanelWindow();
+
     void setInstrumentConnected(bool connected);
 
 // public slots:

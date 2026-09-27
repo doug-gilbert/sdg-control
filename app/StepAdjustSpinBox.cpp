@@ -30,6 +30,22 @@ StepAdjustSpinBox::StepAdjustSpinBox(AppController *controller,
             this, [this](const QPoint &pos) {
         QMenu *menu = lineEdit()->createStandardContextMenu();
 
+        // Remove the standard QLineEdit text Undo/Redo actions.
+        // QuantityEdit owns the semantic value Undo/Redo instead.
+        const auto actions = menu->actions();
+
+        for (QAction *action : actions)
+        {
+            const QString text = action->text();
+
+            if (text.contains("Undo", Qt::CaseInsensitive) ||
+                text.contains("Redo", Qt::CaseInsensitive))
+            {
+                menu->removeAction(action);
+                delete action;
+            }
+        }
+
         for (QAction *action : menu->actions())
         {
             if (action->text().contains("Paste"))
@@ -86,6 +102,20 @@ StepAdjustSpinBox::StepAdjustSpinBox(AppController *controller,
                     sdgDebug() << objectName() << "Multiply by 10 ignored";
             });
             multiply->setEnabled(currentStep * 10.0 <= m_maximumStep);
+
+            auto *multiplyTw = menu->addAction("<-- 2 digits", this, [this]
+            {
+                sdgDebug() << objectName() << "Multiply by 100 selected";
+
+                const double currStep = singleStep();
+                const double newStep = currStep * 100.0;
+
+                if (newStep <= m_maximumStep)
+                    setAdjustedStep(newStep);
+                else
+                    sdgDebug() << objectName() << "Multiply by 100 ignored";
+            });
+            multiplyTw->setEnabled(currentStep * 100.0 <= m_maximumStep);
 
             auto *divide = menu->addAction("1 digit -->", this, [this] {
                 sdgDebug() << objectName() << "Divide by 10 selected";
@@ -163,4 +193,22 @@ void StepAdjustSpinBox::onSecondMSD_changed(bool checked)
     // the context menu(s) only exist when visible
     m_secondMSD = checked;
     setAdaptiveStepType(checked);
+}
+
+void StepAdjustSpinBox::stepBy(int steps)
+{
+    const double before = value();
+
+    QDoubleSpinBox::stepBy(steps);
+
+    const double after = value();
+
+    sdgDebug()
+        << objectName()
+        << "stepBy steps =" << steps
+        << "before =" << QString::number(before, 'f', 12)
+        << "after =" << QString::number(after, 'f', 12)
+        << "step =" << QString::number(singleStep(), 'f', 12);
+
+    emit userValueChanged(after);
 }
