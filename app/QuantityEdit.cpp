@@ -19,7 +19,6 @@
 #include <QUndoCommand>
 #include <QUndoStack>
 
-
 #include <limits>
 
 #ifdef HAVE_CONFIG_H
@@ -48,6 +47,9 @@ double QuantityRepresentation::convert(double value,
 
     for (const auto &rep : reps)
     {
+        if (rep.callback)
+            continue;        /* this entry is for context menu */
+
         if (rep.uiRep == from)
             fromRep = &rep;
 
@@ -76,6 +78,9 @@ bool QuantityRepresentation::convertible(const QString &from,
 
     for (const auto &rep : reps)
     {
+        if (rep.callback)
+            continue;        /* this entry is for context menu */
+
         if (rep.uiRep == from)
             fromRep = &rep;
 
@@ -111,11 +116,19 @@ QuantityEdit::QuantityEdit(AppController *controller,
     m_valueSpin->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     const auto representations = m_representation.representations();
+    std::vector<QuantityRepresentation::Representation> realRepresentations;
 
-    if (representations.size() == 1)
+    // filter out representations that have an active callback
+    for (const auto &rep : representations)
+    {
+        if (!rep.callback)
+            realRepresentations.push_back(rep);
+    }
+
+    if (realRepresentations.size() == 1)
     {
         m_representationLabel =
-            new QLabel(representations.front().uiRep, this);
+            new QLabel(realRepresentations.front().uiRep, this);
 
         m_representationLabel->setObjectName(
             "quantityRepresentationLabel");
@@ -139,8 +152,10 @@ QuantityEdit::QuantityEdit(AppController *controller,
         m_representationCombo->setSizeAdjustPolicy(
             QComboBox::AdjustToContents);
 
-        for (const auto &text : representations)
+        for (const auto &text : realRepresentations)
+        {
             m_representationCombo->addItem(text.uiRep);
+        }
     }
 
     auto *layout = new QHBoxLayout(this);
@@ -375,18 +390,22 @@ void QuantityEdit::beginEditing()
     if (m_editing)
         return;
 
+#if 0
     DEBUG_FUNC << objectName()
                << "current =" << currentValue().value
                << currentValue().representation;
+#endif
 
     m_originalValue = currentValue();
     m_editing = true;
     m_qdirty = false;
 
+#if 0
     DEBUG_FUNC << objectName()
                << "captured original ="
                << m_originalValue.value
                << m_originalValue.representation;
+#endif
 
     emit editingStarted();
 }
@@ -615,15 +634,19 @@ double QuantityEdit::convertedValue(double value,
     return m_representation.convert(value, from, to);
 }
 
-void QuantityEdit::showRepresentationContextMenu(
-    const QPoint &globalPos)
+void QuantityEdit::showRepresentationContextMenu(const QPoint &globalPos)
 {
     const QString from = m_representationCombo->currentText();
 
     QMenu menu(this);
 
+    // Add scaling related conversion selection to ComboBox context menu
+    // which is a popup following right click
     for (const auto &to : m_representation.representations())
     {
+        if (to.callback)
+            continue;
+
         if (to.uiRep == from)
             continue;
 
@@ -677,6 +700,29 @@ void QuantityEdit::showRepresentationContextMenu(
         [this] {
             commit();
         });
+
+    // add any callback driven actions to end of context menu
+    bool first = true;
+    for (const auto &rep : m_representation.representations())
+    {
+        if (rep.callback)
+        {
+            if (first)
+            {
+                menu.addSeparator();
+                first = false;
+            }
+            auto *action = menu.addAction(rep.uiRep);
+            connect(action,
+                    &QAction::triggered,
+                    this,
+                    [this, rep]
+                    {
+                        rep.callback(this, rep.callbackArg);
+                    });
+
+        }
+    }
     finish->setEnabled(m_qdirty);
 
     /*

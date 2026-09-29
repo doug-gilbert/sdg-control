@@ -38,6 +38,18 @@
 namespace       // anonymous namespace so all within are at file scope
 {
 
+void frequency2PeriodSwitch(const QuantityEdit * qe, int flag)
+{
+    DEBUG_FUNC << qe->objectName();
+    emit qe->frequencySwap(flag);
+}
+
+void period2FrequencySwitch(const QuantityEdit * qe, int flag)
+{
+    DEBUG_FUNC << qe->objectName();
+    emit qe->periodSwap(flag);
+}
+
 // Start of Frequency/Period section
 
 class FrequencyRepresentation : public QuantityRepresentation
@@ -51,7 +63,10 @@ public:
             {"kHz", "Hz", 1'000.0},
             {"MHz", "Hz", 1'000'000.0},
             {"mHz", "Hz", 0.001},
-            {"uHz", "Hz", 0.000'001}
+            {"uHz", "Hz", 0.000'001},
+
+            {"Switch to period", "", 0.0, frequency2PeriodSwitch, 0},
+            {"Add period field", "", 0.0, frequency2PeriodSwitch, 1}
         };
     }
 
@@ -71,7 +86,10 @@ public:
             {"s",  "s",  1.0},
             {"ms", "s",  0.001},
             {"us", "s",  0.000'001},
-            {"ns", "s",  0.000'000'001}
+            {"ns", "s",  0.000'000'001},
+
+            {"Switch to frequency", "", 0.0, period2FrequencySwitch, 0},
+            {"Add frequency field", "", 0.0, period2FrequencySwitch, 1}
         };
     }
 
@@ -83,6 +101,7 @@ public:
 
 const FrequencyRepresentation frequencyQuantityRepresentation;
 const PeriodRepresentation periodQuantityRepresentation;
+
 
 // Start of Amplitude section; still awaiting Vhigh/Vlow support
 class AmplitudeRepresentation : public QuantityRepresentation
@@ -471,7 +490,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         "RAMP",
         "PULSE",
         "NOISE",
-        "DC",  // Supported by the SDG, but DC-specific UI not implemented yet
+        "DC",
         "ARB"
     });
     m_waveformCombo->setObjectName("waveformCombo");
@@ -753,6 +772,17 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit frequencyChanged(this->m_channel, frequency);
             });
 
+    connect(m_frequencyEdit,
+            &QuantityEdit::frequencySwap,
+            this,
+            [this](int flag)
+            {
+                if (flag == 0)
+                    showFrequencyPeriod(false, true);
+                else
+                    showFrequencyPeriod(true, true);
+            });
+
     connect(m_periodEdit,
             &QuantityEdit::committed,
             this,
@@ -777,6 +807,17 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
                 updatePulseDuty();
                 emit periodChanged(this->m_channel, period);
+            });
+
+    connect(m_periodEdit,
+            &QuantityEdit::periodSwap,
+            this,
+            [this](int flag)
+            {
+                if (flag == 0)
+                    showFrequencyPeriod(true, false);
+                else
+                    showFrequencyPeriod(true, true);
             });
 
     connect(m_amplitudeEdit,
@@ -1200,6 +1241,9 @@ void ChannelWidget::updateControlVisibility()
     m_frequencyLabel->setVisible(showStandardControls);
     m_frequencyEdit->setVisible(showStandardControls);
 
+    m_periodLabel->setVisible(false);
+    m_periodEdit->setVisible(false);
+
     m_amplitudeLabel->setVisible(showStandardControls);
     m_amplitudeEdit->setVisible(showStandardControls);
 
@@ -1351,6 +1395,15 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
                 edit->deselectIfDirty();
             });
     }
+}
+
+void ChannelWidget::showFrequencyPeriod(bool showFrequency, bool showPeriod)
+{
+    m_frequencyLabel->setVisible(showFrequency);
+    m_frequencyEdit->setVisible(showFrequency);
+
+    m_periodLabel->setVisible(showPeriod);
+    m_periodEdit->setVisible(showPeriod);
 }
 
 void ChannelWidget::debugLayout() const

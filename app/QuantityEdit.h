@@ -11,6 +11,7 @@
 #include <QUndoStack>
 #include <QWidget>
 
+#include <functional>
 #include <vector>
 
 class QLabel;
@@ -18,6 +19,7 @@ class QUndoCommand;
 
 class StepAdjustSpinBox;
 class AppController;
+class QuantityEdit;
 
 
 class QuantityRepresentation
@@ -28,6 +30,10 @@ public:
         QString uiRep;            // Example: mVpp (selection in comboBox)
         QString canonicalRep;     // Thus: Vpp
         double ui2CanonicalScale; // If 0.0 implies no scaling
+
+        // Optional action appended to the ComboBox context menu.
+        std::function<void(const QuantityEdit *, int)> callback = nullptr;
+        int callbackArg = 0;
     };
 
     virtual ~QuantityRepresentation() = default;
@@ -158,11 +164,18 @@ signals:
 
     void representationChanged(const QString &representation);
 
+    // Having begun an edit on this instance (containing both a SpinBox and
+    // a ComboBox) the user has done something that indicates this edit has
+    // finished. That 'something' includes clicking on another field (focus
+    // out) or selected 'Finish editing' in the context menu (right click).
     void committed(const QuantityEdit::Value &original,
                    const QuantityEdit::Value &final);
 
     void valueRestored(const QuantityEdit::Value &oldValue,
                        const QuantityEdit::Value &newValue);
+
+    void frequencySwap(int flag) const;
+    void periodSwap(int flag) const;
 
 protected:
     void focusInEvent(QFocusEvent *event) override;

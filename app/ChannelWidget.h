@@ -73,6 +73,8 @@ public:
     // Note: there are multiple UI fields within OutputState
     void setUiOutput(const OutputState &output);
 
+    void showFrequencyPeriod(bool showFrequency, bool showPeriod);
+
     void setControlsEnabled(bool enabled);
 
     void visitAllQuantityEdits(
