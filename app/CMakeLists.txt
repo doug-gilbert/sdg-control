@@ -15,6 +15,8 @@ add_executable(sdg-control
     QuantityEdit.cpp
     QuantityEdit.h
     AppController.h
+    AppHelper.cpp
+    AppHelper.h
     ../common/GeneralState.h
     ../common/ChannelState.h
     ../common/Utility.cpp

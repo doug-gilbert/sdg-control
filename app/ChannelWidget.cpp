@@ -31,6 +31,7 @@
 #include "StepAdjustSpinBox.h"
 #include "QuantityEdit.h"
 #include "AppController.h"
+#include "AppHelper.h"
 #include "Utility.h"
 #include "debug.h"
 
@@ -103,7 +104,14 @@ const FrequencyRepresentation frequencyQuantityRepresentation;
 const PeriodRepresentation periodQuantityRepresentation;
 
 
-// Start of Amplitude section; still awaiting Vhigh/Vlow support
+// Start of Amplitude section
+
+void amplitudeModeSwitch(const QuantityEdit * qe, int flag)
+{
+    DEBUG_FUNC << qe->objectName();
+    emit qe->amplitudeModeSwitch(flag);
+}
+
 class AmplitudeRepresentation : public QuantityRepresentation
 {
 public:
@@ -115,7 +123,10 @@ public:
             {"mVpp",  "Vpp",    0.001},
             {"Vrms",  "Vrms",   1.0},
             {"mVrms", "Vrms",   0.001},
-            {"dBm",   "dBm",    1.0}
+            {"dBm",   "dBm",    1.0},
+
+            {"Switch to Normal", "", 0.0, amplitudeModeSwitch, 0},
+            {"Switch to Vhigh/Vlow", "", 0.0, amplitudeModeSwitch, 1}
         };
     }
 
@@ -151,6 +162,7 @@ public:
 
 const AmplitudeRepresentation amplitudeQuantityRepresentation;
 
+
 // Start of Offset section
 class OffsetRepresentation : public QuantityRepresentation
 {
@@ -160,7 +172,10 @@ public:
     {
         return {
             {"Vdc",  "Vdc",  1.0},
-            {"mVdc",  "Vdc",  0.001}
+            {"mVdc",  "Vdc",  0.001},
+
+            {"Switch to Normal", "", 0.0, amplitudeModeSwitch, 0},
+            {"Switch to Vhigh/Vlow", "", 0.0, amplitudeModeSwitch, 1}
         };
     }
 
@@ -171,6 +186,31 @@ public:
 };
 
 const OffsetRepresentation offsetRepresentation;
+
+
+// Start of VHighLow section
+class VHighLowRepresentation : public QuantityRepresentation
+{
+public:
+    std::vector<QuantityRepresentation::Representation>
+                                            representations() const override
+    {
+        return {
+            {"V",   "V",    1.0},
+            {"mV",  "V",    0.001},
+
+            {"Switch to Normal", "", 0.0, amplitudeModeSwitch, 0},
+            {"Switch to Vhigh/Vlow", "", 0.0, amplitudeModeSwitch, 1}
+        };
+    }
+
+    QString canonicalRepresentation() const override
+    {
+        return { "V" };
+    }
+};
+
+const VHighLowRepresentation vHighLowQuantityRepresentation;
 
 // Start of Phase section
 
@@ -185,7 +225,7 @@ public:
 
     QString canonicalRepresentation() const override
     {
-        return {"°"};
+        return {"°"};    /* that is a multi-byte UTF-8 character */
     }
 };
 
@@ -407,11 +447,13 @@ public:
 
 const DcOffsetRepresentation dcOffsetRepresentation;
 
-}       // <<< end of anonymous namespace
+}       // <<<<< end of anonymous namespace >>>>>
 
 
-// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-// The start of the main class this source file is named after
+/*
+ * vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+ * The start of the main class this source file is named after
+ */
 ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                              const ChannelDirtyState *dirtyState,
                              QWidget *parent)
@@ -445,7 +487,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_scrollArea = new QScrollArea(this);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(
-        Qt::ScrollBarAlwaysOff);
+        // Qt::ScrollBarAlwaysOff);
+        Qt::ScrollBarAsNeeded);
     m_scrollArea->setVerticalScrollBarPolicy(
         Qt::ScrollBarAsNeeded);
 
@@ -479,7 +522,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
         Qt::TextSelectableByMouse |
         Qt::TextSelectableByKeyboard);
 
-    m_formLayout->addRow("Status:", m_statusLabel);
+    m_statusIntroLabel = new QLabel("Status:", m_groupBox);
+    m_formLayout->addRow(m_statusIntroLabel, m_statusLabel);
 #endif
 
     m_waveformCombo = new QComboBox(m_groupBox);
@@ -496,57 +540,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_waveformCombo->setObjectName("waveformCombo");
     m_waveformCombo->setToolTip("Best to start with this field");
 
-    m_frequencyEdit = new QuantityEdit(m_controller,
-                                       frequencyQuantityRepresentation,
-                                       m_dirtyState->m_frequency,
-                                       m_groupBox);
-    m_frequencyEdit->setObjectName("frequencyEdit");
-    m_frequencyEdit->setToolTip(
-        "Right click in the numeric field to modify\n"
-        "the spinner step size");
-    m_frequencyEdit->setMinimumWidth(215);
-    m_frequencyEdit->setSizePolicy(QSizePolicy::Expanding,
-                                   QSizePolicy::Fixed);
-    m_frequencyEdit->setCanonicalRange(0.000'01, 120'000'000);
-    m_frequencyEdit->setDecimals(6);
-    m_frequencyEdit->setSingleStep(0.000'01);
-    m_frequencyEdit->setStepLimits(0.000'01, 100'000'000.0);
-    m_frequencyEdit->setValue(1'000.0, "Hz");
+    prepareFrequencyPeriod(/* preLayout */ true);
 
-    m_periodEdit = new QuantityEdit(m_controller,
-                                    periodQuantityRepresentation,
-          /* not an error --> */    m_dirtyState->m_frequency,
-                                    m_groupBox);
-    m_periodEdit->setObjectName("periodEdit");
-    m_periodEdit->setToolTip(
-        "Right click in the numeric field to modify\n"
-        "the spinner step size");
+    prepareAmplitudeOffset(/* preLayout */ true);
 
-    m_periodEdit->setMinimumWidth(215);
-    m_periodEdit->setSizePolicy(QSizePolicy::Expanding,
-                                QSizePolicy::Fixed);
-    m_periodEdit->setCanonicalRange(0.000'000'008'3, 1'000'000.0);
-    m_periodEdit->setDecimals(6);
-    m_periodEdit->setSingleStep(0.000'000'001);
-    m_periodEdit->setStepLimits(0.000'000'000'001, 1'000'000.0);
-    m_periodEdit->setValue(0.001, "s");
-
-    m_amplitudeEdit = new QuantityEdit(m_controller,
-                                       amplitudeQuantityRepresentation,
-                                       m_dirtyState->m_amplitude,
-                                       m_groupBox);
-    m_amplitudeEdit->setObjectName("amplitudeEdit");
-    m_amplitudeEdit->setMinimumWidth(215);
-    m_amplitudeEdit->setSizePolicy(QSizePolicy::Expanding,
-                                   QSizePolicy::Fixed);
-
-    m_offsetEdit = new QuantityEdit(m_controller,
-                                    offsetRepresentation,
-                                    m_dirtyState->m_offset,
-                                    m_groupBox);
-    m_offsetEdit->setObjectName("offsetEdit");
-    m_offsetEdit->setMinimumWidth(215);
-    m_offsetEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    prepareVHighLow(/* preLayout */ true);
 
     m_phaseEdit = new QuantityEdit(m_controller,
                                    phaseRepresentation,
@@ -558,7 +556,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_phaseEdit->setDecimals(1);
     m_phaseEdit->setSingleStep(1.0);
     m_phaseEdit->setStepLimits(0.1, 100.0);
-    m_phaseEdit->setToolTip("Phase angle in degrees, from -360 to 360");
+    m_phaseEdit->setValueToolTip("Phase angle in degrees, from -360 to 360");
 
     m_dutyEdit = new QuantityEdit(m_controller, dutyRepresentation,
                                    m_dirtyState->m_duty, m_groupBox);
@@ -568,7 +566,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_dutyEdit->setDecimals(1);
     m_dutyEdit->setSingleStep(1.0);
     m_dutyEdit->setStepLimits(0.1, 10.0);
-    m_dutyEdit->setToolTip(
+    m_dutyEdit->setValueToolTip(
                   "Duty cycle: time_up/(time_up+time_down) as percentage");
 
     m_rampSymmetryEdit = new QuantityEdit(m_controller,
@@ -580,7 +578,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_rampSymmetryEdit->setRange(0.0, 100.0);
     m_rampSymmetryEdit->setDecimals(1);
     m_rampSymmetryEdit->setSingleStep(1.0);
-    m_rampSymmetryEdit->setToolTip("(ramp_up / (ramp_up+ramp_down)) * 100");
+    m_rampSymmetryEdit->setValueToolTip(
+                           "(ramp_up / (ramp_up+ramp_down)) * 100");
 
     m_pulseWidthEdit = new QuantityEdit(m_controller,
                                         pulseWidthRepresentation,
@@ -597,8 +596,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                                        m_groupBox);
     m_pulseRiseEdit->setObjectName("pulseRiseEdit");
     // m_pulseRiseEdit->setRange(0.001, 1'000'000.0);
-    m_pulseRiseEdit->setDecimals(3);
-    m_pulseRiseEdit->setSingleStep(0.1);
+    m_pulseRiseEdit->setDecimals(9);
+    m_pulseRiseEdit->setSingleStep(0.000'001);
 
     m_pulseFallEdit = new QuantityEdit(m_controller,
                                        pulseFallRepresentation,
@@ -606,8 +605,8 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                                        m_groupBox);
     m_pulseFallEdit->setObjectName("pulseFallEdit");
     // m_pulseFallEdit->setRange(0.001, 1'000'000.0);
-    m_pulseFallEdit->setDecimals(3);
-    m_pulseFallEdit->setSingleStep(0.1);
+    m_pulseFallEdit->setDecimals(9);
+    m_pulseFallEdit->setSingleStep(0.000'001);
 
     m_pulseDutyEdit = new QuantityEdit(m_controller, pulseDutyRepresentation,
           /* duty or pulseDuty ?? */   m_dirtyState->m_duty,
@@ -618,7 +617,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
     m_pulseDutyEdit->setDecimals(1);
     m_pulseDutyEdit->setSingleStep(1.0);
     m_pulseDutyEdit->setStepLimits(0.1, 10.0);
-    m_pulseDutyEdit->setToolTip(
+    m_pulseDutyEdit->setValueToolTip(
                   "Duty cycle: time_up/(time_up+time_down) as percentage");
 
     m_noiseStdevEdit = new QuantityEdit(m_controller, noiseStdevRepresentation,
@@ -682,10 +681,6 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     // Create widgets and labels
     m_waveformLabel = new QLabel("Waveform:", m_groupBox);
-    m_frequencyLabel = new QLabel("Frequency:", m_groupBox);
-    m_periodLabel = new QLabel("Period:", m_groupBox);
-    m_amplitudeLabel = new QLabel("Amplitude:", m_groupBox);
-    m_offsetLabel = new QLabel("Offset:", m_groupBox);
     m_phaseLabel = new QLabel("Phase:", m_groupBox);
     m_dutyLabel = new QLabel("Duty:", m_groupBox);
     m_rampSymmetryLabel = new QLabel("Ramp symmetry:", m_groupBox);
@@ -704,12 +699,15 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 
     updateControlVisibility();
 
-    // Add labels and related fields to form (which is in a groupbox)
+    // Add labels and related fields to the form (which is in a groupbox)
+    // The ORDER fields appear in the UI is dictated by the following calls.
     m_formLayout->addRow(m_waveformLabel, m_waveformCombo);
     m_formLayout->addRow(m_frequencyLabel, m_frequencyEdit);
     m_formLayout->addRow(m_periodLabel, m_periodEdit);
     m_formLayout->addRow(m_amplitudeLabel, m_amplitudeEdit);
     m_formLayout->addRow(m_offsetLabel, m_offsetEdit);
+    m_formLayout->addRow(m_vHighLabel, m_vHighEdit);
+    m_formLayout->addRow(m_vLowLabel, m_vLowEdit);
     m_formLayout->addRow(m_phaseLabel, m_phaseEdit);
     m_formLayout->addRow(m_dutyLabel, m_dutyEdit);
     m_formLayout->addRow(m_rampSymmetryLabel, m_rampSymmetryEdit);
@@ -745,116 +743,11 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit waveformChanged(this->m_channel, waveform);
             });
 
-    connect(m_frequencyEdit,
-            &QuantityEdit::committed,
-            this,
-            [this](const QuantityEdit::Value &,
-                   const QuantityEdit::Value &final)
-            {
-                Q_UNUSED(final);
+    prepareFrequencyPeriod(/* preLayout */ false);
 
-                const double frequency = m_frequencyEdit->canonicalValue();
+    prepareAmplitudeOffset(/* preLayout */ false);
 
-                if (frequency > 0.0) {
-                    const double period = 1.0 / frequency;
-
-                    m_periodEdit->setValue(period, "s");
-
-                    DEBUG_FUNC << "frequency=" << frequency << "Hz"
-                               << "period=" << period << "s";
-                }
-                else {
-                    DEBUG_FUNC << "<< WILD frequency="
-                               << frequency << "Hz >>";
-                }
-
-                updatePulseDuty();
-                emit frequencyChanged(this->m_channel, frequency);
-            });
-
-    connect(m_frequencyEdit,
-            &QuantityEdit::frequencySwap,
-            this,
-            [this](int flag)
-            {
-                if (flag == 0)
-                    showFrequencyPeriod(false, true);
-                else
-                    showFrequencyPeriod(true, true);
-            });
-
-    connect(m_periodEdit,
-            &QuantityEdit::committed,
-            this,
-            [this](const QuantityEdit::Value &,
-                   const QuantityEdit::Value &final)
-            {
-                Q_UNUSED(final);
-
-                const double period = m_periodEdit->canonicalValue();
-
-                if (period > 0.0) {
-                    const double frequency = 1.0 / period;
-
-                    m_frequencyEdit->setValue(frequency, "Hz");
-
-                    DEBUG_FUNC << "period=" << period << "s"
-                               << "frequency=" << frequency << "Hz";
-                }
-                else {
-                    DEBUG_FUNC <<  "<< WILD period=" << period << "s >>";
-                }
-
-                updatePulseDuty();
-                emit periodChanged(this->m_channel, period);
-            });
-
-    connect(m_periodEdit,
-            &QuantityEdit::periodSwap,
-            this,
-            [this](int flag)
-            {
-                if (flag == 0)
-                    showFrequencyPeriod(true, false);
-                else
-                    showFrequencyPeriod(true, true);
-            });
-
-    connect(m_amplitudeEdit,
-            &QuantityEdit::committed,
-            this,
-            [this](const QuantityEdit::Value &original,
-                   const QuantityEdit::Value &final)
-            {
-                sdgDebug() << "Amplitude field contents:"
-                           << m_amplitudeEdit->cleanText();
-                qsdgDebug() << "amplitude committed:"
-                            << "original =" << original.value
-                            << original.representation
-                            << "final =" << final.value
-                            << final.representation;
-
-                emit amplitudeChanged(m_channel,
-                                     final.value,
-                                     final.representation);
-            });
-
-    connect(m_offsetEdit,
-            &QuantityEdit::committed,
-            this,
-            [this](const QuantityEdit::Value &,
-                   const QuantityEdit::Value &final)
-            {
-                sdgDebug() << m_offsetEdit->debugString();
-                sdgDebug()
-                    << objectName()
-                    << "offset committed:"
-                    << "value =" << final.value
-                    << "representation =" << final.representation;
-
-                emit offsetChanged(m_channel, final.value,
-                                   final.representation);
-            });
+    prepareVHighLow(/* preLayout */ false);
 
     connect(m_phaseEdit,
             &QuantityEdit::committed,
@@ -1043,7 +936,7 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
                 emit hideRequested(m_channel);
             });
 
-    // This sets initial visibilty (whether or not fields are shown)
+    // This sets initial visibility (whether or not fields are shown)
     updateControlVisibility();
 
 }
@@ -1051,6 +944,325 @@ ChannelWidget::ChannelWidget(AppController *controller, int my_channel,
 ChannelWidget::~ChannelWidget()
 {
     DEBUG_FUNC << "Channel:" << m_channel;
+}
+
+/*
+ * These prepare*() methods offload boilerplate code from the constructor.
+ * Previously code for each field (or pair of related fields) was spread
+ * across are a 600 line (plus) constructor.
+ * These methods all assume that the prepare*(true) will be called BEFORE
+ * the corresponding prepare*(false); if not a Q_ASSERT_X will be tripped.
+ */
+void ChannelWidget::prepareFrequencyPeriod(bool preLayout)
+{
+    QuantityEdit * qe;
+
+    if (preLayout)
+    {
+        m_frequencyEdit = new QuantityEdit(m_controller,
+                                           frequencyQuantityRepresentation,
+                                           m_dirtyState->m_frequency,
+                                           m_groupBox);
+        qe = m_frequencyEdit;
+        qe->setObjectName("frequencyEdit");
+        qe->setValueToolTip(
+        "Right click in the numeric field to modify\n"
+        "the spinner step size");
+        qe->setUnitToolTip("Right click here for more options");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding,
+                                   QSizePolicy::Fixed);
+        qe->setCanonicalRange(0.000'01, 120'000'000);
+        qe->setDecimals(6);
+        qe->setSingleStep(0.000'01);
+        qe->setStepLimits(0.000'01, 100'000'000.0);
+        qe->setValue(1'000.0, "Hz");
+        m_frequencyLabel = new QLabel("Frequency:", m_groupBox);
+
+        m_periodEdit = new QuantityEdit(m_controller,
+                                        periodQuantityRepresentation,
+              /* not an error --> */    m_dirtyState->m_frequency,
+                                        m_groupBox);
+        qe = m_periodEdit;
+        qe->setObjectName("periodEdit");
+        qe->setValueToolTip(
+        "Right click in the numeric field to modify\n"
+        "the spinner step size");
+        qe->setUnitToolTip("Right click here for more options");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding,
+                                QSizePolicy::Fixed);
+        qe->setCanonicalRange(0.000'000'008'3, 1'000'000.0);
+        qe->setDecimals(6);
+        qe->setSingleStep(0.000'000'001);
+        qe->setStepLimits(0.000'000'000'001, 1'000'000.0);
+        qe->setValue(0.001, "s");
+        m_periodLabel = new QLabel("Period:", m_groupBox);
+    }
+    else
+    {         // after the formLayout invocations we set up the connects
+        qe = m_frequencyEdit;
+        Q_ASSERT_X(qe, __func__, "m_frequencyEdit=nullptr, bad ordering?");
+
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &,
+                       const QuantityEdit::Value &final)
+                {
+                    Q_UNUSED(final);
+
+                    const double frequency = m_frequencyEdit->canonicalValue();
+
+                    if (frequency > 0.0) {
+                        const double period = 1.0 / frequency;
+
+                        m_periodEdit->setValue(period, "s");
+
+                        DEBUG_FUNC << "frequency=" << frequency << "Hz"
+                                   << "period=" << period << "s";
+                    }
+                    else {
+                        DEBUG_FUNC << "<< WILD frequency="
+                                   << frequency << "Hz >>";
+                    }
+
+                    updatePulseDuty();
+                    emit frequencyChanged(this->m_channel, frequency);
+                });
+
+        connect(qe, &QuantityEdit::frequencySwap,
+                this,
+                [this](int flag)
+                {
+                    if (flag == 0)
+                        setFrequencyPeriodMode(FrequencyPeriodMode::Period);
+                    else
+                        setFrequencyPeriodMode(FrequencyPeriodMode::Both);
+                });
+
+
+        qe = m_periodEdit;
+        Q_ASSERT_X(qe, __func__, "m_periodEdit=nullptr, bad ordering?");
+
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &,
+                       const QuantityEdit::Value &final)
+                {
+                    Q_UNUSED(final);
+
+                    const double period = m_periodEdit->canonicalValue();
+
+                    if (period > 0.0) {
+                        const double frequency = 1.0 / period;
+
+                        m_frequencyEdit->setValue(frequency, "Hz");
+
+                        DEBUG_FUNC << "period=" << period << "s"
+                                   << "frequency=" << frequency << "Hz";
+                    }
+                    else {
+                        DEBUG_FUNC <<  "<< WILD period=" << period << "s >>";
+                    }
+
+                    updatePulseDuty();
+                    emit periodChanged(this->m_channel, period);
+                });
+
+        connect(qe, &QuantityEdit::periodSwap,
+                this,
+                [this](int flag)
+                {
+                    if (flag == 0)
+                        setFrequencyPeriodMode(FrequencyPeriodMode::Frequency);
+                    else
+                        setFrequencyPeriodMode(FrequencyPeriodMode::Both);
+                });
+
+    }
+}
+
+void ChannelWidget::prepareAmplitudeOffset(bool preLayout)
+{
+    QuantityEdit * qe;
+
+    if (preLayout)
+    {
+        m_amplitudeEdit = new QuantityEdit(m_controller,
+                                           amplitudeQuantityRepresentation,
+                                           m_dirtyState->m_amplitude,
+                                           m_groupBox);
+        qe = m_amplitudeEdit;
+        qe->setObjectName("amplitudeEdit");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        qe->setValueToolTip(
+            "Right click in the numeric field to modify\n"
+            "the spinner step size");
+        qe->setUnitToolTip(
+                         "Right click here for more voltage options");
+        m_amplitudeLabel = new QLabel("Amplitude:", m_groupBox);
+
+        m_offsetEdit = new QuantityEdit(m_controller,
+                                        offsetRepresentation,
+                                        m_dirtyState->m_offset,
+                                        m_groupBox);
+        qe = m_offsetEdit;
+        qe->setObjectName("offsetEdit");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        qe->setValueToolTip(
+            "Right click in the numeric field to modify\n"
+            "the spinner step size");
+        qe->setUnitToolTip(
+                         "Right click here for more voltage options");
+        m_offsetLabel = new QLabel("Offset:", m_groupBox);
+    }
+    else
+    {         // after the formLayout invocations we set up the connects
+        qe = m_amplitudeEdit;
+        Q_ASSERT_X(qe, __func__, "m_amplitudeEdit=nullptr, bad ordering?");
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &original,
+                       const QuantityEdit::Value &final)
+                {
+                    sdgDebug() << "Amplitude field contents:"
+                               << m_amplitudeEdit->cleanText();
+                    qsdgDebug() << "amplitude committed:"
+                                << "original =" << original.value
+                                << original.representation
+                                << "final =" << final.value
+                                << final.representation;
+
+                    emit amplitudeChanged(m_channel,
+                                         final.value,
+                                         final.representation);
+                });
+
+        connect(qe, &QuantityEdit::amplitudeModeSwitch,
+                this,
+                [this](int flag)
+                {
+                    if (flag == 0)
+                        setAmplitudeMode(AmplitudeMode::Normal);
+                    else
+                        setAmplitudeMode(AmplitudeMode::HighLow);
+                });
+
+        qe = m_offsetEdit;
+        Q_ASSERT_X(qe, __func__, "m_offsetEdit=nullptr, bad ordering?");
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &,
+                       const QuantityEdit::Value &final)
+                {
+                    sdgDebug() << m_offsetEdit->debugString();
+                    sdgDebug() << objectName()
+                        << "offset committed:"
+                        << "value =" << final.value
+                        << "representation =" << final.representation;
+
+                    emit offsetChanged(m_channel, final.value,
+                                       final.representation);
+                });
+    }
+}
+
+void ChannelWidget::prepareVHighLow(bool preLayout)
+{
+    QuantityEdit * qe;
+
+    if (preLayout)
+    {
+        m_vHighEdit = new QuantityEdit(m_controller,
+                                       vHighLowQuantityRepresentation,
+                                       m_dirtyState->m_vHigh,
+                                       m_groupBox);
+        qe = m_vHighEdit;
+        qe->setObjectName("vHighEdit");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        qe->setCanonicalRange(-10.0, 10.0);
+        qe->setDecimals(4);
+        qe->setSingleStep(0.001);
+        qe->setStepLimits(0.000'1, 1.0);
+        qe->setValue(0.001, "V");
+        qe->setValueToolTip(
+            "Right click in the numeric field to modify\n"
+            "the spinner step size");
+        qe->setUnitToolTip("Right click here for Amplitude options");
+        m_vHighLabel = new QLabel("Voltage high:", m_groupBox);
+
+        m_vLowEdit = new QuantityEdit(m_controller,
+                                      vHighLowQuantityRepresentation,
+                                      m_dirtyState->m_vLow,
+                                      m_groupBox);
+        qe = m_vLowEdit;
+        qe->setObjectName("vLowEdit");
+        qe->setMinimumWidth(215);
+        qe->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        qe->setCanonicalRange(-10.0, 10.0);
+        qe->setDecimals(4);
+        qe->setSingleStep(0.001);
+        qe->setStepLimits(0.000'1, 1.0);
+        qe->setValue(-0.001, "V");
+        qe->setValueToolTip(
+            "Right click in the numeric field to modify\n"
+            "the spinner step size");
+        qe->setUnitToolTip("Right click here for Amplitude options");
+        m_vLowLabel = new QLabel("Voltage low:", m_groupBox);
+    }
+    else
+    {         // after the formLayout invocations we set up the connects
+        qe = m_vHighEdit;
+        Q_ASSERT_X(qe, __func__, "m_vHighEdit=nullptr, bad ordering?");
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &original,
+                       const QuantityEdit::Value &final)
+                {
+                    Q_UNUSED(original);
+
+                    emit vHighChanged(m_channel,
+                                      final.value,
+                                      final.representation);
+                });
+
+        connect(qe, &QuantityEdit::amplitudeModeSwitch,
+                this,
+                [this](int flag)
+                {
+                    if (flag == 0)
+                        setAmplitudeMode(AmplitudeMode::Normal);
+                    else
+                        setAmplitudeMode(AmplitudeMode::HighLow);
+                });
+
+        qe = m_vLowEdit;
+        Q_ASSERT_X(qe, __func__, "m_vLowEdit=nullptr, bad ordering?");
+        connect(qe, &QuantityEdit::committed,
+                this,
+                [this](const QuantityEdit::Value &original,
+                       const QuantityEdit::Value &final)
+                {
+                    Q_UNUSED(original);
+
+                    emit vLowChanged(m_channel,
+                                     final.value,
+                                     final.representation);
+                });
+
+        connect(qe, &QuantityEdit::amplitudeModeSwitch,
+                this,
+                [this](int flag)
+                {
+                    if (flag == 0)
+                        setAmplitudeMode(AmplitudeMode::Normal);
+                    else
+                        setAmplitudeMode(AmplitudeMode::HighLow);
+                });
+    }
 }
 
 void ChannelWidget::setUiWaveform(const QString &waveform)
@@ -1110,6 +1322,16 @@ void ChannelWidget::setUiAmplitude(const AmplitudeState &amplit)
 void ChannelWidget::setUiOffset(double offset)
 {
     m_offsetEdit->setValue(offset, "Vdc");
+}
+
+void ChannelWidget::setUiVHigh(double vLevel)
+{
+    m_vHighEdit->setValue(vLevel, "V");
+}
+
+void ChannelWidget::setUiVLow(double vLevel)
+{
+    m_vLowEdit->setValue(vLevel, "V");
 }
 
 void ChannelWidget::setUiPhase(double value)
@@ -1227,6 +1449,16 @@ void ChannelWidget::setUiStatus(const QString &text)
 #endif
 }
 
+void ChannelWidget::setVisibleUiStatus(bool enable)
+{
+#ifdef SDG_DEVELOPER_UI
+    m_statusIntroLabel->setVisible(enable);
+    m_statusLabel->setVisible(enable);
+#else
+    Q_UNUSED(enable);
+#endif
+}
+
 void ChannelWidget::updateControlVisibility()
 {
     const QString waveform = m_waveformCombo->currentText();
@@ -1238,17 +1470,39 @@ void ChannelWidget::updateControlVisibility()
     const bool showDC = (waveform == "DC");
     const bool showStandardControls = !showNoise && !showDC;
 
-    m_frequencyLabel->setVisible(showStandardControls);
-    m_frequencyEdit->setVisible(showStandardControls);
+    const bool showFrequency =
+        showStandardControls &&
+        m_frequencyPeriodMode != FrequencyPeriodMode::Period;
 
-    m_periodLabel->setVisible(false);
-    m_periodEdit->setVisible(false);
+    const bool showPeriod =
+        showStandardControls &&
+        m_frequencyPeriodMode != FrequencyPeriodMode::Frequency;
 
-    m_amplitudeLabel->setVisible(showStandardControls);
-    m_amplitudeEdit->setVisible(showStandardControls);
+    m_frequencyLabel->setVisible(showFrequency);
+    m_frequencyEdit->setVisible(showFrequency);
 
-    m_offsetLabel->setVisible(showStandardControls);
-    m_offsetEdit->setVisible(showStandardControls);
+    m_periodLabel->setVisible(showPeriod);
+    m_periodEdit->setVisible(showPeriod);
+
+    const bool showNormalAmplitude =
+        showStandardControls &&
+        m_amplitudeMode == AmplitudeMode::Normal;
+
+    const bool showHighLowAmplitude =
+        showStandardControls &&
+        m_amplitudeMode == AmplitudeMode::HighLow;
+
+    m_amplitudeLabel->setVisible(showNormalAmplitude);
+    m_amplitudeEdit->setVisible(showNormalAmplitude);
+
+    m_offsetLabel->setVisible(showNormalAmplitude);
+    m_offsetEdit->setVisible(showNormalAmplitude);
+
+    m_vHighLabel->setVisible(showHighLowAmplitude);
+    m_vHighEdit->setVisible(showHighLowAmplitude);
+
+    m_vLowLabel->setVisible(showHighLowAmplitude);
+    m_vLowEdit->setVisible(showHighLowAmplitude);
 
     m_phaseLabel->setVisible(showStandardControls);
     m_phaseEdit->setVisible(showStandardControls);
@@ -1305,6 +1559,8 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_periodEdit);
     visitor(m_amplitudeEdit);
     visitor(m_offsetEdit);
+    visitor(m_vHighEdit);
+    visitor(m_vLowEdit);
     visitor(m_phaseEdit);
     visitor(m_dutyEdit);
     visitor(m_rampSymmetryEdit);
@@ -1318,24 +1574,6 @@ void ChannelWidget::visitAllQuantityEdits(
     visitor(m_dcOffsetEdit);
 }
 
-void ChannelWidget::selectCombo(QComboBox *combo)
-{
-    DEBUG_FUNC << " Object:" << combo->objectName();
-
-    combo->setStyleSheet(
-        "QComboBox {"
-        " background-color: palette(highlight);"
-        " color: palette(highlighted-text);"
-        "}"
-    );
-}
-
-void ChannelWidget::deselectCombo(QComboBox *combo)
-{
-    combo->setStyleSheet({});
-}
-
-// Note that CheckBox_s are not visited
 void ChannelWidget::selectAllIfDirty(bool enabled)
 {
     DEBUG_FUNC << "Channel:" << m_channel;
@@ -1352,18 +1590,21 @@ void ChannelWidget::selectAllIfDirty(bool enabled)
             }
         });
 
-    // ComboBoxes
+    // ComboBoxes and CheckBoxes
     if (enabled) {
         if (m_dirtyState->m_waveform)
-            selectCombo(m_waveformCombo);
+            AppHelper::selectCombo(m_waveformCombo);
         if (m_dirtyState->m_polarity)
-            selectCombo(m_polarityCombo);
+            AppHelper::selectCombo(m_polarityCombo);
         if (m_dirtyState->m_outputLoad)
-            selectCombo(m_outputLoadCombo);
+            AppHelper::selectCombo(m_outputLoadCombo);
+        if (m_dirtyState->m_externalOutput)
+            AppHelper::selectCheckBox(m_externalOutputCheck);
     } else {
-        deselectCombo(m_waveformCombo);
-        deselectCombo(m_polarityCombo);
-        deselectCombo(m_outputLoadCombo);
+        AppHelper::deselectCombo(m_waveformCombo);
+        AppHelper::deselectCombo(m_polarityCombo);
+        AppHelper::deselectCombo(m_outputLoadCombo);
+        AppHelper::deselectCheckBox(m_externalOutputCheck);
     }
 }
 
@@ -1381,29 +1622,38 @@ void ChannelWidget::contextMenuEvent(QContextMenuEvent *event)
 
     if (action == showModified)
     {
+        selectAllIfDirty(true);
+#if 0
         visitAllQuantityEdits(
             [](QuantityEdit *edit)
             {
                 edit->selectIfDirty();
             });
+#endif
     }
     else if (action == clearModified)
     {
+        selectAllIfDirty(false);
+#if 0
         visitAllQuantityEdits(
             [](QuantityEdit *edit)
             {
                 edit->deselectIfDirty();
             });
+#endif
     }
 }
 
-void ChannelWidget::showFrequencyPeriod(bool showFrequency, bool showPeriod)
+void ChannelWidget::setFrequencyPeriodMode(FrequencyPeriodMode mode)
 {
-    m_frequencyLabel->setVisible(showFrequency);
-    m_frequencyEdit->setVisible(showFrequency);
+    m_frequencyPeriodMode = mode;
+    updateControlVisibility();
+}
 
-    m_periodLabel->setVisible(showPeriod);
-    m_periodEdit->setVisible(showPeriod);
+void ChannelWidget::setAmplitudeMode(AmplitudeMode mode)
+{
+    m_amplitudeMode = mode;
+    updateControlVisibility();
 }
 
 void ChannelWidget::debugLayout() const

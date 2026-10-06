@@ -34,7 +34,7 @@ SDG2000X::~SDG2000X()
     DEBUG_FUNC;
 }
 
-// Yes the SDG2000X has a front panel, the simulator doesnt
+// Yes the SDG2000X has a front panel, the simulator doesn't
 bool SDG2000X::hasFrontPanel() const
 {
     return true;
@@ -149,6 +149,32 @@ bool SDG2000X::setSdgOffset(int channel, double volts)
 
     QString cmd =
         QString("%1:BSWV OFST,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(volts, 'g', 4));
+
+    return m_scpi.command(cmd);
+}
+
+bool SDG2000X::setSdgVHigh(int channel, double volts)
+{
+    if (!m_scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV HLEV,%2")
+        .arg(channelPrefix(channel))
+        .arg(QString::number(volts, 'g', 4));
+
+    return m_scpi.command(cmd);
+}
+
+bool SDG2000X::setSdgVLow(int channel, double volts)
+{
+    if (!m_scpi.isConnected())
+        return false;
+
+    QString cmd =
+        QString("%1:BSWV LLEV,%2")
         .arg(channelPrefix(channel))
         .arg(QString::number(volts, 'g', 4));
 
@@ -356,6 +382,32 @@ bool SDG2000X::setInvert(int channel, bool enable)
     return true;
 }
 
+bool SDG2000X::setSdgClockSource(ClockSource cs)
+{
+    if (!m_scpi.isConnected())
+        return false;
+
+    QString cmd = QString("ROSC %1")
+        .arg((cs == ClockSource::Internal) ? "INTERNAL" : "EXTERNAL");
+
+    sdgDebug() << "Clock source:" << cmd;
+
+    return m_scpi.command(cmd);
+}
+
+bool SDG2000X::setSdgOverVoltageProtection(OverVoltageProtection ovp)
+{
+    if (!m_scpi.isConnected())
+        return false;
+
+    QString cmd = QString("VOLTPRT %1")
+        .arg((ovp == OverVoltageProtection::Off) ? "OFF" : "ON");
+
+    sdgDebug() << "Over Voltage Protection:" << cmd;
+
+    return m_scpi.command(cmd);
+}
+
 ChannelState SDG2000X::getChannelState(int channel)
 {
     ChannelState state;
@@ -415,6 +467,16 @@ ChannelState SDG2000X::getChannelState(int channel)
             else
                 state.offset = value.toDouble();
         }
+        else if (key == "HLEV")
+        {
+            value.remove("V");
+            state.vHigh = value.toDouble();
+        }
+        else if (key == "LLEV")
+        {
+            value.remove("V");
+            state.vLow = value.toDouble();
+        }
         else if (key == "PHSE")
         {
             state.phase = value.toDouble();
@@ -461,6 +523,11 @@ ChannelState SDG2000X::getChannelState(int channel)
             value.remove("HZ");
             state.noiseBandwidth = value.toDouble();
         }
+        else if (key == "MAX_OUTPUT_AMP")
+        {
+            value.remove("V");
+            state.maxOutputAmplitude = value.toDouble();
+        }
     }
 
     const auto outputState = getOutputState(channel);
@@ -470,6 +537,72 @@ ChannelState SDG2000X::getChannelState(int channel)
 
     return state;
 }
+
+GeneralState SDG2000X::getGeneralState()
+{
+    GeneralState state;
+
+    QString response = m_scpi.query("VOLTPRT?");
+
+    DEBUG_FUNC << "VOLTPRT? response:" << response;
+    if (response.contains("OFF"))
+        state.overVoltageProtection = OverVoltageProtection::Off;
+    else if (response.contains("ON"))
+        state.overVoltageProtection = OverVoltageProtection::On;
+
+    response = m_scpi.query("ROSC?");
+    sdgDebug() << "ROSC? response:" << response;
+    if (response.contains("INTERNAL"))
+        state.clockSource = ClockSource::Internal;
+    else if (response.contains("EXTERNAL"))
+        state.clockSource = ClockSource::External;
+
+    return state;
+}
+
+#if 0
+ChannelState SDG2000X::getSweepState(int channel)
+{
+    ChannelState state;
+    QString wvtp;
+    QString response = m_scpi.query(channelPrefix(channel) + ":SWWV?");
+    /* ARWV for Arb waveforms, MDWV for modulated, BTWV for Burst */
+
+    sdgDebug() << "SWWV raw response:" << response;
+
+    if (response == "WRITE ERROR" ||
+        response == "READ TIMEOUT")
+    {
+        state.waveform = response;
+        return state;
+    }
+
+    QStringList fields = response.split(',');
+
+    for (int i = 0; i + 1 < fields.size(); i += 2)
+    {
+        QString key = fields[i].trimmed();
+        QString value = fields[i + 1].trimmed();
+
+        if (key.contains("WVTP"))
+            key = "WVTP";
+
+        if (key == "WVTP")
+        {
+            state.waveform = value;
+            wvtp = value;
+        }
+        /* lots more to decode here */
+    }
+
+    const auto outputState = getOutputState(channel);
+
+    if (outputState)
+        state.output = *outputState;
+
+    return state;
+}
+#endif
 
 bool SDG2000X::clearErrors()
 {
@@ -526,6 +659,28 @@ bool SDG2000X::waitForOperationComplete(int timeout_ms)
     return m_scpi.waitForOperationComplete(timeout_ms);
 }
 
+bool SDG2000X::applyVoltageHelper(int channel, const ChannelState& state,
+                                   const ChannelDirtyState& dirty)
+{
+    bool ok = true;
+
+    if (dirty.m_amplitude || dirty.m_offset)
+    {
+        if (dirty.m_amplitude)
+            ok &= setSdgAmplitude(channel, state.amplitude);
+        if (dirty.m_offset)
+            ok &= setSdgOffset(channel, state.offset);
+    }
+    else
+    {         // give Amplitude/Offset precedence over Vhigh/Vlow
+        if (dirty.m_vHigh)
+            ok &= setSdgVHigh(channel, state.vLow);
+        if (dirty.m_vLow)
+            ok &= setSdgVLow(channel, state.vHigh);
+    }
+    return ok;
+}
+
 bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
                                  const ChannelDirtyState& dirty)
 {
@@ -541,10 +696,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
     {
         if (dirty.m_frequency)
             ok &= setSdgFrequency(channel, state.frequency);
-        if (dirty.m_amplitude)
-            ok &= setSdgAmplitude(channel, state.amplitude);
-        if (dirty.m_offset)
-            ok &= setSdgOffset(channel, state.offset);
+        ok &= applyVoltageHelper(channel, state, dirty);
         if (dirty.m_phase)
             ok &= setSdgPhase(channel, state.phase);
         if (dirty.m_rampSymmetry)
@@ -554,13 +706,9 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
     {
         if (dirty.m_frequency)
             ok &= setSdgFrequency(channel, state.frequency);
-        if (dirty.m_amplitude)
-            ok &= setSdgAmplitude(channel, state.amplitude);
-        if (dirty.m_offset)
-            ok &= setSdgOffset(channel, state.offset);
+        ok &= applyVoltageHelper(channel, state, dirty);
         if (dirty.m_phase)
             ok &= setSdgPhase(channel, state.phase);
-
         if (dirty.m_pulseWidth)
             ok &= setSdgPulseWidth(channel, state.pulseWidth);
         if (dirty.m_pulseRise)
@@ -592,10 +740,7 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
         // SINE, SQUARE, ARB, etc.
         if (dirty.m_frequency)
             ok &= setSdgFrequency(channel, state.frequency);
-        if (dirty.m_amplitude)
-            ok &= setSdgAmplitude(channel, state.amplitude);
-        if (dirty.m_offset)
-            ok &= setSdgOffset(channel, state.offset);
+        ok &= applyVoltageHelper(channel, state, dirty);
         if (dirty.m_phase)
             ok &= setSdgPhase(channel, state.phase);
         if (dirty.m_duty && state.waveform == "SQUARE")
@@ -621,6 +766,20 @@ bool SDG2000X::applyChannelState(int channel, const ChannelState& state,
 
     DEBUG_FUNC << "No SCPI commands sent; skipping OPC";
     return true;
+}
+
+bool SDG2000X::applyGeneralState(const GeneralState& g_state,
+                                 const GeneralDirtyState& dirty)
+{
+    bool ok = true;
+
+    if (dirty.m_clockSource)
+        setSdgClockSource(g_state.clockSource);
+
+    if (dirty.m_overVoltageProtection)
+        setSdgOverVoltageProtection(g_state.overVoltageProtection);
+
+    return ok;
 }
 
 QByteArray SDG2000X::getFrontPanelImage()

@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 {
     CLI_options cli_options;
 
-#ifndef COMP_MSVC      // all ther way down to and including QAplication
+#ifndef COMP_MSVC      // all the way down to and including QAplication
     // Arguments that will be given to getopt_long().
     std::vector<char *> appArgs;
     appArgs.push_back(argv[0]);  // argv[0] is name of app

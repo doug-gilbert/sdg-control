@@ -72,26 +72,10 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     m_instrumentCombo->setToolTip(
         "The Simulator is a dummy backend so no real SDG2000X is needed");
 
-    connect(m_instrumentCombo,
-            &QComboBox::currentIndexChanged,
-            this,
-            [this](int index)
-            {
-                switch (index)
-                {
-                case 0:
-                    setInstrument(InstrumentType::Simulator);
-                    break;
-
-                case 1:
-                    setInstrument(InstrumentType::SDG2000X);
-                    break;
-                }
-            });
-
-    auto *hostLabel = new QLabel("Host / IP:", central);
+    m_ipaddrLabel = new QLabel("Host / IP:", central);
 
     QSettings settings("sdg-control", "sdg-control");
+
     m_ipaddrEdit = new QLineEdit(
         settings.value("host", "sdg2000x").toString(),
         central);
@@ -111,9 +95,9 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     m_immediateCheck->setObjectName("immediateCheck");
     m_immediateCheck->setChecked(true);
     m_immediateCheck->setToolTip(
-        "When Checked: changes are sent to the function generator\n"
+        "If Checked: changes are sent to the function generator\n"
         "when editing of each field is complete.\n"
-        "When Unchecked: changes are sent when Send button is pressed.");
+        "If Unchecked: changes are sent when Send button is pressed.");
 
     m_sendButton = new QPushButton("Send", central);
     m_sendButton->setObjectName("sendButton");
@@ -132,7 +116,7 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     connectionLayout->addWidget(instrumentLabel);
     connectionLayout->addWidget(m_instrumentCombo);
-    connectionLayout->addWidget(hostLabel);
+    connectionLayout->addWidget(m_ipaddrLabel);
     connectionLayout->addWidget(m_ipaddrEdit);
     connectionLayout->addWidget(m_connectButton);
     connectionLayout->addWidget(m_disconnectButton);
@@ -146,15 +130,8 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
     m_connectionStateEdit->setFocusPolicy(Qt::NoFocus);
     m_connectionStateEdit->setText("Not connected");
 
-#if 0
-    // QLabel can be made selectable, but QLineEdit(read-only) was chosen
-    // because it provides a more obvious copyable text field.
-    idLabel = new QLabel("Not connected", central);
-    idLabel->setTextInteractionFlags(Qt::TextSelectableByMouse |
-                                     Qt::TextSelectableByKeyboard);
-#endif
-
-    m_generalWidget = new GeneralWidget(m_controller, central);
+    m_generalWidget = new GeneralWidget(m_controller,
+                        &m_pendingGeneralState.m_generalDirtyState, central);
 
     m_ch1Widget = new ChannelWidget(m_controller, 1,
                                     pendingChannelDirtyState(1), central);
@@ -170,13 +147,13 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     layout->addWidget(m_connectionStateEdit);
 
-    auto *channelLayout = new QHBoxLayout;
+    auto *generalAndChannelsLayout = new QHBoxLayout;
 
-    channelLayout->addWidget(m_ch1Widget);
-    channelLayout->addWidget(m_ch2Widget);
-    channelLayout->addWidget(m_generalWidget);
+    generalAndChannelsLayout->addWidget(m_ch1Widget);
+    generalAndChannelsLayout->addWidget(m_ch2Widget);
+    generalAndChannelsLayout->addWidget(m_generalWidget);
 
-    layout->addLayout(channelLayout);
+    layout->addLayout(generalAndChannelsLayout);
 
     layout->addWidget(m_refreshButton);
 
@@ -192,26 +169,244 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
 
     setCentralWidget(frame);
 
+    // Start with Simulator showing as default connection selection
     setInstrument(InstrumentType::Simulator);
+    m_ipaddrLabel->setVisible(false);
+    m_ipaddrEdit->setVisible(false);
 
-    connect(m_immediateCheck,
-            &QCheckBox::toggled,
+    prepareChannelConnects();
+    prepareGeneralConnects();
+
+    prepareMainConnects();
+
+    prepareMenuBar();
+
+    resize(800, 350);
+}
+
+#if 0
+    // QLabel can be made selectable, but QLineEdit(read-only) was chosen
+    // because it provides a more obvious copyable text field.
+    m_connectionStateEdit = new QLabel("Not connected", central);
+    m_connectionStateEdit->setTextInteractionFlags(
+                Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+#endif
+
+// Offloaded work from the ctor
+void MainWindow::prepareMenuBar()
+{
+    auto *fileMenu = menuBar()->addMenu("&File");
+
+    auto *loadAction = fileMenu->addAction("&Load settings");
+    auto *saveAction = fileMenu->addAction("&Save settings");
+    auto *quitAction = fileMenu->addAction("&Quit");
+
+    connect(loadAction,
+            &QAction::triggered,
+            this,
+            &MainWindow::loadSettings);
+
+    connect(saveAction,
+            &QAction::triggered,
+            this,
+            &MainWindow::saveSettings);
+
+    connect(quitAction,
+            &QAction::triggered,
+            this,
+            &QWidget::close);
+
+    QMenu *editMenu = menuBar()->addMenu("&Edit");
+
+    m_resetAction = editMenu->addAction("Reset and set defaults");
+    m_adaptiveDecimalStepAction = editMenu->addAction("Spin second MS digit");
+    m_adaptiveDecimalStepAction->setCheckable(true);
+    m_adaptiveDecimalStepAction->setChecked(false);
+    m_adaptiveDecimalStepAction->setEnabled(false);
+    // m_adaptiveDecimalStepAction->setStatusTip(<str>); // but no Status bar
+    m_adaptiveDecimalStepAction->setToolTip(
+        "In Adaptive decimal step mode the\n"
+        "second Most Significant Digit spins");
+
+    connect(m_resetAction,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                sdgDebug() << "Reset requested";
+                if (m_generator && m_generator->reset())
+                    refreshClicked();
+            });
+
+    connect(m_adaptiveDecimalStepAction,
+            &QAction::toggled,
             this,
             [this](bool checked)
             {
-                m_immediateMode = checked;
+                m_controller->secondMSD_inform(checked);
+            });
 
+    auto *viewMenu = menuBar()->addMenu("&View");
+
+    m_showChannel1Action = viewMenu->addAction("Show Channel 1");
+    m_showChannel1Action->setCheckable(true);
+    // Assume at startup, both Channels are visible
+    m_showChannel1Action->setChecked(true);
+    // At this point the widgets have not yet been shown, so isVisible()
+    // cannot be used to initialize these actions.
+    // Needs a connect(viewMenu, QMenu::hovered, ...) for toolTip to work
+    m_showChannel1Action->setToolTip(
+        "When UNchecked, Channel 1 is hidden leaving\n"
+        "more screen 'real estate' for Channel 2");
+
+    m_showChannel2Action = viewMenu->addAction("Show Channel 2");
+    m_showChannel2Action->setCheckable(true);
+    m_showChannel2Action->setChecked(true);
+    m_showChannel2Action->setToolTip(
+        "When UNchecked, Channel 2 is hidden leaving\n"
+        "more screen 'real estate' for Channel 1");
+
+    m_showGeneralAction = viewMenu->addAction("Show General Settings");
+    m_showGeneralAction->setCheckable(true);
+    m_showGeneralAction->setChecked(false);
+    m_showGeneralAction->setToolTip(
+        "When Checked, a General settings window will appear\n"
+        "when UNchecked, the General settings window is hidden");
+
+    m_frontPanelAction = viewMenu->addAction("Show front panel");
+    m_frontPanelAction->setCheckable(true);
+    m_frontPanelAction->setEnabled(false);
+    m_frontPanelAction->setToolTip(
+        "Fetch SDG2000X's screen as a bmp and render it");
+
+#ifdef SDG_DEVELOPER_UI
+    m_debugStatusAction = viewMenu->addAction("Show Debug status field");
+    m_debugStatusAction->setCheckable(true);
+    m_debugStatusAction->setChecked(false);
+    m_debugStatusAction->setEnabled(true);
+    m_ch1Widget->setVisibleUiStatus(false);
+    m_ch2Widget->setVisibleUiStatus(false);
+
+    connect(m_debugStatusAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_ch1Widget->setVisibleUiStatus(checked);
+                m_ch2Widget->setVisibleUiStatus(checked);
+            });
+#endif
+
+    connect(m_showGeneralAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_generalWidget->setVisible(checked);
+            });
+
+    connect(m_showChannel1Action,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_ch1Widget->setVisible(checked);
+            });
+
+    connect(m_showChannel2Action,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_ch2Widget->setVisible(checked);
+            });
+
+    connect(m_frontPanelAction,
+            &QAction::toggled,
+            this,
+            [this](bool checked)
+            {
                 if (checked)
                 {
-                    m_sendButton->hide();
-                    sdgDebug() << "enter Immediate mode";
+                    if (!m_frontPanelWindow)
+                        createFrontPanelWindow();
+
+                    m_frontPanelWindow->show();
+                    m_frontPanelWindow->raise();
+                    m_frontPanelWindow->activateWindow();
+                    m_frontPanelWindow->updateScreen();
                 }
                 else
                 {
-                    m_sendButton->show();
-                    sdgDebug() << "enter Send mode";
-                    m_sendButton->setEnabled(m_sendEnabled);
+                    if (m_frontPanelWindow)
+                        m_frontPanelWindow->hide();
                 }
+            });
+
+    // This connect() is to display the 'Show Channel 1/2' toolTips
+    connect(viewMenu,
+            &QMenu::hovered,
+            this,
+            [](QAction *action)
+            {
+                if (action && !action->toolTip().isEmpty())
+                {
+                    QToolTip::showText(
+                        QCursor::pos(),
+                        action->toolTip());
+                }
+                else
+                {
+                    QToolTip::hideText();
+                }
+            });
+
+    auto *helpMenu = menuBar()->addMenu("&Help");
+
+    auto *aboutAction = helpMenu->addAction("&About SDG Control");
+
+    connect(aboutAction,
+            &QAction::triggered,
+            this,
+            [this]()
+            {
+                QString text;
+
+                text += QString("SDG Control\n\n");
+                text += QString("Version: %1\n\n")
+                            .arg(SDG_CONTROL_VERSION);
+                text += QString(
+                    "Controls Siglent SDG2000X series Function/Arbitrary\n");
+
+                text += QString(
+                    "Waveform generators over a TCP connection using\n");
+                text += QString(
+                    "the SCPI command set. Based on the Qt6 application\n");
+                text += QString("development framework.\n\n");
+                text += QString("Build time: %1").arg(BUILD_TIME);
+
+                QMessageBox::about(this, "About SDG Control", text);
+            });
+}
+
+void MainWindow::prepareChannelConnects()
+{
+    connect(m_ch1Widget,
+            &ChannelWidget::hideRequested,
+            this,
+            [this](int)
+            {
+                m_ch1Widget->hide();
+                m_showChannel1Action->setChecked(false);
+            });
+
+    connect(m_ch2Widget,
+            &ChannelWidget::hideRequested,
+            this,
+            [this](int)
+            {
+                m_ch2Widget->hide();
+                m_showChannel2Action->setChecked(false);
             });
 
     // Define a Lambda function to ease the tedium of doing a connect for
@@ -260,6 +455,24 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
                const QString &representation)
         {
             setOffset(channel, value, representation);
+        });
+
+    connectChannelWidgets(
+        &ChannelWidget::vHighChanged,
+        [this](int channel,
+               double value,
+               const QString &representation)
+        {
+            setVHigh(channel, value, representation);
+        });
+
+    connectChannelWidgets(
+        &ChannelWidget::vLowChanged,
+        [this](int channel,
+               double value,
+               const QString &representation)
+        {
+            setVLow(channel, value, representation);
         });
 
     connectChannelWidgets(
@@ -360,13 +573,83 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
             setOutputLoad(channel, load);
         });
 
-
     connectChannelWidgets(
         &ChannelWidget::externalOutputChanged,
         [this](int channel, bool enabled)
         {
             setExternalOutput(channel, enabled);
         });
+}
+
+void MainWindow::prepareGeneralConnects()
+{
+    connect(m_generalWidget,
+            &GeneralWidget::hideRequested,
+            this,
+            [this]()
+            {
+                m_generalWidget->hide();
+                m_showGeneralAction->setChecked(false);
+            });
+
+    connect(m_generalWidget,
+            &GeneralWidget::clockSourceChanged,
+            this,
+            [this](ClockSource cs)
+            {
+                setClockSource(cs);
+            });
+
+    connect(m_generalWidget,
+            &GeneralWidget::overVoltageProtectionChanged,
+            this,
+            [this](OverVoltageProtection ovp)
+            {
+                setOverVoltageProtection(ovp);
+            });
+}
+
+void MainWindow::prepareMainConnects()
+{
+    connect(m_immediateCheck,
+            &QCheckBox::toggled,
+            this,
+            [this](bool checked)
+            {
+                m_immediateMode = checked;
+
+                if (checked)
+                {
+                    m_sendButton->hide();
+                    sdgDebug() << "enter Immediate mode";
+                }
+                else
+                {
+                    m_sendButton->show();
+                    sdgDebug() << "enter Send mode";
+                    m_sendButton->setEnabled(m_sendEnabled);
+                }
+            });
+
+    connect(m_instrumentCombo,
+            &QComboBox::currentIndexChanged,
+            this,
+            [this](int index)
+            {
+                switch (index)
+                {
+                case 0:
+                    setInstrument(InstrumentType::Simulator);
+                    m_ipaddrLabel->setVisible(false);
+                    m_ipaddrEdit->setVisible(false);
+                    break;
+                case 1:
+                    setInstrument(InstrumentType::SDG2000X);
+                    m_ipaddrLabel->setVisible(true);
+                    m_ipaddrEdit->setVisible(true);
+                    break;
+                }
+            });
 
     connect(m_connectButton,
             &QPushButton::clicked,
@@ -387,216 +670,6 @@ MainWindow::MainWindow(const CLI_options &cli_opts, QWidget *parent)
             &QPushButton::clicked,
             this,
             &MainWindow::sendClicked);
-
-    createMenuBar();
-
-    resize(800, 350);
-}
-
-// Offloaded work from the ctor
-void MainWindow::createMenuBar()
-{
-    auto *fileMenu = menuBar()->addMenu("&File");
-
-    auto *loadAction = fileMenu->addAction("&Load settings");
-    auto *saveAction = fileMenu->addAction("&Save settings");
-    auto *quitAction = fileMenu->addAction("&Quit");
-
-    connect(loadAction,
-            &QAction::triggered,
-            this,
-            &MainWindow::loadSettings);
-
-    connect(saveAction,
-            &QAction::triggered,
-            this,
-            &MainWindow::saveSettings);
-
-    connect(quitAction,
-            &QAction::triggered,
-            this,
-            &QWidget::close);
-
-    QMenu *editMenu = menuBar()->addMenu("&Edit");
-
-    m_resetAction = editMenu->addAction("Reset and set defaults");
-    m_adaptiveDecimalStepAction = editMenu->addAction("Spin second MS digit");
-    m_adaptiveDecimalStepAction->setCheckable(true);
-    m_adaptiveDecimalStepAction->setChecked(false);
-    m_adaptiveDecimalStepAction->setEnabled(false);
-    // m_adaptiveDecimalStepAction->setStatusTip(<str>); // but no Status bar
-    m_adaptiveDecimalStepAction->setToolTip(
-        "In Adaptive decimal step mode the\n"
-        "second Most Significant Digit spins");
-
-    connect(m_resetAction,
-            &QAction::triggered,
-            this,
-            [this]()
-            {
-                sdgDebug() << "Reset requested";
-                if (m_generator && m_generator->reset())
-                    refreshClicked();
-            });
-
-    connect(m_adaptiveDecimalStepAction,
-            &QAction::toggled,
-            this,
-            [this](bool checked)
-            {
-                m_controller->secondMSD_inform(checked);
-            });
-
-    auto *viewMenu = menuBar()->addMenu("&View");
-
-    m_showChannel1Action = viewMenu->addAction("Show Channel 1");
-    m_showChannel1Action->setCheckable(true);
-    // Assume at startup, both Channels are visible
-    m_showChannel1Action->setChecked(true);
-    // At this point the widgets have not yet been shown, so isVisible()
-    // cannot be used to initialize these actions.
-    // Needs a connect(viewMenu, QMenu::hovered, ...) for toolTip to work
-    m_showChannel1Action->setToolTip(
-        "When UNchecked, Channel 1 is hidden leaving\n"
-        "more screen 'real estate' for Channel 2");
-
-    m_showChannel2Action = viewMenu->addAction("Show Channel 2");
-    m_showChannel2Action->setCheckable(true);
-    m_showChannel2Action->setChecked(true);
-    m_showChannel2Action->setToolTip(
-        "When UNchecked, Channel 2 is hidden leaving\n"
-        "more screen 'real estate' for Channel 1");
-
-    m_showGeneralAction = viewMenu->addAction("Show General Settings");
-    m_showGeneralAction->setCheckable(true);
-    m_showGeneralAction->setChecked(false);
-    m_showGeneralAction->setToolTip(
-        "When Checked, a General settings window will appear\n"
-        "when UNchecked, the General settings window is hidden");
-
-    m_frontPanelAction = viewMenu->addAction("Show front panel");
-    m_frontPanelAction->setCheckable(true);
-    m_frontPanelAction->setEnabled(false);
-    m_frontPanelAction->setToolTip(
-        "Fetch SDG2000X's screen as a bmp and render it");
-
-    connect(m_generalWidget,
-            &GeneralWidget::hideRequested,
-            this,
-            [this]()
-            {
-                m_generalWidget->hide();
-                m_showGeneralAction->setChecked(false);
-            });
-
-    connect(m_ch1Widget,
-            &ChannelWidget::hideRequested,
-            this,
-            [this](int)
-            {
-                m_ch1Widget->hide();
-                m_showChannel1Action->setChecked(false);
-            });
-
-    connect(m_ch2Widget,
-            &ChannelWidget::hideRequested,
-            this,
-            [this](int)
-            {
-                m_ch2Widget->hide();
-                m_showChannel2Action->setChecked(false);
-            });
-
-    connect(m_showGeneralAction,
-            &QAction::toggled,
-            this,
-            [this](bool checked)
-            {
-                m_generalWidget->setVisible(checked);
-            });
-
-    connect(m_showChannel1Action,
-            &QAction::toggled,
-            this,
-            [this](bool checked)
-            {
-                m_ch1Widget->setVisible(checked);
-            });
-
-    connect(m_showChannel2Action,
-            &QAction::toggled,
-            this,
-            [this](bool checked)
-            {
-                m_ch2Widget->setVisible(checked);
-            });
-
-    connect(m_frontPanelAction,
-            &QAction::toggled,
-            this,
-            [this](bool checked)
-            {
-                if (checked)
-                {
-                    if (!m_frontPanelWindow)
-                        createFrontPanelWindow();
-
-                    m_frontPanelWindow->show();
-                    m_frontPanelWindow->raise();
-                    m_frontPanelWindow->activateWindow();
-                    m_frontPanelWindow->updateScreen();
-                }
-                else
-                {
-                    if (m_frontPanelWindow)
-                        m_frontPanelWindow->hide();
-                }
-            });
-
-    // This connect() is to display the 'Show Channel 1/2' toolTips
-    connect(viewMenu,
-            &QMenu::hovered,
-            this,
-            [](QAction *action)
-            {
-                if (action && !action->toolTip().isEmpty())
-                {
-                    QToolTip::showText(
-                        QCursor::pos(),
-                        action->toolTip());
-                }
-                else
-                {
-                    QToolTip::hideText();
-                }
-            });
-
-    auto *helpMenu = menuBar()->addMenu("&Help");
-
-    auto *aboutAction = helpMenu->addAction("&About SDG Control");
-
-    connect(aboutAction,
-            &QAction::triggered,
-            this,
-            [this]()
-            {
-                QString text;
-
-                text += QString("SDG Control\n\n");
-                text += QString("Version: %1\n\n")
-                            .arg(SDG_CONTROL_VERSION);
-                text += QString(
-                    "Controls Siglent SDG2000X series Function/Arbitrary\n");
-
-                text += QString(
-                    "Waveform generators over a TCP connection using\n");
-                text += QString(
-                    "the SCPI command set. Based on the Qt6 application\n");
-                text += QString("development framework.\n\n");
-                text += QString("Build time: %1").arg(BUILD_TIME);
-
-                QMessageBox::about(this, "About SDG Control", text);
-            });
 }
 
 MainWindow::~MainWindow()
@@ -642,6 +715,7 @@ void MainWindow::setInstrument(InstrumentType type)
     m_ch2Widget->setControlsEnabled(false);
 
     m_pendingState = {};
+    m_pendingGeneralState = {};
     setSendEnabled(false);
 
     m_connectionStateEdit->setText("Not connected");
@@ -658,7 +732,7 @@ QString MainWindow::displayIdentification(const QString &idn) const
 }
 
 #ifdef SDG_DEVELOPER_UI
-static void setChannelStatus(int my_chan, ChannelWidget & cwid,
+static void setChannelStatus(int my_chan, ChannelWidget * cwid,
                              const ChannelState &ch)
 {
     auto amp = ch.amplitude;
@@ -679,17 +753,17 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
         .arg(ch.phase, 0, 'f', 1);
 
     if (ch.waveform == "RAMP")
-        cwid.setUiStatus( QString("%1  Sym %2  ExternalOutput %3")
+        cwid->setUiStatus( QString("%1  Sym %2  ExternalOutput %3")
             .arg(common)
             .arg(ch.rampSymmetry)
             .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "DC")
-        cwid.setUiStatus( QString("%1  DC_OFST %2  ExternalOutput %3")
+        cwid->setUiStatus( QString("%1  DC_OFST %2  ExternalOutput %3")
             .arg(common)
             .arg(ch.dcOffset)
             .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "PULSE")
-        cwid.setUiStatus(
+        cwid->setUiStatus(
             QString("%1  Width %2  Rise %3  Fall %4  ExternalOutput %5")
                    .arg(common)
                    .arg(ch.pulseWidth)
@@ -697,56 +771,65 @@ static void setChannelStatus(int my_chan, ChannelWidget & cwid,
                    .arg(ch.pulseFall)
                    .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (ch.waveform == "SQUARE")
-        cwid.setUiStatus( QString("%1  Duty %2 ExternalOutput %3")
+        cwid->setUiStatus( QString("%1  Duty %2 ExternalOutput %3")
             .arg(common)
             .arg(ch.duty)
             .arg(ch.output.externalOutput ? "ON" : "OFF"));
     else if (my_chan == 1 && ch.waveform == "SINE")
-        cwid.setUiStatus( QString("%1  ExternalOutput %2  %3")
+        cwid->setUiStatus( QString("%1  ExternalOutput %2  %3")
             .arg(common)
             .arg(ch.output.externalOutput ? "ON" : "OFF")
             .arg(BUILD_TIME));
     else
-        cwid.setUiStatus( QString("%1  ExternalOutput %2")
+        cwid->setUiStatus( QString("%1  ExternalOutput %2")
             .arg(common)
             .arg(ch.output.externalOutput ? "ON" : "OFF"));
 }
 #endif
 
 // This function is called when the Refresh button is pressed
-static void setChannelFields(int my_chan, ChannelWidget & cwid,
+static void setChannelFields(int my_chan, ChannelWidget * cwid,
                              const ChannelState & ch)
 {
-    cwid.setUiWaveform(ch.waveform);
-    cwid.setUiFrequency(ch.frequency);
-    cwid.setUiAmplitude(ch.amplitude);
-    cwid.setUiOffset(ch.offset);
-    cwid.setUiPhase(ch.phase);
-    cwid.setUiDuty(ch.duty);
-    cwid.setUiRampSymmetry(ch.rampSymmetry);
-    cwid.setUiPulseWidth(ch.pulseWidth);
-    cwid.setUiPulseRise(ch.pulseRise);
-    cwid.setUiPulseFall(ch.pulseFall);
-    cwid.setUiNoiseBandset(ch.noiseBandset);
-    cwid.setUiNoiseStdev(ch.noiseStdev);
-    cwid.setUiNoiseMean(ch.noiseMean);
-    cwid.setUiNoiseBandwidth(ch.noiseBandwidth);
-    cwid.setUiDcOffset(ch.dcOffset);
+    cwid->setUiWaveform(ch.waveform);
+    cwid->setUiFrequency(ch.frequency);
+    cwid->setUiAmplitude(ch.amplitude);
+    cwid->setUiOffset(ch.offset);
+    cwid->setUiVHigh(ch.vHigh);
+    cwid->setUiVLow(ch.vLow);
+    cwid->setUiPhase(ch.phase);
+    cwid->setUiDuty(ch.duty);
+    cwid->setUiRampSymmetry(ch.rampSymmetry);
+    cwid->setUiPulseWidth(ch.pulseWidth);
+    cwid->setUiPulseRise(ch.pulseRise);
+    cwid->setUiPulseFall(ch.pulseFall);
+    cwid->setUiNoiseBandset(ch.noiseBandset);
+    cwid->setUiNoiseStdev(ch.noiseStdev);
+    cwid->setUiNoiseMean(ch.noiseMean);
+    cwid->setUiNoiseBandwidth(ch.noiseBandwidth);
+    cwid->setUiDcOffset(ch.dcOffset);
 
 // DC Precision is present in the SDG UI/firmware but is not currently
 // documented by Siglent and is not returned by BSWV?. Leave the field
 // in the application state/UI so it can be wired up if a future
 // firmware/SCPI implementation exposes it.
-    cwid.setUiDcPrecisionHigh(ch.dcPrecisionHigh);
+    cwid->setUiDcPrecisionHigh(ch.dcPrecisionHigh);
 
     // Note: ch.output has type OutputState which holds several fields
-    cwid.setUiOutput(ch.output);
+    cwid->setUiOutput(ch.output);
 
 #ifdef SDG_DEVELOPER_UI
     setChannelStatus(my_chan, cwid, ch);
 #else
     Q_UNUSED(my_chan);
 #endif
+}
+
+// This function is called when the Refresh button is pressed
+static void setGeneralFields(GeneralWidget * gwid, const GeneralState & gs)
+{
+    gwid->setUiClockSource(gs.clockSource);
+    gwid->setUiOverVoltageProtection(gs.overVoltageProtection);
 }
 
 static inline bool haveIOError(const ChannelState & ch)
@@ -782,7 +865,7 @@ void MainWindow::refreshClicked()
     ch1.amplitude.userRepresentation =
         pendingChannelState(1)->amplitude.userRepresentation;
 
-    setChannelFields(1, *m_ch1Widget, ch1);
+    setChannelFields(1, m_ch1Widget, ch1);
 
     auto ch2 = m_generator->getChannelState(2);
 
@@ -795,10 +878,13 @@ void MainWindow::refreshClicked()
     ch2.amplitude.userRepresentation =
         pendingChannelState(2)->amplitude.userRepresentation;
 
-    setChannelFields(2, *m_ch2Widget, ch2);
+    setChannelFields(2, m_ch2Widget, ch2);
 
     *pendingChannelState(1) = ch1;
     *pendingChannelState(2) = ch2;
+
+    m_pendingGeneralState.m_generalState = m_generator->getGeneralState();
+    setGeneralFields(m_generalWidget, m_pendingGeneralState.m_generalState);
 
     if (wasDirty)
     {
@@ -896,14 +982,22 @@ void MainWindow::sendClicked()
         ok &= local_ok;
     }
 
-    if (ok)
+    auto gen_ok = m_generator->applyGeneralState(
+                          m_pendingGeneralState.m_generalState,
+                          m_pendingGeneralState.m_generalDirtyState);
+
+    if (gen_ok)
     {
-        DEBUG_FUNC << "All channels applied OK; disabling Send";
-        setSendEnabled(false);
+        DEBUG_FUNC << "General fields applied OK";
+        if (ok)
+        {
+            DEBUG_FUNC << "Everything applied okay; disabling Send";
+            setSendEnabled(false);
+        }
     }
     else
     {
-        DEBUG_FUNC << "At least one channel failed; Send remains enabled";
+        DEBUG_FUNC << "Applying General fields failed";
     }
 }
 
@@ -1068,6 +1162,72 @@ void MainWindow::setOffset(int channel, double value,
         if (m_generator->applyChannelState(channel, *pendingState,
                                            *dirtyState))
             dirtyState->m_offset = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
+// According to User manual: Vpp = Vhigh - Vlow     and
+// Offset = (Vhigh - Vlow) / 2       also Vpp >= 0 and Vhigh >= Vlow
+void MainWindow::setVHigh(int channel, double value,
+                          const QString &representation)
+{
+    auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
+    double volts = value;
+
+    // Normalize to the unit of Volts
+    if (representation == "mV")
+        volts *= 0.001;
+
+    if (m_immediateMode && (volts < pendingState->vLow)) {
+DEBUG_FUNC << "Vlow > Vhigh NOT allowed";
+         // want pop-up here, ignore volts, set vLow <--- Vhigh and exit??
+         return;
+    }
+    pendingState->vHigh = volts;
+
+    DEBUG_FUNC << "value =" << value << "representation =" << representation
+               << "volts =" << volts;
+
+    dirtyState->m_vHigh = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_vHigh = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
+void MainWindow::setVLow(int channel, double value,
+                          const QString &representation)
+{
+    auto pendingState = pendingChannelState(channel);
+    auto dirtyState = pendingChannelDirtyState(channel);
+    double volts = value;
+
+    // Normalize to the unit of Volts
+    if (representation == "mV")
+        volts *= 0.001;
+
+    if (m_immediateMode && (volts > pendingState->vHigh)) {
+DEBUG_FUNC << "Vlow > Vhigh NOT allowed";
+         // want pop-up here, ignore volts, set vLow <--- Vhigh and exit??
+         return;
+    }
+    pendingState->vLow = volts;
+
+    DEBUG_FUNC << "value =" << value << "representation =" << representation
+               << "volts =" << volts;
+
+    dirtyState->m_vLow = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyChannelState(channel, *pendingState,
+                                           *dirtyState))
+            dirtyState->m_vLow = false;
     }
     else
         setSendEnabled(true);
@@ -1330,6 +1490,38 @@ void MainWindow::setExternalOutput(int channel, bool externalOutput)
         setSendEnabled(true);
 }
 
+void MainWindow::setClockSource(ClockSource cs)
+{
+    auto & genState { m_pendingGeneralState.m_generalState };
+    auto & genDirty { m_pendingGeneralState.m_generalDirtyState };
+
+    genState.clockSource = cs;
+    genDirty.m_clockSource = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyGeneralState(genState, genDirty))
+            genDirty.m_clockSource = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
+void MainWindow::setOverVoltageProtection(OverVoltageProtection ovp)
+{
+    auto & genState { m_pendingGeneralState.m_generalState };
+    auto & genDirty { m_pendingGeneralState.m_generalDirtyState };
+
+    genState.overVoltageProtection = ovp;
+    genDirty.m_overVoltageProtection = true;
+    if (m_immediateMode)
+    {
+        if (m_generator->applyGeneralState(genState, genDirty))
+            genDirty.m_overVoltageProtection = false;
+    }
+    else
+        setSendEnabled(true);
+}
+
 void MainWindow::setSendEnabled(bool value)
 {
     m_sendEnabled = value;
@@ -1358,9 +1550,10 @@ void MainWindow::loadSettings()
         return;
 
     std::array<ChannelState, 2> loadedState;
+    GeneralState genState;
     QString error;
 
-    if (!SettingsIO::load(fileName, loadedState, &error))
+    if (!SettingsIO::load(fileName, loadedState, genState, &error))
     {
         sdgDebug() << "Load failed:" << error;
         return;
@@ -1370,7 +1563,9 @@ void MainWindow::loadSettings()
     pendingChannelDirtyState(1)->setAll();
     *pendingChannelState(2) = loadedState[1];
     pendingChannelDirtyState(2)->setAll();
-    // m_pendingState = loadedState;
+
+    m_pendingGeneralState.m_generalState = genState;
+    m_pendingGeneralState.m_generalDirtyState.setAll();
 
     updateWidgetsFromState();
 
@@ -1399,13 +1594,16 @@ void MainWindow::saveSettings()
     stateToSave[0] = *pendingChannelState(1);
     stateToSave[1] = *pendingChannelState(2);
 
-    SettingsIO::save(fileName, stateToSave);
+    SettingsIO::save(fileName, stateToSave,
+                     m_pendingGeneralState.m_generalState);
 }
 
 void MainWindow::updateWidgetsFromState()
 {
     updateChannelWidget(1, *pendingChannelState(1));
     updateChannelWidget(2, *pendingChannelState(2));
+
+    updateGeneralWidget(m_pendingGeneralState.m_generalState);
 }
 
 // This method is only invoked during Load Settings (from JSON) file
@@ -1413,14 +1611,16 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
 {
     ChannelWidget *widget = (channel == 1) ? m_ch1Widget : m_ch2Widget;
 
-    // accept the default second argument od each set*State() method, so
+    // accept the default second argument of each set*State() method, so
     // that is makeDirty = true.
     // This could be made more efficient by checking the prior value of
-    // each field and onlt setting dirty if the new value is different.
+    // each field and only setting dirty if the new value is different.
     widget->setUiWaveform(state.waveform);
     widget->setUiFrequency(state.frequency);
     widget->setUiAmplitude(state.amplitude);
     widget->setUiOffset(state.offset);
+    widget->setUiVHigh(state.offset);
+    widget->setUiVLow(state.offset);
     widget->setUiPhase(state.phase);
     widget->setUiDuty(state.duty);
     widget->setUiRampSymmetry(state.rampSymmetry);
@@ -1435,6 +1635,12 @@ void MainWindow::updateChannelWidget(int channel, const ChannelState &state)
     widget->setUiDcPrecisionHigh(state.dcPrecisionHigh);
 
     widget->setUiOutput(state.output);
+}
+
+void MainWindow::updateGeneralWidget(const GeneralState &state)
+{
+    m_generalWidget->setUiClockSource(state.clockSource);
+    m_generalWidget->setUiOverVoltageProtection(state.overVoltageProtection);
 }
 
 void MainWindow::createFrontPanelWindow()
@@ -1510,6 +1716,7 @@ void MainWindow::showSendContextMenu(const QPoint &globalPos)
             this,
             [this]
             {
+                m_generalWidget->selectAllIfDirty(true);
                 m_ch1Widget->selectAllIfDirty(true);
                 m_ch2Widget->selectAllIfDirty(true);
             });
@@ -1519,6 +1726,7 @@ void MainWindow::showSendContextMenu(const QPoint &globalPos)
             this,
             [this]
             {
+                m_generalWidget->selectAllIfDirty(false);
                 m_ch1Widget->selectAllIfDirty(false);
                 m_ch2Widget->selectAllIfDirty(false);
             });

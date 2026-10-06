@@ -52,11 +52,15 @@ public:
 
     void setUiStatus(const QString &text);   // visible if SDG_DEVELOPER_UI=ON
 
+    void setVisibleUiStatus(bool enable);
+
     // Going from internal state (where Units may be normalized) to UI
     void setUiWaveform(const QString &waveform);
     void setUiFrequency(double value);
-    void setUiAmplitude(const AmplitudeState &amplitud);
+    void setUiAmplitude(const AmplitudeState &amplitude);
     void setUiOffset(double value);
+    void setUiVHigh(double value);
+    void setUiVLow(double value);
     void setUiPhase(double value);
     void setUiDuty(double value);
     void setUiRampSymmetry(double value);
@@ -73,18 +77,18 @@ public:
     // Note: there are multiple UI fields within OutputState
     void setUiOutput(const OutputState &output);
 
-    void showFrequencyPeriod(bool showFrequency, bool showPeriod);
-
     void setControlsEnabled(bool enabled);
 
     void visitAllQuantityEdits(
         const std::function<void(QuantityEdit *)> &visitor);
 
-    // If enabled is true, the numeric contents of every field are selected
-    // (highlighted) if the corresponding dirty flag is set. If enabled is
-    // false, and if the corresponding dirty flag is set, then the numeric
-    // contents of each field are deselected (i.e. any highlighted characters
-    // are returned to their normal state). [Uses visitAllQuantityEdits().]
+    // If enabled is true, the contents of each field is selected
+    // (highlighted) if the corresponding dirty flag is set. For QuantityEdit
+    // based numeric fields, only the the numeric part is selected; for
+    // ComboBox only fields, the "dirty" selection is highlighted. If enabled
+    // is false, and if the corresponding dirty flag is set, then the
+    // contents of each field is deselected. So selectAllIfDirty(false)
+    // undoes what selectAllIfDirty(true) does.
     void selectAllIfDirty(bool enabled);
 
     void contextMenuEvent(QContextMenuEvent *event) override;
@@ -97,6 +101,10 @@ signals:
                           const QString &representation);
     void offsetChanged(int channel, double value,
                        const QString &representation);
+    void vHighChanged(int channel, double value,
+                      const QString &representation);
+    void vLowChanged(int channel, double value,
+                     const QString &representation);
     void phaseChanged(int channel, double phase);
     void dutyChanged(int channel, double duty);
     void rampSymmetryChanged(int channel, double percent);
@@ -116,11 +124,13 @@ signals:
     void hideRequested(int channel);
 
 private:
-    static void selectCombo(QComboBox *combo);
-    static void deselectCombo(QComboBox *combo);
-
     void updateControlVisibility();
     void updatePulseDuty();
+
+    // constructor helpers
+    void prepareFrequencyPeriod(bool preLayout);
+    void prepareAmplitudeOffset(bool preLayout);
+    void prepareVHighLow(bool preLayout);
 
     void debugLayout() const;
 
@@ -140,6 +150,7 @@ private:
 
 #ifdef SDG_DEVELOPER_UI
     QLabel *m_statusLabel;
+    QLabel *m_statusIntroLabel;
 #endif
 
     QLabel *m_waveformLabel;
@@ -147,6 +158,8 @@ private:
     QLabel *m_periodLabel;
     QLabel *m_amplitudeLabel;
     QLabel *m_offsetLabel;
+    QLabel *m_vHighLabel;
+    QLabel *m_vLowLabel;
     QLabel *m_phaseLabel;
     QLabel *m_dutyLabel;
     QLabel *m_rampSymmetryLabel;
@@ -168,6 +181,8 @@ private:
     QuantityEdit *m_periodEdit = nullptr;
     QuantityEdit *m_amplitudeEdit = nullptr;
     QuantityEdit *m_offsetEdit = nullptr;
+    QuantityEdit *m_vHighEdit = nullptr;
+    QuantityEdit *m_vLowEdit = nullptr;
     QuantityEdit *m_phaseEdit = nullptr;
     QuantityEdit *m_dutyEdit = nullptr;
     QuantityEdit *m_rampSymmetryEdit = nullptr;
@@ -185,5 +200,24 @@ private:
     QComboBox *m_outputLoadCombo;
     QCheckBox *m_externalOutputCheck;
 
-    // friend class MainWindow;    // allow access to each field's dirty flag
+    enum class FrequencyPeriodMode
+    {
+        Frequency,
+        Period,
+        Both
+    };
+
+    enum class AmplitudeMode
+    {
+        Normal,
+        HighLow
+    };
+
+    void setFrequencyPeriodMode(FrequencyPeriodMode mode);
+    void setAmplitudeMode(AmplitudeMode mode);
+
+    FrequencyPeriodMode m_frequencyPeriodMode =
+        FrequencyPeriodMode::Frequency;
+
+    AmplitudeMode m_amplitudeMode = AmplitudeMode::Normal;
 };

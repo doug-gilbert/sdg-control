@@ -24,11 +24,19 @@ public:
 
     ChannelState getChannelState(int channel) override;
 
+    GeneralState getGeneralState() override;
+
     bool applyChannelState(int channel,
                            const ChannelState &state,
                            const ChannelDirtyState& dirty) override;
 
+    bool applyGeneralState(const GeneralState &state,
+                           const GeneralDirtyState& dirty) override;
+
 private:
     std::array<ChannelState, 2> channelState;
+
+    GeneralState generalState;
+
     bool connected = false;
 };

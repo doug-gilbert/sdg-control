@@ -64,6 +64,8 @@ struct AmplitudeState
     double getVrms() const { return v_rms; }
     double get_dBm() const { return dBm; }
 
+    bool anyValid() const { return v_ppValid || v_rmsValid || dBmValid; }
+
     // Returns a normalised value usually corresponding to
     // userRepresentation. Normalised in the sense that for any voltages the
     // Unit is Volts (never milliVolts). This follows how SCPI communicates
@@ -100,7 +102,7 @@ struct AmplitudeState
 
 protected:
 
-    double v_pp = 1.0;        // 0.0 blows up dBm (and Period)
+    double v_pp = 1.0;        // Note that 0.0 blows up dBm
     double v_rms = 0.353'6;   // correct for a SINE wave, Vpp=1
     double dBm = 3.979'4;     // correct for a SINE wave, Vpp=1, Rload=50
 };
@@ -109,11 +111,15 @@ struct ChannelState
 {
     QString waveform = "SINE";
 
-    double frequency = 1'000.0;
+    double frequency = 1'000.0;  // always want > 0.0 so inference is safe
+    // double period = 1.0 / frequency;     <<< inferred rather than stored
+
     AmplitudeState amplitude;
     double offset = 0.0;
-    double phase = 0.0;
+    double vHigh = 0.001;
+    double vLow = -0.001;
 
+    double phase = 0.0;
     double duty = 50.0;       // percentage, 0..100
 
     double rampSymmetry = 50.0;
@@ -130,7 +136,10 @@ struct ChannelState
     double dcOffset = 0.0;
     bool dcPrecisionHigh = true;  // false implies low precision
 
-    OutputState output;
+    OutputState output;      // fields sent by the SCPI OUTP command
+
+    double maxOutputAmplitude = 20.0;  // reported by SDG, not UI editable
+
 };
 
 inline QDebug operator<<(QDebug debug, const OutputState &output)
@@ -151,6 +160,8 @@ inline QDebug operator<<(QDebug debug, const OutputState &output)
     X(frequency)                \
     X(amplitude)                \
     X(offset)                   \
+    X(vHigh)                    \
+    X(vLow)                     \
     X(phase)                    \
     X(duty)                     \
     X(rampSymmetry)             \

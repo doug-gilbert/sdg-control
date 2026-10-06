@@ -21,98 +21,189 @@
 #include "Utility.h"
 #include "debug.h"
 
+
 namespace
 {
     constexpr int FormatVersion = 1;
+    constexpr auto UtilityNameKey = "utility_name";
+    constexpr auto utilityName = "sdg-control";
+    constexpr auto UtilityVersionKey = "utility_version";
+#ifdef SDG_CONTROL_VERSION
+    #define MY_STRINGIFY(x) #x
+    constexpr auto utilityVersion = MY_STRINGIFY(SDG_CONTROL_VERSION);
+#else
+    constexpr auto utilityVersion = "not available";
+#endif
+    constexpr auto ControlledInstrumentKey = "controlled_instrument";
+    constexpr auto controlled_instrument =
+          "SDG2000X series Function/Arbitrary Waveform Generator";
 
-    constexpr auto FormatVersionKey = "formatVersion";
-    constexpr auto DateTimeKey      = "createDateTime";
+    /* JSON key names should only contain, a-z, 0-9 and _  */
+    constexpr auto FormatVersionKey = "format_version";
+    constexpr auto DateTimeKey      = "create_date_time";
     constexpr auto Channel1Key      = "channel1";
     constexpr auto Channel2Key      = "channel2";
+    constexpr auto GeneralKey       = "general";
+    constexpr auto ClockSourceKey   = "clock_source";
+    constexpr auto OverVoltageProtectionKey   = "over_voltage_protection";
+    constexpr auto SdgModeKey       = "mode";
 
     constexpr auto WaveformKey      = "waveform";
+    constexpr auto BasicSettingsKey = "basic_settings";
+    constexpr auto WaveformQualifierKey = "waveform_qualifier";
     constexpr auto FrequencyKey     = "frequency";
     constexpr auto AmplitudeKey     = "amplitude";
-    constexpr auto AmplitudeRepresentationKey = "amplitudeRepresentation";
-    constexpr auto AmplitudeUserRepresentationKey =
-                                "amplitudeUserRepresentation";
+    constexpr auto AmplitudeRepKey  = "amplitude_representation";
+    constexpr auto AmplitudeUserRepKey =
+                                "amplitude_user_representation";
     constexpr auto OffsetKey        = "offset";
+    constexpr auto VHighKey         = "volt_high";
+    constexpr auto VLowKey          = "volt_low";
     constexpr auto PhaseKey         = "phase";
     constexpr auto DutyKey          = "duty";
-    constexpr auto SymmetryKey      = "rampSymmetry";
-    constexpr auto PulseWidthKey    = "pulseWidth";
-    constexpr auto PulseRiseKey     = "pulseRise";
-    constexpr auto PulseFallKey     = "pulseFall";
-    constexpr auto NoiseBandsetKey  = "noiseBandset";
-    constexpr auto NoiseStdevKey    = "noiseStdev";
-    constexpr auto NoiseMeanKey     = "noiseMean";
-    constexpr auto NoiseBandwidthKey = "noiseBandwidth";
-    constexpr auto DcOffsetKey      = "dcOffset";
-    constexpr auto DcPrecisionHighKey = "dcPrecisionHigh";
+    constexpr auto SymmetryKey      = "ramp_symmetry";
+    constexpr auto PulseWidthKey    = "pulse_width";
+    constexpr auto PulseRiseKey     = "pulse_rise";
+    constexpr auto PulseFallKey     = "pulse_fall";
+    constexpr auto NoiseBandsetKey  = "noise_bandset";
+    constexpr auto NoiseStdevKey    = "noise_stdev";
+    constexpr auto NoiseMeanKey     = "noise_mean";
+    constexpr auto NoiseBandwidthKey = "noise_bandwidth";
+    constexpr auto DcOffsetKey      = "dc_offset";
+    constexpr auto DcPrecisionHighKey = "dc_precision_high";
     constexpr auto PolarityKey      = "polarity";
-    constexpr auto OutputLoadKey    = "outputLoad";
-    constexpr auto ExternalOutputKey = "externalOutput";
+    constexpr auto OutputLoadKey    = "output_load";
+    constexpr auto ExternalOutputKey = "external_output";
+    constexpr auto MaxOutputAmplitudeKey = "max_output_amplitude";
+
+    void channelCommonToJson(const ChannelState &state, QJsonObject &obj)
+    {
+        const auto & ampState = state.amplitude;
+
+        obj[FrequencyKey]     = state.frequency;
+        if (ampState.anyValid())
+        {
+            obj[AmplitudeKey] = ampState.valueRepresentation().value;
+            obj[AmplitudeRepKey] =
+                           ampState.valueRepresentation().representation;
+            obj[AmplitudeUserRepKey] = ampState.userRepresentation;
+            obj[OffsetKey]    = state.offset;
+        }
+        else
+        {
+            obj[VHighKey]     = state.vHigh;
+            obj[VLowKey]      = state.vLow;
+        }
+        obj[PhaseKey]         = state.phase;
+    }
 
     QJsonObject channelToJson(const ChannelState &state)
     {
+        QJsonObject objBS;   // basic_settings:
+        QString wf = state.waveform;
+
+        if (wf == "SINE")
+        {
+            channelCommonToJson(state, objBS);
+        }
+        else if (wf == "SQUARE")
+        {
+            channelCommonToJson(state, objBS);
+            objBS[DutyKey]           = state.duty;
+        }
+        else if (wf == "RAMP")
+        {
+            channelCommonToJson(state, objBS);
+            objBS[SymmetryKey]       = state.rampSymmetry;
+        }
+        else if (wf == "PULSE")
+        {
+            channelCommonToJson(state, objBS);
+            objBS[PulseWidthKey]     = state.pulseWidth;
+            objBS[PulseRiseKey]      = state.pulseRise;
+            objBS[PulseFallKey]      = state.pulseFall;
+        }
+        else if (wf == "NOISE")
+        {
+            objBS[NoiseBandsetKey]   = state.noiseBandset;
+            objBS[NoiseStdevKey]     = state.noiseStdev;
+            objBS[NoiseMeanKey]      = state.noiseMean;
+            objBS[NoiseBandwidthKey] = state.noiseBandwidth;
+        }
+        else if (wf == "DC")
+        {
+            objBS[DcOffsetKey]       = state.dcOffset;
+            objBS[DcPrecisionHighKey] = state.dcPrecisionHigh;
+        }
+        else
+        {
+            DEBUG_FUNC << "Unimplemented waveform:" << wf;
+        }
+
         QJsonObject obj;
-        const auto & ampState = state.amplitude;
 
-
-        obj[WaveformKey]       = state.waveform;
-        obj[FrequencyKey]      = state.frequency;
-        obj[AmplitudeKey]      = ampState.valueRepresentation().value;
-        obj[AmplitudeRepresentationKey] =
-                  ampState.valueRepresentation().representation;
-        obj[AmplitudeUserRepresentationKey] = ampState.userRepresentation;
-        obj[OffsetKey]         = state.offset;
-        obj[PhaseKey]          = state.phase;
-        obj[DutyKey]           = state.duty;
-        obj[SymmetryKey]       = state.rampSymmetry;
-        obj[PulseWidthKey]     = state.pulseWidth;
-        obj[PulseRiseKey]      = state.pulseRise;
-        obj[PulseFallKey]      = state.pulseFall;
-        obj[NoiseBandsetKey]   = state.noiseBandset;
-        obj[NoiseStdevKey]     = state.noiseStdev;
-        obj[NoiseMeanKey]      = state.noiseMean;
-        obj[NoiseBandwidthKey] = state.noiseBandwidth;
-        obj[DcOffsetKey]       = state.dcOffset;
-        obj[DcPrecisionHighKey] = state.dcPrecisionHigh;
+        obj[BasicSettingsKey]  = objBS;
         obj[PolarityKey]       =
                  Utility::polarityToString(state.output.polarity);
         obj[OutputLoadKey]     =
                  Utility::outputLoadToString(state.output.outputLoad);
         obj[ExternalOutputKey] = state.output.externalOutput;
-
+        obj[WaveformKey]       = wf;
+        obj[WaveformQualifierKey] = "none";
         return obj;
     }
 
-    bool jsonToChannel(const QJsonObject &obj, ChannelState &state)
+    QJsonObject generalToJson(const GeneralState &gen_state)
     {
-        if (!obj.contains(WaveformKey) ||
-            !obj.contains(ExternalOutputKey))
-        {
+        QJsonObject obj;
+
+        obj[ClockSourceKey]     =
+                 Utility::clockSourceToString(gen_state.clockSource);
+
+        obj[OverVoltageProtectionKey]     =
+                 Utility::overVoltageProtectionToString(
+                                  gen_state.overVoltageProtection);
+
+        obj[SdgModeKey]     =
+                 Utility::sdgModeToString(gen_state.sdgMode);
+        return obj;
+    }
+
+    bool jsonToGeneral(const QJsonObject &obj, GeneralState &g_state)
+    {
+        const bool csPresent = obj.contains(ClockSourceKey);
+        const bool ovpPresent = obj.contains(OverVoltageProtectionKey);
+        const bool modePresent = obj.contains(SdgModeKey);
+
+        if (!(csPresent || ovpPresent))
             return false;
-        }
 
-        state.waveform  = obj[WaveformKey].toString();
-        state.output.polarity =
-             Utility::stringToPolarity(obj[PolarityKey].toString());
-        state.output.outputLoad =
-             Utility::stringToOutputLoad(obj[OutputLoadKey].toString());
+        if (csPresent)
+            g_state.clockSource =
+               Utility::stringToClockSource(obj[ClockSourceKey].toString());
+        if (ovpPresent)
+            g_state.overVoltageProtection =
+               Utility::stringToOverVoltageProtection(
+                                 obj[OverVoltageProtectionKey].toString());
+        if (modePresent)
+            g_state.sdgMode =
+               Utility::stringToSdgMode(obj[SdgModeKey].toString());
+        return true;
+    }
 
-        state.output.externalOutput = obj[ExternalOutputKey].toBool();
-
+    void jsonCommonToChannel(ChannelState &state, QJsonObject &obj)
+    {
         if (obj.contains(FrequencyKey))
             state.frequency = obj[FrequencyKey].toDouble();
+
         if (obj.contains(AmplitudeKey))
         {
             const double value = obj[AmplitudeKey].toDouble();
             AmplitudeState & ampState = state.amplitude;
 
-            if (obj.contains(AmplitudeRepresentationKey))
+            if (obj.contains(AmplitudeRepKey))
             {
-                const QString r = obj[AmplitudeRepresentationKey].toString();
+                const QString r = obj[AmplitudeRepKey].toString();
                 bool ok = true;
 
                 /* Should be only normalized Units (i.e. no milliVolts) */
@@ -127,59 +218,107 @@ namespace
                     ok = false;
                     sdgDebug() << __func__ << ">>> rep=" << r;
                 }
-                if (ok && obj.contains(AmplitudeUserRepresentationKey))
+                if (ok && obj.contains(AmplitudeUserRepKey))
                     ampState.userRepresentation =
-                         obj[AmplitudeUserRepresentationKey].toString();
+                         obj[AmplitudeUserRepKey].toString();
             }
         }
-        if (state.waveform == "DC")
+        else if (obj.contains(VHighKey))
         {
-            if (obj.contains(DcOffsetKey))
-                state.dcOffset = obj[DcOffsetKey].toDouble();
+            state.vHigh = obj[VHighKey].toDouble();
+            if (obj.contains(VLowKey))
+                state.vLow = obj[VLowKey].toDouble();
+        }
 
-            if (obj.contains(DcPrecisionHighKey))
-                state.dcPrecisionHigh = obj[DcPrecisionHighKey].toBool();
-        }
-        else
-        {
-            if (obj.contains(OffsetKey))
-                state.offset = obj[OffsetKey].toDouble();
-        }
         if (obj.contains(PhaseKey))
             state.phase = obj[PhaseKey].toDouble();
-        if (obj.contains(DutyKey))
-            state.duty = obj[DutyKey].toDouble();
-        if (obj.contains(SymmetryKey))
-            state.rampSymmetry = obj[SymmetryKey].toDouble();
-        if (obj.contains(PulseWidthKey))
-            state.pulseWidth = obj[PulseWidthKey].toDouble();
-        if (obj.contains(PulseRiseKey))
-            state.pulseRise = obj[PulseRiseKey].toDouble();
-        if (obj.contains(PulseFallKey))
-            state.pulseFall = obj[PulseFallKey].toDouble();
-        if (obj.contains(NoiseBandsetKey))
-            state.noiseBandset = obj[NoiseBandsetKey].toBool();
-        if (obj.contains(NoiseStdevKey))
-            state.noiseStdev = obj[NoiseStdevKey].toDouble();
-        if (obj.contains(NoiseMeanKey))
-            state.noiseMean = obj[NoiseMeanKey].toDouble();
-        if (obj.contains(NoiseBandwidthKey))
-            state.noiseBandwidth = obj[NoiseBandwidthKey].toDouble();
+    }
+
+    bool jsonToChannel(const QJsonObject &obj, ChannelState &state)
+    {
+
+        if (!obj.contains(WaveformKey) ||
+            !obj.contains(ExternalOutputKey) ||
+            !obj.contains(BasicSettingsKey))
+        {
+            return false;
+        }
+
+        QJsonObject objBS { obj[BasicSettingsKey].toObject() };
+        QString wf { obj[WaveformKey].toString() };
+
+        state.waveform  = wf;
+        state.output.polarity =
+             Utility::stringToPolarity(obj[PolarityKey].toString());
+        state.output.outputLoad =
+             Utility::stringToOutputLoad(obj[OutputLoadKey].toString());
+
+        state.output.externalOutput = obj[ExternalOutputKey].toBool();
+
+        if (wf == "SINE")
+        {
+            jsonCommonToChannel(state, objBS);
+        }
+        else if (wf == "SQUARE")
+        {
+            jsonCommonToChannel(state, objBS);
+            if (objBS.contains(DutyKey))
+                state.duty = objBS[DutyKey].toDouble();
+        }
+        else if (wf == "RAMP")
+        {
+            jsonCommonToChannel(state, objBS);
+            if (objBS.contains(SymmetryKey))
+                state.rampSymmetry = objBS[SymmetryKey].toDouble();
+        }
+        else if (wf == "PULSE")
+        {
+            jsonCommonToChannel(state, objBS);
+            if (objBS.contains(PulseWidthKey))
+                state.pulseWidth = objBS[PulseWidthKey].toDouble();
+            if (objBS.contains(PulseRiseKey))
+                state.pulseRise = objBS[PulseRiseKey].toDouble();
+            if (objBS.contains(PulseFallKey))
+                state.pulseFall = objBS[PulseFallKey].toDouble();
+        }
+        else if (wf == "NOISE")
+        {
+            if (objBS.contains(NoiseBandsetKey))
+                state.noiseBandset = objBS[NoiseBandsetKey].toBool();
+            if (objBS.contains(NoiseStdevKey))
+                state.noiseStdev = objBS[NoiseStdevKey].toDouble();
+            if (objBS.contains(NoiseMeanKey))
+                state.noiseMean = objBS[NoiseMeanKey].toDouble();
+            if (objBS.contains(NoiseBandwidthKey))
+                state.noiseBandwidth = objBS[NoiseBandwidthKey].toDouble();
+        }
+        else if (wf == "DC")
+        {
+            if (objBS.contains(DcOffsetKey))
+                state.dcOffset = objBS[DcOffsetKey].toDouble();
+            if (objBS.contains(DcPrecisionHighKey))
+                state.dcPrecisionHigh = objBS[DcPrecisionHighKey].toBool();
+        }
 
         return true;
     }
 }
 
 bool SettingsIO::save(const QString &filename,
-                      const std::array<ChannelState, 2> &state)
+                      const std::array<ChannelState, 2> &state,
+                      const GeneralState &gen_state)
 {
     QJsonObject root;
     QDateTime dt = QDateTime::currentDateTime();
 
+    root[UtilityNameKey] = utilityName;
+    root[UtilityVersionKey] = utilityVersion;
+    root[ControlledInstrumentKey] = controlled_instrument;
     root[FormatVersionKey] = FormatVersion;
     root[DateTimeKey] = dt.toUTC().toString(Qt::ISODateWithMs);
     root[Channel1Key] = channelToJson(state.at(0));
     root[Channel2Key] = channelToJson(state.at(1));
+    root[GeneralKey] = generalToJson(gen_state);
 
     QJsonDocument doc(root);
 
@@ -200,6 +339,7 @@ bool SettingsIO::save(const QString &filename,
 
 bool SettingsIO::load(const QString &filename,
                       std::array<ChannelState, 2> &state,
+                      GeneralState &gen_state,
                       QString *error)
 {
     QFile file(filename);
@@ -233,7 +373,7 @@ bool SettingsIO::load(const QString &filename,
         return false;
     }
 
-    QJsonObject root = doc.object();
+    const QJsonObject root = doc.object();
 
     // Now root["channel1"], root["channel2"], etc. are valid
     ChannelState ch1;
@@ -250,6 +390,13 @@ bool SettingsIO::load(const QString &filename,
     {
         if (error)
             *error = "Invalid channel2 settings";
+        return false;
+    }
+
+    if (!jsonToGeneral(root[GeneralKey].toObject(), gen_state))
+    {
+        if (error)
+            *error = "Invalid General settings";
         return false;
     }
 

@@ -8,7 +8,7 @@
 #include <QString>
 #include <QDebug>
 
-#include <tuple>        // for struct GeneralDirtyState below
+// #include <tuple>        // for struct GeneralDirtyState below
 
 
 enum class ClockSource {
@@ -16,15 +16,28 @@ enum class ClockSource {
     External
 };
 
+enum class OverVoltageProtection {
+    Off,
+    On
+};
+
+enum class SdgMode {
+    PhaseLocked,
+    Independent
+};
+
 struct GeneralState
 {
-    ClockSource g_clockSource;
-
+    ClockSource clockSource = ClockSource::Internal;
+    OverVoltageProtection overVoltageProtection = OverVoltageProtection::Off;
+    SdgMode sdgMode = SdgMode::PhaseLocked;
 };
 
 // Trying hard to state this list of dirty flags once and only once
 #define GENERAL_DIRTY_FIELDS(X) \
-    X(clockSource)
+    X(clockSource) \
+    X(overVoltageProtection) \
+    X(sdgMode)
 
 struct GeneralDirtyState
 {

@@ -9,6 +9,7 @@
 #include <QByteArray>
 
 #include "ChannelState.h"
+#include "GeneralState.h"
 
 class QString;
 
@@ -36,9 +37,14 @@ public:
 
     virtual ChannelState getChannelState(int channel) = 0;
 
+    virtual GeneralState getGeneralState() = 0;
+
     virtual bool applyChannelState(int channel,
                                    const ChannelState &state,
                                    const ChannelDirtyState &dirty) = 0;
+
+    virtual bool applyGeneralState(const GeneralState &state,
+                                   const GeneralDirtyState &dirty) = 0;
 
     virtual bool hasFrontPanel() const { return false; }
 

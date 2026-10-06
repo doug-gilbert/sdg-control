@@ -18,6 +18,7 @@ class QCheckBox;
 class QComboBox;
 class QAction;
 class QPoint;
+class QLabel;
 
 class ChannelWidget;
 class AppController;
@@ -34,12 +35,11 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    // constructor (ctor) invoked in main.cpp
     explicit MainWindow(const CLI_options &cli_opts,
                         QWidget *parent = nullptr);
 
     ~MainWindow();
-
-    bool isAmplitudeWidget(QWidget *widget) const;
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -66,6 +66,9 @@ private:
 
     FrontPanelWindow *m_frontPanelWindow = nullptr;
     QAction *m_frontPanelAction = nullptr;
+#ifdef SDG_DEVELOPER_UI
+    QAction *m_debugStatusAction = nullptr;
+#endif
 
     /**
      * Channel is either 1 or 2. Take care when indexing this array with
@@ -74,9 +77,12 @@ private:
      */
     std::array<PendingChannelState, 2> m_pendingState;
 
+    PendingGeneralState m_pendingGeneralState;
+
     QCheckBox *m_immediateCheck;
     QPushButton *m_sendButton;
 
+    QLabel * m_ipaddrLabel;
     QLineEdit *m_ipaddrEdit;
     QPushButton *m_connectButton;
     QPushButton *m_disconnectButton;
@@ -109,13 +115,17 @@ private:
 
     void updateWidgetsFromState();
     void updateChannelWidget(int channel, const ChannelState &state);
+    void updateGeneralWidget(const GeneralState &state);
 
+    // Channel field changed signals call these
     void setWaveform(int channel, const QString & waveform);
     void setFrequency(int channel, double value);
     void setPeriod(int channel, double value);
     void setAmplitude(int channel, double value,
                       const QString &representation);
     void setOffset(int channel, double value, const QString &representation);
+    void setVHigh(int channel, double value, const QString &representation);
+    void setVLow(int channel, double value, const QString &representation);
     void setPhase(int channel, double value);
     void setDuty(int channel, double value);
     void setRampSymmetry(int channel, double value);
@@ -132,7 +142,15 @@ private:
     void setOutputLoad(int channel, OutputLoad load);
     void setExternalOutput(int channel, bool enabled);
 
-    void createMenuBar();
+    // Channel field changed signals call these
+    void setClockSource(ClockSource cs);
+    void setOverVoltageProtection(OverVoltageProtection ovp);
+
+    // ctor offloads
+    void prepareMenuBar();
+    void prepareChannelConnects();
+    void prepareGeneralConnects();
+    void prepareMainConnects();
 
     QString displayIdentification(const QString &idn) const;
 

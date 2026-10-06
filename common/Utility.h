@@ -20,4 +20,10 @@ namespace Utility
 
     QString clockSourceToString(ClockSource source);
     ClockSource stringToClockSource(const QString &str);
+
+    QString overVoltageProtectionToString(OverVoltageProtection src);
+    OverVoltageProtection stringToOverVoltageProtection(const QString &str);
+
+    QString sdgModeToString(SdgMode mode);
+    SdgMode stringToSdgMode(const QString &mode);
 }

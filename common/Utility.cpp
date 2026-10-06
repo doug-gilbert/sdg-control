@@ -70,3 +70,39 @@ ClockSource Utility::stringToClockSource(const QString &str)
         return ClockSource::Internal;
     return ClockSource::External;
 }
+
+QString Utility::overVoltageProtectionToString(OverVoltageProtection src)
+{
+    switch (src) {
+    case OverVoltageProtection::On:
+        return "On";
+    case OverVoltageProtection::Off:
+        return "Off";
+    }
+    return "Off";
+}
+
+OverVoltageProtection Utility::stringToOverVoltageProtection(const QString &str)
+{
+    if (str == "On" || str == "ON")
+        return OverVoltageProtection::On;
+    return OverVoltageProtection::Off;
+}
+
+QString Utility::sdgModeToString(SdgMode mode)
+{
+    switch (mode) {
+    case SdgMode::PhaseLocked:
+        return "PhaseLocked";
+    case SdgMode::Independent:
+        return "Independent";
+    }
+    return "PhaseLocked";
+}
+
+SdgMode Utility::stringToSdgMode(const QString &modeStr)
+{
+    if (modeStr == "PhaseLocked")
+        return SdgMode::PhaseLocked;
+    return SdgMode::Independent;
+}

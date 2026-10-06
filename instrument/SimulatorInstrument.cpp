@@ -61,6 +61,14 @@ ChannelState SimulatorInstrument::getChannelState(int channel)
     return channelState[channel - 1];
 }
 
+GeneralState SimulatorInstrument::getGeneralState()
+{
+    if (!connected)
+        return {};
+
+    return generalState;
+}
+
 bool SimulatorInstrument::applyChannelState(
     int channel,
     const ChannelState &state,
@@ -72,5 +80,14 @@ bool SimulatorInstrument::applyChannelState(
         return false;
 
     channelState[channel - 1] = state;
+    return true;
+}
+
+bool SimulatorInstrument::applyGeneralState(const GeneralState &g_state,
+                                            const GeneralDirtyState& dirty)
+{
+    Q_UNUSED(dirty);
+
+    generalState = g_state;
     return true;
 }

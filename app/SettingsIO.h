@@ -16,9 +16,11 @@
 namespace SettingsIO
 {
     bool save(const QString &filename,
-              const std::array<ChannelState,2> &state);
+              const std::array<ChannelState,2> &state,
+              const GeneralState &gen_state);
 
     bool load(const QString &filename,
               std::array<ChannelState,2> &state,
+              GeneralState &gen_state,
               QString *error = nullptr);
 }

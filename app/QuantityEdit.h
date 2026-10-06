@@ -101,6 +101,8 @@ public:
 
     bool isEditing() const { return m_editing; }
 
+    // Sets the displayed value and resets the editing/dirty state.
+    // The undo stack is not altered by this call.
     void setValue(double value, const QString &representation);
 
     void setCanonicalValue(double value);
@@ -112,7 +114,7 @@ public:
     double canonicalValue() const;
 
     void undo();         // also invoked by Ctrl+Z
-    void redo();         // also invoked by Ctrl+Y or Ctrl+Shift+Z
+    void redo();         // also invoked by Ctrl+Shift+Z (sometimes Ctrl-Y)
 
     // This is accessing PendingChannelState owned by MainWindow and is not
     // necessarily 1 to 1. For example the Frequency and Period fields share
@@ -122,7 +124,7 @@ public:
     // Select (highlight) the numeric field if m_dirtyFlag is true.
     // "Deselecting" is removing the highlight.
     void selectIfDirty() const;
-    void selectAll() const;
+    void selectAll() const;	// select all characters in field
     void deselectIfDirty() const;
     void deselect() const;
 
@@ -140,7 +142,8 @@ public:
     void setRange(double minimum, double maximum);
     double minimum() const;
     double maximum() const;
-    void setToolTip(const QString &toolTip);
+    void setValueToolTip(const QString &toolTip);
+    void setUnitToolTip(const QString &toolTip);
 
     // setMinimumWidth() passes through to base class (QWidget)
     // setObjectName() passes through to base class (QWidget)
@@ -176,6 +179,7 @@ signals:
 
     void frequencySwap(int flag) const;
     void periodSwap(int flag) const;
+    void amplitudeModeSwitch(int flag) const;
 
 protected:
     void focusInEvent(QFocusEvent *event) override;

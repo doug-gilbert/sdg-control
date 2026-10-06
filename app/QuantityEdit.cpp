@@ -31,6 +31,7 @@
 
 #include "QuantityEdit.h"
 #include "StepAdjustSpinBox.h"
+#include "AppHelper.h"
 #include "debug.h"
 
 
@@ -295,9 +296,7 @@ QuantityEdit::Value QuantityEdit::currentValue() const
            };
 }
 
-void QuantityEdit::setValue(
-    double value,
-    const QString &representation)
+void QuantityEdit::setValue(double value, const QString &representation)
 {
     setValueWithoutHistory({value, representation});
 
@@ -363,8 +362,9 @@ void QuantityEdit::setRepresentation(const QString &representation)
 
 void QuantityEdit::deselect() const
 {
-    if (m_valueSpin->edit()->hasSelectedText())
-        m_valueSpin->edit()->deselect();
+    // if (m_valueSpin->edit()->hasSelectedText())
+        // m_valueSpin->edit()->deselect();
+    AppHelper::deselectSpinBox(m_valueSpin);
 }
 
 void QuantityEdit::deselectIfDirty() const
@@ -376,7 +376,8 @@ void QuantityEdit::deselectIfDirty() const
 // Highlight all characters in a field
 void QuantityEdit::selectAll() const
 {
-    m_valueSpin->edit()->selectAll();
+    // m_valueSpin->edit()->selectAll();
+    AppHelper::selectSpinBox(m_valueSpin);
 }
 
 void QuantityEdit::selectIfDirty() const
@@ -617,9 +618,18 @@ void QuantityEdit::setSuffix(const QString &suffix)
     m_valueSpin->setSuffix(suffix);
 }
 
-void QuantityEdit::setToolTip(const QString &toolTip)
+void QuantityEdit::setValueToolTip(const QString &toolTip)
 {
     m_valueSpin->setToolTip(toolTip);
+}
+
+void QuantityEdit::setUnitToolTip(const QString &toolTip)
+{
+    if (m_representationCombo)
+        m_representationCombo->setToolTip(toolTip);
+
+    if (m_representationLabel)
+        m_representationLabel->setToolTip(toolTip);
 }
 
 QString QuantityEdit::toolTip() const
